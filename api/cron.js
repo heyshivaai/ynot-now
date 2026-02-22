@@ -1,5 +1,8 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+console.log('SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
+console.log('SUPABASE_KEY:', SUPABASE_KEY ? 'SET' : 'MISSING');
+console.log('ANTHROPIC_KEY:', ANTHROPIC_KEY ? 'SET' : 'MISSING');
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 
