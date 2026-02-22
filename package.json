@@ -1,0 +1,10 @@
+{
+  "type": "module"
+}
+```
+
+Scroll down → type `add package.json` → click **Commit changes**.
+
+Wait 30 seconds for Vercel to redeploy → then run in Command Prompt:
+```
+curl -X GET "https://ynot-now.vercel.app/api/cron" -H "Authorization: Bearer ynot-secret-2025"
