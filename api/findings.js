@@ -21,14 +21,14 @@ async function supabaseGet(table, query = '') {
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const latestRun = await supabaseGet('findings',
-      '?select=run_id,run_date&order=run_date.desc&limit=1'
+      '?select=run_id,run_date&order=created_at.desc&limit=1'
     );
 
     if (!latestRun?.length) {
