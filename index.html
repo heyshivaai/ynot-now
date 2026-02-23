@@ -1199,7 +1199,7 @@ function loadSampleFindings(){
 // ── INIT — try DB, fall back to samples ──
 async function init(){
   try{
-    const r=await fetch('/api/findings');
+    const r=await fetch('https://ynot-now.vercel.app/api/findings');
     if(r.ok){
       const data=await r.json();
       if(data.findings&&data.findings.length>0){
