@@ -1,17 +1,20 @@
-const SUPABASE_URL = process.env.SUPABASE_URL;
+﻿const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 
+function normalizeVerdict(v){v=(v||'').toUpperCase();if(v.indexOf('SIGNAL')>=0)return 'SIGNAL';if(v.indexOf('NOISE')>=0)return 'NOISE';return 'WATCH';}
+function normalizeRisk(r){r=(r||'').toLowerCase();if(r.indexOf('high')>=0)return 'high';if(r.indexOf('low')>=0)return 'low';return 'medium';}
+function clamp(v,a,b){var n=parseInt(v);return isNaN(n)?3:Math.min(b,Math.max(a,n));}
 const MINDS = [
-  { id:'scout', name:'Scout', icon:'🔭', domain:'P&C', prompt:`Find 3 AI innovations in P&C insurance. Return ONLY a JSON array: [{"title":"Computer Vision Claims","verdict":"SIGNAL","body":"CV models assess damage from photos with 94% accuracy.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC","url":"https://content.naic.org"}]}]` },
-  { id:'vita', name:'Vita', icon:'🧬', domain:'Life', prompt:`Find 3 AI innovations in Life insurance. Return ONLY a JSON array: [{"title":"AI Underwriting","verdict":"SIGNAL","body":"LLM underwriting cuts decision time from weeks to minutes.","confidence":5,"domain":"Life","subdomain":"Underwriting","experiment":"test hypothesis","trl":8,"regulatoryRisk":"medium","refs":[{"label":"arXiv","url":"https://arxiv.org"}]}]` },
-  { id:'atlas', name:'Atlas', icon:'🌍', domain:'Reinsurance', prompt:`Find 3 AI innovations in reinsurance. Return ONLY a JSON array: [{"title":"ML Cat Models","verdict":"SIGNAL","body":"ML improves cat loss estimates by 30%.","confidence":4,"domain":"Reinsurance","subdomain":"Cat Modeling","experiment":"test hypothesis","trl":7,"regulatoryRisk":"low","refs":[{"label":"Geneva Association","url":"https://www.genevaassociation.org"}]}]` },
-  { id:'prism', name:'Prism', icon:'💎', domain:'Horizontal', prompt:`Find 3 horizontal tech innovations for insurance. Return ONLY a JSON array: [{"title":"Federated Learning","verdict":"WATCH","body":"Carriers sharing fraud signals without raw data.","confidence":3,"domain":"Horizontal","subdomain":"Federated Learning","experiment":"test hypothesis","trl":5,"regulatoryRisk":"medium","refs":[{"label":"NIST","url":"https://nist.gov"}]}]` },
-  { id:'null', name:'Null', icon:'⚔️', domain:'All', prompt:`Find 3 overhyped AI claims in insurance. Return ONLY a JSON array: [{"title":"Blockchain Claims","verdict":"NOISE","body":"No major carrier deployed blockchain claims at scale.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":3,"regulatoryRisk":"low","refs":[{"label":"FCA","url":"https://www.fca.org.uk"}]}]` },
-  { id:'weave', name:'Weave', icon:'🕸️', domain:'All', prompt:`Find 3 second-order AI effects in insurance. Return ONLY a JSON array: [{"title":"Synthetic Data Democratisation","verdict":"SIGNAL","body":"Synthetic data lets small carriers compete.","confidence":4,"domain":"Horizontal","subdomain":"Data","experiment":"test hypothesis","trl":6,"regulatoryRisk":"medium","refs":[{"label":"EIOPA","url":"https://www.eiopa.europa.eu"}]}]` },
-  { id:'deploy', name:'Deploy', icon:'🚀', domain:'All', prompt:`Find 3 AI solutions proven at scale today. Return ONLY a JSON array: [{"title":"NLP FNOL Automation","verdict":"SIGNAL","body":"NLP automates 60-80% of FNOL intake with ROI under 18 months.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC","url":"https://content.naic.org"}]}]` },
-  { id:'faro', name:'Faro', icon:'🔦', domain:'All', prompt:`Find 3 emerging insurance AI signals for 18-36 months. Return ONLY a JSON array: [{"title":"Actuarial Foundation Models","verdict":"WATCH","body":"LLMs fine-tuned on actuarial data showing early promise.","confidence":3,"domain":"Life","subdomain":"Actuarial","experiment":"test hypothesis","trl":4,"regulatoryRisk":"high","refs":[{"label":"arXiv","url":"https://arxiv.org"}]}]` }
+  { id:'scout', name:'Scout', icon:'ðŸ”­', domain:'P&C', prompt:`Find 3 AI innovations in P&C insurance. Return ONLY a JSON array: [{"title":"Computer Vision Claims","verdict":"SIGNAL","body":"CV models assess damage from photos with 94% accuracy.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC","url":"https://content.naic.org"}]}]` },
+  { id:'vita', name:'Vita', icon:'ðŸ§¬', domain:'Life', prompt:`Find 3 AI innovations in Life insurance. Return ONLY a JSON array: [{"title":"AI Underwriting","verdict":"SIGNAL","body":"LLM underwriting cuts decision time from weeks to minutes.","confidence":5,"domain":"Life","subdomain":"Underwriting","experiment":"test hypothesis","trl":8,"regulatoryRisk":"medium","refs":[{"label":"arXiv","url":"https://arxiv.org"}]}]` },
+  { id:'atlas', name:'Atlas', icon:'ðŸŒ', domain:'Reinsurance', prompt:`Find 3 AI innovations in reinsurance. Return ONLY a JSON array: [{"title":"ML Cat Models","verdict":"SIGNAL","body":"ML improves cat loss estimates by 30%.","confidence":4,"domain":"Reinsurance","subdomain":"Cat Modeling","experiment":"test hypothesis","trl":7,"regulatoryRisk":"low","refs":[{"label":"Geneva Association","url":"https://www.genevaassociation.org"}]}]` },
+  { id:'prism', name:'Prism', icon:'ðŸ’Ž', domain:'Horizontal', prompt:`Find 3 horizontal tech innovations for insurance. Return ONLY a JSON array: [{"title":"Federated Learning","verdict":"WATCH","body":"Carriers sharing fraud signals without raw data.","confidence":3,"domain":"Horizontal","subdomain":"Federated Learning","experiment":"test hypothesis","trl":5,"regulatoryRisk":"medium","refs":[{"label":"NIST","url":"https://nist.gov"}]}]` },
+  { id:'null', name:'Null', icon:'âš”ï¸', domain:'All', prompt:`Find 3 overhyped AI claims in insurance. Return ONLY a JSON array: [{"title":"Blockchain Claims","verdict":"NOISE","body":"No major carrier deployed blockchain claims at scale.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":3,"regulatoryRisk":"low","refs":[{"label":"FCA","url":"https://www.fca.org.uk"}]}]` },
+  { id:'weave', name:'Weave', icon:'ðŸ•¸ï¸', domain:'All', prompt:`Find 3 second-order AI effects in insurance. Return ONLY a JSON array: [{"title":"Synthetic Data Democratisation","verdict":"SIGNAL","body":"Synthetic data lets small carriers compete.","confidence":4,"domain":"Horizontal","subdomain":"Data","experiment":"test hypothesis","trl":6,"regulatoryRisk":"medium","refs":[{"label":"EIOPA","url":"https://www.eiopa.europa.eu"}]}]` },
+  { id:'deploy', name:'Deploy', icon:'ðŸš€', domain:'All', prompt:`Find 3 AI solutions proven at scale today. Return ONLY a JSON array: [{"title":"NLP FNOL Automation","verdict":"SIGNAL","body":"NLP automates 60-80% of FNOL intake with ROI under 18 months.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC","url":"https://content.naic.org"}]}]` },
+  { id:'faro', name:'Faro', icon:'ðŸ”¦', domain:'All', prompt:`Find 3 emerging insurance AI signals for 18-36 months. Return ONLY a JSON array: [{"title":"Actuarial Foundation Models","verdict":"WATCH","body":"LLMs fine-tuned on actuarial data showing early promise.","confidence":3,"domain":"Life","subdomain":"Actuarial","experiment":"test hypothesis","trl":4,"regulatoryRisk":"high","refs":[{"label":"arXiv","url":"https://arxiv.org"}]}]` }
 ];
 
 async function supabaseCall(method, table, body, query) {
@@ -100,10 +103,10 @@ module.exports = async function handler(req, res) {
     return {
       run_id: runId, run_date: runDate,
       mind_id: f.mind_id, mind_name: f.mind_name, mind_icon: f.mind_icon,
-      title: f.title, verdict: (function(v){return v.includes('SIGNAL')?'SIGNAL':v.includes('NOISE')?'NOISE':'WATCH';})(((f.verdict||
+      title: f.title, verdict: normalizeVerdict(f.verdict),
       domain: f.domain, subdomain: f.subdomain || null,
       confidence: Math.min(5, Math.max(1, parseInt(f.confidence) || 3)), trl: f.trl || 5,
-      regulatory_risk: f.regulatoryRisk || 'medium',
+      regulatory_risk: normalizeRisk(f.regulatoryRisk),
       experiment: f.experiment || null, refs: f.refs || []
     };
   });
@@ -121,3 +124,6 @@ module.exports = async function handler(req, res) {
     errors: errors
   });
 };
+
+
+
