@@ -204,7 +204,9 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .es-sub{font-size:16px;color:var(--mid);}
 
 /* ── LAB PAGINATION ── */
+.lab-last-updated{font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;color:var(--mid);margin-top:-16px;margin-bottom:28px;opacity:.65;}
 .lab-summary{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);margin-bottom:16px;}
+.visitor-badge{position:fixed;bottom:22px;right:22px;z-index:300;font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;color:var(--mid);background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border:1px solid var(--rule);border-radius:100px;padding:6px 14px;display:none;box-shadow:0 2px 12px rgba(0,0,0,.06);cursor:default;}
 .lab-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);}
 .pg-btn{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;padding:9px 22px;border:1.5px solid var(--rule);border-radius:100px;background:var(--white);color:var(--ink);cursor:pointer;transition:all .15s;}
 .pg-btn:hover:not([disabled]){border-color:var(--ink);background:var(--off);}
@@ -325,7 +327,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .footer-inner{max-width:var(--max);margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
 .footer-logo{font-family:var(--ff-serif);font-size:22px;color:var(--white);text-decoration:none;}
 .footer-mission{font-family:var(--ff-serif);font-style:italic;font-size:15px;color:#333;}
-.footer-meta{font-family:var(--ff-mono);font-size:11px;color:#222;letter-spacing:.05em;}
+.footer-meta{font-family:var(--ff-mono);font-size:11px;color:#555;letter-spacing:.05em;}
 
 /* ── MODAL ── */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(10,10,8,.8);z-index:900;backdrop-filter:blur(12px);align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;}
@@ -628,6 +630,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="ls-stat"><div class="ls-num" id="cbSignals">—</div><div class="ls-label">Signals found</div></div>
       <div class="ls-stat"><div class="ls-num" id="cbNoise">—</div><div class="ls-label">Noise called out</div></div>
     </div>
+    <div class="lab-last-updated" id="labLastUpdated"></div>
 
     <div class="filter-section">
       <div class="filter-label">Domain</div>
@@ -1233,9 +1236,11 @@ async function init(){
         });
         const rEl=document.getElementById('cbRuns');if(rEl&&data.total_runs)rEl.textContent=data.total_runs;
         if(data.run_date){
-          const d=new Date(data.run_date);
-          document.getElementById('footerMeta').textContent=
-            insights.length+' insights · Last explored '+d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+          const d=new Date(data.run_date+'T12:00:00Z');
+          const fmt=d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+          document.getElementById('footerMeta').textContent=insights.length+' insights · Last explored '+fmt;
+          const lu=document.getElementById('labLastUpdated');
+          if(lu)lu.textContent='Last updated '+fmt+' · Refreshes weekly';
         }
         updateStats();refresh();
         return;
@@ -1247,6 +1252,19 @@ async function init(){
 }
 
 init();
+
+// ── VISITOR COUNTER ──
+(async function(){
+  try{
+    const r=await fetch('https://ynot-now.vercel.app/api/visitors');
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d.count>0){
+      const el=document.getElementById('visitorBadge');
+      if(el){el.textContent=d.count.toLocaleString()+' curious visitors';el.style.display='block';}
+    }
+  }catch(e){}
+})();
 
 // ── TIMELINE SCRUBBER ──
 (function(){
@@ -1375,5 +1393,7 @@ init();
   go(0);
 })();
 </script>
+
+<div class="visitor-badge" id="visitorBadge" title="Total visits"></div>
 </body>
 </html>
