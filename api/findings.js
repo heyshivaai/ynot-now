@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
       `?run_id=eq.${encodeURIComponent(run_id)}&order=verdict.asc,confidence.desc`
     );
 
-    const trajectory = await supabaseGet('trajectory',
+    const trajectory = await supabaseGet('trl_history',
       '?order=recorded_at.asc&select=technology_name,domain,trl,verdict,recorded_at,direction,previous_trl'
     );
 
