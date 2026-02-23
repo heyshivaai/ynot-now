@@ -100,7 +100,7 @@ module.exports = async function handler(req, res) {
     return {
       run_id: runId, run_date: runDate,
       mind_id: f.mind_id, mind_name: f.mind_name, mind_icon: f.mind_icon,
-      title: f.title, verdict: f.verdict, body: f.body,
+      title: f.title, verdict: (function(v){return v.includes('SIGNAL')?'SIGNAL':v.includes('NOISE')?'NOISE':'WATCH';})(((f.verdict||
       domain: f.domain, subdomain: f.subdomain || null,
       confidence: f.confidence || 3, trl: f.trl || 5,
       regulatory_risk: f.regulatoryRisk || 'medium',
