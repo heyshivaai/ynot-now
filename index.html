@@ -199,23 +199,13 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .es-title{font-family:var(--ff-serif);font-size:26px;letter-spacing:-.01em;margin-bottom:10px;color:var(--ink);}
 .es-sub{font-size:16px;color:var(--mid);}
 
-/* ── MIND GROUPS ── */
-.mg{margin-bottom:20px;}
-.mg-head{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--off);border:2px solid var(--rule);border-radius:12px;cursor:pointer;user-select:none;transition:border-color .15s;}
-.mg-head:hover{border-color:var(--mid);}
-.mg-head.open{border-bottom-left-radius:0;border-bottom-right-radius:0;border-color:var(--ink);}
-.mg-icon{font-size:18px;flex-shrink:0;}
-.mg-name{font-family:var(--ff-serif);font-size:17px;letter-spacing:-.01em;color:var(--ink);flex:1;}
-.mg-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
-.mg-badge{font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;padding:3px 9px;border-radius:100px;font-weight:500;}
-.mg-badge.bs{background:var(--ink);color:var(--white);}
-.mg-badge.bw{background:#e0e0de;color:#333;}
-.mg-badge.bn{background:var(--off);color:var(--mid);border:1px solid var(--rule);}
-.mg-chevron{font-size:10px;color:var(--mid);transition:transform .2s;margin-left:4px;flex-shrink:0;}
-.mg-head.open .mg-chevron{transform:rotate(180deg);}
-.mg-body{border:2px solid var(--ink);border-top:none;border-radius:0 0 12px 12px;padding:16px;display:none;}
-.mg-head.open+.mg-body{display:block;}
-@media(max-width:600px){.mg-head{padding:12px 14px;}.mg-name{font-size:15px;}}
+/* ── LAB PAGINATION ── */
+.lab-summary{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);margin-bottom:16px;}
+.lab-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);}
+.pg-btn{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;padding:9px 22px;border:1.5px solid var(--rule);border-radius:100px;background:var(--white);color:var(--ink);cursor:pointer;transition:all .15s;}
+.pg-btn:hover:not([disabled]){border-color:var(--ink);background:var(--off);}
+.pg-btn[disabled]{opacity:.3;cursor:default;}
+.pg-info{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);}
 
 /* ── TAXONOMY ── */
 .tax-wrap{margin-top:64px;padding-top:48px;border-top:2px solid var(--rule);}
@@ -677,6 +667,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="ll-body" id="logBody"></div>
     </div>
 
+    <div id="labSummary" class="lab-summary"></div>
     <div class="cards" id="cardsGrid">
       <div class="empty-state">
         <div class="es-q">Y?</div>
@@ -684,6 +675,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <div class="es-sub">Their findings appear here as they discover them.</div>
       </div>
     </div>
+    <div id="labPager" class="lab-pager"></div>
 
     <!-- TAXONOMY -->
     <div class="tax-wrap">
@@ -1027,15 +1019,17 @@ function setMind(id,state,msg){
 // ── FILTER STATE ──
 let domFilter='all',verdFilter='all',regionFilter='all',readinessFilter='all';
 let insights=[];
+let currentPage=1;
+const PAGE_SIZE=8;
 
-function setDom(v,btn){domFilter=v;setPill('#domPills',btn);refresh();}
-function setVerd(v,btn){verdFilter=v;setPill('#verdPills',btn);refresh();}
-function setRegion(v,btn){regionFilter=v;setPill('#regionPills',btn);refresh();}
-function setReadiness(v,btn){readinessFilter=v;setPill('#readinessPills',btn);refresh();}
+function setDom(v,btn){domFilter=v;currentPage=1;setPill('#domPills',btn);refresh();}
+function setVerd(v,btn){verdFilter=v;currentPage=1;setPill('#verdPills',btn);refresh();}
+function setRegion(v,btn){regionFilter=v;currentPage=1;setPill('#regionPills',btn);refresh();}
+function setReadiness(v,btn){readinessFilter=v;currentPage=1;setPill('#readinessPills',btn);refresh();}
 function setPill(sel,btn){document.querySelectorAll(sel+' .pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
 
 function filterByPathway(stage,card){
-  readinessFilter=stage;
+  readinessFilter=stage;currentPage=1;
   document.querySelectorAll('#readinessPills .pill').forEach(b=>{b.classList.remove('on');if(b.textContent===stage)b.classList.add('on');});
   document.querySelectorAll('.pathway-card').forEach(c=>c.classList.remove('active'));
   card.classList.add('active');
@@ -1104,6 +1098,8 @@ function makeCard(f,idx){
 
 function refresh(){
   const g=document.getElementById('cardsGrid');
+  const summary=document.getElementById('labSummary');
+  const pager=document.getElementById('labPager');
   const filtered=insights.filter(f=>{
     const rl=readinessLabel(f.trl);
     if(domFilter!=='all'&&f.domain!==domFilter)return false;
@@ -1113,43 +1109,34 @@ function refresh(){
     return true;
   });
   if(!filtered.length){
+    if(summary)summary.textContent='';
+    if(pager)pager.innerHTML='';
     g.innerHTML='<div class="empty-state"><div class="es-q">Y?</div><div class="es-title">No findings match.</div><div class="es-sub">Try adjusting the filters above.</div></div>';
     return;
   }
+  const total=filtered.length;
+  const totalPages=Math.ceil(total/PAGE_SIZE);
+  if(currentPage>totalPages)currentPage=totalPages;
+  const start=(currentPage-1)*PAGE_SIZE;
+  const end=Math.min(start+PAGE_SIZE,total);
+  const page=filtered.slice(start,end);
+  if(summary)summary.textContent=`Showing ${start+1}–${end} of ${total} finding${total!==1?'s':''}`;
   g.innerHTML='';
-  const mindOrder=['scout','vita','atlas','prism','null','weave','deploy','faro'];
-  const mindMap={};
-  filtered.forEach(f=>{const id=f.mindId||'other';if(!mindMap[id])mindMap[id]=[];mindMap[id].push(f);});
-  let anyGroup=false;
-  mindOrder.forEach(mid=>{
-    const mf=mindMap[mid];
-    if(!mf||!mf.length)return;
-    anyGroup=true;
-    const mind=MINDS.find(m=>m.id===mid)||{icon:'',name:mid};
-    const sig=mf.filter(f=>f.verdict==='SIGNAL').length;
-    const wat=mf.filter(f=>f.verdict==='WATCH').length;
-    const noi=mf.filter(f=>f.verdict==='NOISE').length;
-    let badges='';
-    if(sig)badges+=`<span class="mg-badge bs">${sig} SIGNAL</span>`;
-    if(wat)badges+=`<span class="mg-badge bw">${wat} WATCH</span>`;
-    if(noi)badges+=`<span class="mg-badge bn">${noi} NOISE</span>`;
-    const mg=document.createElement('div');mg.className='mg';
-    const head=document.createElement('div');head.className='mg-head open';
-    head.innerHTML=`<span class="mg-icon">${mind.icon}</span><span class="mg-name">${mind.name}</span><div class="mg-badges">${badges}</div><span class="mg-chevron">▼</span>`;
-    head.onclick=()=>head.classList.toggle('open');
-    const body=document.createElement('div');body.className='mg-body';
-    const cards=document.createElement('div');cards.className='cards';
-    mf.forEach((f,i)=>cards.appendChild(makeCard(f,i)));
-    body.appendChild(cards);mg.appendChild(head);mg.appendChild(body);g.appendChild(mg);
-  });
-  // any findings from minds not in the order list
-  const other=(mindMap['other']||[]).concat(mindOrder.reduce((acc,mid)=>{return acc;},[...Object.keys(mindMap).filter(k=>!mindOrder.includes(k)&&k!=='other').flatMap(k=>mindMap[k])]));
-  if(other.length){
-    const mg=document.createElement('div');mg.className='mg';
-    const body=document.createElement('div');body.className='mg-body';body.style.display='block';
-    const cards=document.createElement('div');cards.className='cards';
-    other.forEach((f,i)=>cards.appendChild(makeCard(f,i)));
-    body.appendChild(cards);mg.appendChild(body);g.appendChild(mg);
+  page.forEach((f,i)=>g.appendChild(makeCard(f,i)));
+  if(pager){
+    if(totalPages<=1){pager.innerHTML='';return;}
+    const prev=document.createElement('button');
+    prev.className='pg-btn';prev.textContent='← Previous';
+    prev.disabled=currentPage===1;
+    prev.onclick=()=>{currentPage--;refresh();document.getElementById('lab').scrollIntoView({behavior:'smooth'});};
+    const info=document.createElement('span');
+    info.className='pg-info';info.textContent=`Page ${currentPage} of ${totalPages}`;
+    const next=document.createElement('button');
+    next.className='pg-btn';next.textContent='Next →';
+    next.disabled=currentPage===totalPages;
+    next.onclick=()=>{currentPage++;refresh();document.getElementById('lab').scrollIntoView({behavior:'smooth'});};
+    pager.innerHTML='';
+    pager.appendChild(prev);pager.appendChild(info);pager.appendChild(next);
   }
 }
 
