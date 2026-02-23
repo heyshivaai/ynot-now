@@ -103,7 +103,7 @@ module.exports = async function handler(req, res) {
     return {
       run_id: runId, run_date: runDate,
       mind_id: f.mind_id, mind_name: f.mind_name, mind_icon: f.mind_icon,
-      title: f.title, verdict: normalizeVerdict(f.verdict),
+      title: f.title, verdict: normalizeVerdict(f.verdict), body: f.body || f.description || f.summary || 'No body provided',
       domain: f.domain, subdomain: f.subdomain || null,
       confidence: Math.min(5, Math.max(1, parseInt(f.confidence) || 3)), trl: f.trl || 5,
       regulatory_risk: normalizeRisk(f.regulatoryRisk),
@@ -124,6 +124,8 @@ module.exports = async function handler(req, res) {
     errors: errors
   });
 };
+
+
 
 
 
