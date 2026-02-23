@@ -282,7 +282,6 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 /* ── LAB PAGINATION ── */
 .lab-last-updated{font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;color:var(--mid);margin-top:-16px;margin-bottom:28px;opacity:.65;}
 .lab-summary{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);margin-bottom:16px;}
-.visitor-badge{position:fixed;bottom:22px;right:22px;z-index:300;font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;color:var(--mid);background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border:1px solid var(--rule);border-radius:100px;padding:6px 14px;display:none;box-shadow:0 2px 12px rgba(0,0,0,.06);cursor:default;}
 .lab-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);}
 .pg-btn{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;padding:9px 22px;border:1.5px solid var(--rule);border-radius:100px;background:var(--white);color:var(--ink);cursor:pointer;transition:all .15s;}
 .pg-btn:hover:not([disabled]){border-color:var(--ink);background:var(--off);}
@@ -1038,6 +1037,19 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
     <a class="footer-logo" href="#hero"><img src="/logo-dark.svg" alt="YNOT.NOW" height="52" style="display:block;max-width:240px;opacity:0.9;"></a>
     <div class="footer-mission">Because every assumption deserves the question.</div>
     <div class="footer-meta" id="footerMeta">Intelligence compounds weekly</div>
+    <div class="visitor-counter" id="visitorCounter">
+      <div class="vc-item">
+        <div class="vc-dot vc-dot-live"></div>
+        <span class="vc-label">Live now</span>
+        <span class="vc-value loading" id="vcLive">—</span>
+      </div>
+      <div class="vc-sep"></div>
+      <div class="vc-item">
+        <div class="vc-dot vc-dot-total"></div>
+        <span class="vc-label">Total visits</span>
+        <span class="vc-value loading" id="vcTotal">—</span>
+      </div>
+    </div>
   </div>
 </footer>
 
@@ -1383,16 +1395,26 @@ async function init(){
 init();
 
 // ── VISITOR COUNTER ──
-(async function(){
-  try{
-    const r=await fetch('https://ynot-now.vercel.app/api/visitors');
-    if(!r.ok)return;
-    const d=await r.json();
-    if(d.count>0){
-      const el=document.getElementById('visitorBadge');
-      if(el){el.textContent=d.count.toLocaleString()+' curious visitors';el.style.display='block';}
-    }
-  }catch(e){}
+(function(){
+  var API='https://ynot-now.vercel.app/api/visitors';
+  function fmt(n){
+    if(!n&&n!==0)return'—';
+    if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+    if(n>=1000)return(n/1000).toFixed(1).replace(/\.0$/,'')+'k';
+    return String(n);
+  }
+  function update(){
+    fetch(API)
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var l=document.getElementById('vcLive');
+        var t=document.getElementById('vcTotal');
+        if(l){l.textContent=fmt(d.live);l.classList.remove('loading');}
+        if(t){t.textContent=fmt(d.total);t.classList.remove('loading');}
+      }).catch(function(){});
+  }
+  update();
+  setInterval(update,60000);
 })();
 
 // ── TIMELINE SCRUBBER ──
@@ -1523,6 +1545,5 @@ init();
 })();
 </script>
 
-<div class="visitor-badge" id="visitorBadge" title="Total visits"></div>
 </body>
 </html>
