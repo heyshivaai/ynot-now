@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" role="img" aria-label="YNOT.NOW">
+  <title>YNOT.NOW</title>
+  <desc>Y Mark — Primary Light — YNOT.NOW Signals Intelligence Platform</desc>
+  <path d="M 30 18 L 66 72 L 66 130 L 84 130 L 84 72 L 120 18 L 100 18 L 75 60 L 50 18 Z" fill="#0a0a08"/>
+  <text x="30" y="152" font-family="'DM Mono', 'Courier New', monospace" font-size="11" font-weight="500" letter-spacing="1.8" fill="#888880">NOT</text>
+  <text x="66" y="152" font-family="'DM Mono', 'Courier New', monospace" font-size="11" fill="#d0ceca" letter-spacing="0">·</text>
+  <circle cx="92" cy="147" r="4" fill="#4ade80"/>
+  <text x="101" y="152" font-family="'DM Mono', 'Courier New', monospace" font-size="11" fill="#d0ceca" letter-spacing="0">·</text>
+  <text x="113" y="152" font-family="'DM Mono', 'Courier New', monospace" font-size="11" font-weight="500" letter-spacing="1.8" fill="#888880">NOW</text>
+</svg>
