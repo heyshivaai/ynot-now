@@ -354,6 +354,22 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .modal-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;border-top:1px solid var(--rule);padding-top:20px;}
 .mm label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px;}
 .mm span{font-family:var(--ff-serif);font-size:20px;letter-spacing:-.01em;color:var(--ink);}
+
+  /* ── Y Mark Logo overrides ─────────────────────────── */
+  .nav-logo img, a.logo img, .logo img {
+    height: 48px !important;
+    width: auto !important;
+    display: block !important;
+    max-width: 240px !important;
+  }
+  footer img[alt="YNOT.NOW"] {
+    height: 52px !important;
+    width: auto !important;
+    opacity: 0.9 !important;
+  }
+  /* Hide any residual text fallback next to the SVG logo */
+  .nav-logo span.text-logo,
+  .logo-text { display: none !important; }
 </style>
   <!-- Y Mark Favicon — shows in browser tab -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -374,7 +390,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <!-- NAV -->
 <nav>
   <div class="nav-inner">
-    <a class="nav-logo" href="#hero"><img src="/logo.svg" alt="YNOT.NOW" height="36" style="display:block;"></a>
+    <a class="nav-logo" href="#hero"><img src="/logo.svg" alt="YNOT.NOW" height="48" style="display:block;max-width:220px;"></a>
     <div class="nav-links">
       <a class="nav-a" href="#what">What is this</a>
       <a class="nav-a" href="#pathways">Pathways</a>
@@ -920,7 +936,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <a class="footer-logo" href="#hero"><img src="/logo.svg" alt="YNOT.NOW" height="36" style="display:block;"></a>
+    <a class="footer-logo" href="#hero"><img src="/logo-dark.svg" alt="YNOT.NOW" height="52" style="display:block;max-width:240px;opacity:0.9;"></a>
     <div class="footer-mission">Because every assumption deserves the question.</div>
     <div class="footer-meta" id="footerMeta">Intelligence compounds weekly</div>
   </div>

@@ -1,27 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" width="280" height="64" role="img" aria-label="YNOT.NOW">
   <title>YNOT.NOW</title>
 
-  <!-- Y letterform — bold, fills the height -->
-  <path d="M 4 4 L 22 30 L 22 60 L 34 60 L 34 30 L 52 4 L 39 4 L 28 22 L 17 4 Z" fill="#0a0a08"/>
+  <!-- Y letterform — white -->
+  <path d="M 4 4 L 22 30 L 22 60 L 34 60 L 34 30 L 52 4 L 39 4 L 28 22 L 17 4 Z" fill="#ffffff"/>
 
   <!-- Vertical rule divider -->
-  <rect x="64" y="10" width="1.5" height="44" fill="#d0ceca"/>
+  <rect x="64" y="10" width="1.5" height="44" fill="rgba(255,255,255,0.15)"/>
 
-  <!-- YNOT text -->
+  <!-- YNOT text — white -->
   <text x="76" y="28"
         font-family="'DM Mono', 'Courier New', monospace"
         font-size="15"
         font-weight="500"
         letter-spacing="2"
-        fill="#0a0a08">YNOT</text>
+        fill="#ffffff">YNOT</text>
 
-  <!-- .NOW text — signal green dot replaces the period -->
+  <!-- .NOW — green dot + white text -->
   <circle cx="76" cy="43" r="4.5" fill="#4ade80"/>
   <text x="85" y="48"
         font-family="'DM Mono', 'Courier New', monospace"
         font-size="15"
         font-weight="500"
         letter-spacing="2"
-        fill="#0a0a08">NOW</text>
+        fill="rgba(255,255,255,0.6)">NOW</text>
 
 </svg>
