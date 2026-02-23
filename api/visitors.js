@@ -1,51 +1,42 @@
-// api/visitors.js
-// Tracks and returns page view count using Supabase.
-//
-// Required Supabase setup (run once in SQL editor):
-//   create table if not exists counters (
-//     id text primary key,
-//     count bigint default 0
-//   );
-//   insert into counters (id, count) values ('page_views', 0);
+// api/visitors.js — Visitor counter (live sessions + total views)
+// Requires Vercel KV: set KV_REST_API_URL + KV_REST_API_TOKEN in env vars
+// Falls back gracefully to null if KV not connected
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const KV_URL   = process.env.KV_REST_API_URL;
+const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
-async function sb(method, path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`${res.status}: ${text}`);
-  return text ? JSON.parse(text) : null;
+async function kv(cmd, ...args) {
+  if (!KV_URL || !KV_TOKEN) return null;
+  const url = `${KV_URL}/${[cmd,...args].map(encodeURIComponent).join('/')}`;
+  const res  = await fetch(url, { headers: { Authorization: `Bearer ${KV_TOKEN}` } });
+  if (!res.ok) return null;
+  return (await res.json()).result;
 }
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-store');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).end();
 
   try {
-    const rows = await sb('GET', 'counters?id=eq.page_views&select=count');
-    const current = rows?.[0]?.count ?? 0;
-    const next = current + 1;
+    const total   = await kv('INCR', 'ynot:total_views');
+    const ip      = req.headers['x-forwarded-for']?.split(',')[0] || 'anon';
+    const bucket  = Math.floor(Date.now() / (3 * 60 * 1000));
+    await kv('SET', `ynot:sess:${ip}:${bucket}`, '1', 'EX', '180');
 
-    if (!rows?.length) {
-      await sb('POST', 'counters', { id: 'page_views', count: 1 });
-    } else {
-      await sb('PATCH', 'counters?id=eq.page_views', { count: next });
+    let live = 1;
+    if (KV_URL && KV_TOKEN) {
+      const r = await fetch(
+        `${KV_URL}/scan/0/match/${encodeURIComponent('ynot:sess:*')}/count/100`,
+        { headers: { Authorization: `Bearer ${KV_TOKEN}` } }
+      );
+      if (r.ok) {
+        const j = await r.json();
+        live = Math.max(1, Array.isArray(j.result?.[1]) ? j.result[1].length : 1);
+      }
     }
-
-    return res.status(200).json({ count: next });
-  } catch (e) {
-    return res.status(200).json({ count: 0 });
+    return res.status(200).json({ total: total || 1, live });
+  } catch(e) {
+    return res.status(200).json({ total: null, live: null });
   }
 };

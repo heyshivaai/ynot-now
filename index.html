@@ -1,11 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- ── Core SEO ─────────────────────────────────────── -->
+  <title>YNOT.NOW — AI Intelligence for Insurance</title>
+  <meta name="description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Noise — with evidence. Free, open, no vendor bias.">
+  <meta name="keywords" content="AI insurance, insurtech intelligence, insurance AI research, AI underwriting, claims automation, P&C AI, life insurance AI, reinsurance technology, signal watch noise">
+  <meta name="author" content="Shiva Balasubramaniyan">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <link rel="canonical" href="https://ynot-now.vercel.app">
+  <meta name="theme-color" content="#0a0a08">
+
+  <!-- ── Open Graph ────────────────────────────────────── -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="YNOT.NOW">
+  <meta property="og:url" content="https://ynot-now.vercel.app">
+  <meta property="og:title" content="YNOT.NOW — AI Intelligence for Insurance">
+  <meta property="og:description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Noise — with evidence. Free, open, no vendor bias.">
+  <meta property="og:image" content="https://ynot-now.vercel.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="YNOT.NOW — AI Intelligence for Insurance">
+  <meta property="og:locale" content="en_US">
+
+  <!-- ── Twitter / X ───────────────────────────────────── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="YNOT.NOW — AI Intelligence for Insurance">
+  <meta name="twitter:description" content="Eight specialist AI minds track what's real in insurance AI. Signal, Watch, or Noise — always with evidence.">
+  <meta name="twitter:image" content="https://ynot-now.vercel.app/og-image.png">
+  <meta name="twitter:creator" content="@heyshivaai">
+
+  <!-- ── JSON-LD ────────────────────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://ynot-now.vercel.app/#website",
+        "url": "https://ynot-now.vercel.app",
+        "name": "YNOT.NOW",
+        "description": "Independent AI intelligence platform for the insurance industry. Eight specialist minds score findings as Signal, Watch, or Noise — with evidence.",
+        "publisher": { "@id": "https://ynot-now.vercel.app/#organization" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://ynot-now.vercel.app/#organization",
+        "name": "YNOT.NOW",
+        "url": "https://ynot-now.vercel.app",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://ynot-now.vercel.app/logo.svg",
+          "width": 280, "height": 64
+        },
+        "founder": {
+          "@type": "Person",
+          "name": "Shiva Balasubramaniyan",
+          "sameAs": "https://www.linkedin.com/in/heyshivaai"
+        },
+        "sameAs": ["https://www.linkedin.com/in/heyshivaai"]
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://ynot-now.vercel.app/#webpage",
+        "url": "https://ynot-now.vercel.app",
+        "name": "YNOT.NOW — AI Intelligence for Insurance",
+        "description": "Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Noise — with evidence. Free, open, no vendor bias.",
+        "isPartOf": { "@id": "https://ynot-now.vercel.app/#website" },
+        "inLanguage": "en-US",
+        "dateModified": "2026-02-23"
+      },
+      {
+        "@type": "Person",
+        "name": "Shiva Balasubramaniyan",
+        "url": "https://ynot-now.vercel.app/#about",
+        "jobTitle": "Founder, YNOT.NOW",
+        "sameAs": "https://www.linkedin.com/in/heyshivaai"
+      }
+    ]
+  }
+  </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0a0a08">
-  <title>YNOT.NOW — AI Intelligence for Insurance</title>
-<meta name="description" content="Eight specialist AI agents exploring AI across insurance. Every finding scored, sourced, and shared freely.">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -370,20 +445,44 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
   /* Hide any residual text fallback next to the SVG logo */
   .nav-logo span.text-logo,
   .logo-text { display: none !important; }
+
+  /* ── Visitor Counter ──────────────────────────────────── */
+  .visitor-counter {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .vc-item { display:flex; align-items:center; gap:7px; }
+  .vc-dot  { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+  .vc-dot-live {
+    background:#4ade80;
+    animation: vc-pulse 2.5s ease-in-out infinite;
+  }
+  .vc-dot-total { background:rgba(255,255,255,0.2); }
+  @keyframes vc-pulse {
+    0%   { box-shadow:0 0 0 0   rgba(74,222,128,0.6); }
+    50%  { box-shadow:0 0 0 5px rgba(74,222,128,0);   }
+    100% { box-shadow:0 0 0 0   rgba(74,222,128,0);   }
+  }
+  .vc-label {
+    font-family:'DM Mono',monospace;
+    font-size:10px; letter-spacing:0.15em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25);
+  }
+  .vc-value {
+    font-family:'DM Mono',monospace;
+    font-size:11px; font-weight:500; color:rgba(255,255,255,0.55);
+  }
+  .vc-value.loading { opacity:0.3; }
+  .vc-sep { width:1px; height:14px; background:rgba(255,255,255,0.08); }
 </style>
   <!-- Y Mark Favicon — shows in browser tab -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="alternate icon" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/favicon.svg">
-  <!-- Open Graph / Social sharing -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://ynot-now.vercel.app">
-  <meta property="og:title" content="YNOT.NOW — AI Intelligence for Insurance">
-  <meta property="og:description" content="Eight specialist AI minds exploring AI developments across insurance. Signal. Watch. Noise. Free, open, evidence-first.">
-  <meta property="og:image" content="https://ynot-now.vercel.app/logo.svg">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="YNOT.NOW">
-  <meta name="twitter:description" content="AI Intelligence for Insurance — Signal. Watch. Noise.">
 </head>
 <body>
 
