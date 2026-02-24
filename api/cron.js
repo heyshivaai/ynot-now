@@ -38,6 +38,75 @@ Return ONLY a valid JSON array: [{"title":"Vibe Coding Enters the Carrier Back O
   { id:'faro', name:'Faro', icon:'🔦', domain:'All', prompt:`Find 3 emerging insurance AI signals for 18-36 months. Return ONLY a JSON array: [{"title":"Actuarial Foundation Models","verdict":"WATCH","body":"LLMs fine-tuned on actuarial data showing early promise.","confidence":3,"domain":"Life","subdomain":"Actuarial","experiment":"test hypothesis","trl":4,"regulatoryRisk":"high","refs":[{"label":"arXiv","url":"https://arxiv.org"}]}]` }
 ];
 
+// ─── LIVE SOURCE FETCHER ────────────────────────────────────────────────────
+async function fetchLiveSources() {
+  const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
+  const safeFetch = async (url, opts) => {
+    try { return await Promise.race([fetch(url, opts || {}), timeout(6000)]); }
+    catch(e) { return null; }
+  };
+  const sources = {};
+
+  try {
+    const hn = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=AI+insurance+enterprise&hitsPerPage=10&numericFilters=created_at_i>'+Math.floor((Date.now()-7*86400000)/1000));
+    if (hn) { const d = await hn.json(); sources.hackerNews = (d.hits||[]).map(h=>`${h.title} — ${h.url||''}`).join('\n'); }
+  } catch(e) { sources.hackerNews = ''; }
+
+  try {
+    const a = await safeFetch('https://export.arxiv.org/api/query?search_query=all:insurance+AND+all:machine+learning&sortBy=submittedDate&sortOrder=descending&max_results=8');
+    if (a) { const xml = await a.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const s=[...xml.matchAll(/<summary>([\s\S]*?)<\/summary>/g)].map(m=>m[1].trim().substring(0,200)); sources.arxiv=t.map((ti,i)=>`${ti}: ${s[i]||''}`).join('\n'); }
+  } catch(e) { sources.arxiv = ''; }
+
+  try {
+    const a2 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:agentic+AI+OR+all:LLM+enterprise&sortBy=submittedDate&sortOrder=descending&max_results=6');
+    if (a2) { const xml = await a2.text(); sources.arxivHorizontal=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()).join('\n'); }
+  } catch(e) { sources.arxivHorizontal = ''; }
+
+  try {
+    const hn2 = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=insurtech+underwriting+claims+AI&hitsPerPage=8&numericFilters=created_at_i>'+Math.floor((Date.now()-7*86400000)/1000));
+    if (hn2) { const d = await hn2.json(); sources.hackerNewsInsurtech=(d.hits||[]).map(h=>`${h.title} — ${h.url||''}`).join('\n'); }
+  } catch(e) { sources.hackerNewsInsurtech = ''; }
+
+  try {
+    const gh = await safeFetch('https://gh-trending-api.deno.dev/repositories?language=&since=weekly');
+    if (gh && gh.ok) { const d = await gh.json(); sources.githubTrending=(d||[]).slice(0,10).map(r=>`${r.name}: ${r.description||''}`).join('\n'); }
+  } catch(e) { sources.githubTrending = ''; }
+
+  try {
+    const a3 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:climate+risk+insurance+OR+all:catastrophe+model+OR+all:parametric+insurance&sortBy=submittedDate&sortOrder=descending&max_results=6');
+    if (a3) { const xml = await a3.text(); sources.arxivClimate=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()).join('\n'); }
+  } catch(e) { sources.arxivClimate = ''; }
+
+  try {
+    const a4 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:longevity+risk+OR+all:actuarial+machine+learning+OR+all:mortality+prediction&sortBy=submittedDate&sortOrder=descending&max_results=6');
+    if (a4) { const xml = await a4.text(); sources.arxivLife=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()).join('\n'); }
+  } catch(e) { sources.arxivLife = ''; }
+
+  try {
+    const hn3 = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=post+quantum+cryptography+OR+AI+governance+OR+model+risk&hitsPerPage=6&numericFilters=created_at_i>'+Math.floor((Date.now()-14*86400000)/1000));
+    if (hn3) { const d = await hn3.json(); sources.hackerNewsSecurity=(d.hits||[]).map(h=>h.title).join('\n'); }
+  } catch(e) { sources.hackerNewsSecurity = ''; }
+
+  return sources;
+}
+
+function buildSourceContext(mindId, sources) {
+  const blocks = [];
+  if (sources.hackerNews) blocks.push(`=== LIVE: Hacker News AI/Enterprise Stories This Week ===\n${sources.hackerNews}`);
+  if (['scout','deploy','null','weave'].includes(mindId) && sources.hackerNewsInsurtech) blocks.push(`=== LIVE: InsurTech/Claims/Underwriting News ===\n${sources.hackerNewsInsurtech}`);
+  if (['atlas'].includes(mindId) && sources.arxivClimate) blocks.push(`=== LIVE: Recent Climate/Cat/Parametric Research Papers ===\n${sources.arxivClimate}`);
+  if (['vita'].includes(mindId) && sources.arxivLife) blocks.push(`=== LIVE: Recent Longevity/Actuarial AI Research Papers ===\n${sources.arxivLife}`);
+  if (['prism','faro'].includes(mindId)) {
+    if (sources.arxivHorizontal) blocks.push(`=== LIVE: Agentic AI / LLM Research Papers ===\n${sources.arxivHorizontal}`);
+    if (sources.githubTrending) blocks.push(`=== LIVE: GitHub Trending Repos This Week ===\n${sources.githubTrending}`);
+    if (sources.hackerNewsSecurity) blocks.push(`=== LIVE: Security/Governance/PQC News ===\n${sources.hackerNewsSecurity}`);
+  }
+  if (['scout','vita','atlas','prism'].includes(mindId) && sources.arxiv) blocks.push(`=== LIVE: Recent Insurance + ML Research Papers ===\n${sources.arxiv}`);
+  if (blocks.length === 0) return '';
+  return '\n\n' + blocks.join('\n\n') + '\n\nUsing the above LIVE sources as your primary evidence base, identify the most significant findings. Prioritise findings where you can cite one of these real sources. If a source is not relevant to your domain, ignore it.';
+}
+// ─── END LIVE SOURCES ───────────────────────────────────────────────────────
+
 async function supabaseCall(method, table, body, query) {
   query = query || '';
   const url = SUPABASE_URL + '/rest/v1/' + table + query;
@@ -55,7 +124,8 @@ async function supabaseCall(method, table, body, query) {
   return text ? JSON.parse(text) : null;
 }
 
-async function callMind(mind) {
+async function callMind(mind, liveSources) {
+  const userContent = mind.prompt + buildSourceContext(mind.id, liveSources || {});
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -65,9 +135,9 @@ async function callMind(mind) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1200,
+      max_tokens: 1800,
       system: 'Respond ONLY with a valid JSON array. No markdown. Start with [ end with ].',
-      messages: [{ role: 'user', content: mind.prompt }]
+      messages: [{ role: 'user', content: userContent }]
     })
   });
   if (!res.ok) throw new Error('Anthropic ' + res.status);
@@ -110,7 +180,12 @@ module.exports = async function handler(req, res) {
   var allFindings = [];
   var errors = [];
 
-  var outcomes = await Promise.allSettled(MINDS.map(function(m) { return callMind(m); }));
+  // Fetch live sources once per run — shared across all minds
+  console.log('[YNOT] Fetching live data sources...');
+  var liveSources = await fetchLiveSources();
+  console.log('[YNOT] Live sources fetched:', Object.keys(liveSources).filter(function(k){return liveSources[k];}).join(', '));
+
+  var outcomes = await Promise.allSettled(MINDS.map(function(m) { return callMind(m, liveSources); }));
   outcomes.forEach(function(o, i) {
     if (o.status === 'fulfilled') allFindings = allFindings.concat(o.value);
     else errors.push({ mind: MINDS[i].id, error: o.reason && o.reason.message });
@@ -134,6 +209,7 @@ module.exports = async function handler(req, res) {
 
   try {
     await supabaseCall('POST', 'findings', rows);
+    console.log('[YNOT] Run complete. Sources used: arxiv='+!!liveSources.arxiv+', hn='+!!liveSources.hackerNews+', github='+!!liveSources.githubTrending+', climate='+!!liveSources.arxivClimate+', life='+!!liveSources.arxivLife);
   } catch(err) {
     return res.status(500).json({ error: 'Storage failed', details: err.message });
   }
