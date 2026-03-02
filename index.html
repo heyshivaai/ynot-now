@@ -1347,9 +1347,10 @@ function openModal(f){
   else exp.style.display='none';
   const refs=document.getElementById('modalRefs');
   const refLinks=document.getElementById('modalRefLinks');
-  if(f.refs&&f.refs.length){
+  const validRefs=(f.refs||[]).filter(r=>r&&r.url&&!r.url.includes('example.com'));
+  if(validRefs.length){
     refs.style.display='block';
-    refLinks.innerHTML=f.refs.map(r=>`<a class="mr-link" href="${r.url}" target="_blank" rel="noopener">↗ ${r.label}</a>`).join('');
+    refLinks.innerHTML=validRefs.map(r=>`<a class="mr-link" href="${r.url}" target="_blank" rel="noopener">↗ ${r.label}</a>`).join('');
   } else refs.style.display='none';
   document.getElementById('mmVerdict').textContent=v;
   document.getElementById('mmTrl').textContent=rl;
