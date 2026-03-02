@@ -84,8 +84,58 @@ async function fetchLiveSources() {
 
   try {
     const hn3 = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=post+quantum+cryptography+OR+AI+governance+OR+model+risk&hitsPerPage=6&numericFilters=created_at_i>'+Math.floor((Date.now()-14*86400000)/1000));
-    if (hn3) { const d = await hn3.json(); sources.hackerNewsSecurity=(d.hits||[]).map(h=>h.title).join('\n'); }
+    if (hn3) { const d = await hn3.json(); sources.hackerNewsSecurity=(d.hits||[]).map(h=>`${h.title} — ${h.url||''}`).join('\n'); }
   } catch(e) { sources.hackerNewsSecurity = ''; }
+
+  // OpenAlex — insurance AI academic papers with real DOI URLs
+  try {
+    const oa = await safeFetch('https://api.openalex.org/works?search=insurance+artificial+intelligence&sort=publication_date:desc&per-page=8&select=title,doi,open_access&mailto=hello@ynot.now');
+    if (oa) {
+      const d = await oa.json();
+      sources.openAlex = (d.results||[]).map(p => {
+        const url = p.doi || (p.open_access && p.open_access.oa_url) || '';
+        return url ? `${p.title} — ${url}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.openAlex = ''; }
+
+  // Federal Register — US insurance AI regulation filings
+  try {
+    const fr = await safeFetch('https://www.federalregister.gov/api/v1/articles.json?conditions[term]=insurance+artificial+intelligence&per_page=6&order=newest&fields[]=title&fields[]=html_url&fields[]=publication_date');
+    if (fr) {
+      const d = await fr.json();
+      sources.federalRegister = (d.results||[]).map(a => `${a.title} — ${a.html_url}`).join('\n');
+    }
+  } catch(e) { sources.federalRegister = ''; }
+
+  // FCA RSS — UK regulatory news
+  try {
+    const fca = await safeFetch('https://www.fca.org.uk/news/rss.xml');
+    if (fca) {
+      const xml = await fca.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 8);
+      sources.fcaRss = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.fcaRss = ''; }
+
+  // Reddit r/insurtech — community market signal
+  try {
+    const r = await safeFetch('https://www.reddit.com/r/insurtech/new.json?limit=10', {
+      headers: { 'User-Agent': 'YNOT.NOW/1.0 insurance AI intelligence platform' }
+    });
+    if (r && r.ok) {
+      const d = await r.json();
+      sources.reddit = (d.data?.children||[]).map(p => {
+        const post = p.data;
+        const url = post.url && !post.url.includes('reddit.com') ? post.url : `https://reddit.com${post.permalink}`;
+        return `${post.title} — ${url}`;
+      }).join('\n');
+    }
+  } catch(e) { sources.reddit = ''; }
 
   return sources;
 }
@@ -102,6 +152,10 @@ function buildSourceContext(mindId, sources) {
     if (sources.hackerNewsSecurity) blocks.push(`=== LIVE: Security/Governance/PQC News ===\n${sources.hackerNewsSecurity}`);
   }
   if (['scout','vita','atlas','prism'].includes(mindId) && sources.arxiv) blocks.push(`=== LIVE: Recent Insurance + ML Research Papers ===\n${sources.arxiv}`);
+  if (sources.openAlex) blocks.push(`=== LIVE: Academic Papers — Insurance AI with DOI URLs (OpenAlex) ===\n${sources.openAlex}`);
+  if (['scout','deploy','null','weave'].includes(mindId) && sources.federalRegister) blocks.push(`=== LIVE: US Federal Register — Insurance AI Regulation Filings ===\n${sources.federalRegister}`);
+  if (['null','weave','prism','atlas'].includes(mindId) && sources.fcaRss) blocks.push(`=== LIVE: FCA (UK Financial Regulator) News ===\n${sources.fcaRss}`);
+  if (['scout','null','weave','deploy'].includes(mindId) && sources.reddit) blocks.push(`=== LIVE: r/insurtech Community Signal ===\n${sources.reddit}`);
   if (blocks.length === 0) return '';
   return '\n\n' + blocks.join('\n\n') + '\n\nUsing the above LIVE sources as your primary evidence base, identify the most significant findings. For each finding, cite one of the real URLs listed above wherever possible — copy the URL exactly as it appears. Only fall back to a known authoritative domain (arxiv.org, naic.org, fca.org.uk, etc.) if no live source is relevant. NEVER use example.com or invent any URL path.';
 }
@@ -209,7 +263,7 @@ module.exports = async function handler(req, res) {
 
   try {
     await supabaseCall('POST', 'findings', rows);
-    console.log('[YNOT] Run complete. Sources used: arxiv='+!!liveSources.arxiv+', hn='+!!liveSources.hackerNews+', github='+!!liveSources.githubTrending+', climate='+!!liveSources.arxivClimate+', life='+!!liveSources.arxivLife);
+    console.log('[YNOT] Run complete. Sources used: arxiv='+!!liveSources.arxiv+', hn='+!!liveSources.hackerNews+', github='+!!liveSources.githubTrending+', climate='+!!liveSources.arxivClimate+', life='+!!liveSources.arxivLife+', openAlex='+!!liveSources.openAlex+', federalRegister='+!!liveSources.federalRegister+', fcaRss='+!!liveSources.fcaRss+', reddit='+!!liveSources.reddit);
   } catch(err) {
     return res.status(500).json({ error: 'Storage failed', details: err.message });
   }
