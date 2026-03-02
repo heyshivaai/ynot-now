@@ -10,7 +10,7 @@ const MINDS = [
   { id:'scout', name:'Scout', icon:'🔭', domain:'P&C', prompt:`Find 3 AI innovations in P&C insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"Computer Vision Claims","verdict":"SIGNAL","body":"CV models assess damage from photos with 94% accuracy.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC AI Working Group","url":"https://content.naic.org/cipr-topics/artificial-intelligence"}]}]` },
   { id:'vita', name:'Vita', icon:'🧬', domain:'Life', prompt:`Find 3 AI innovations in Life insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"AI Underwriting","verdict":"SIGNAL","body":"LLM underwriting cuts decision time from weeks to minutes.","confidence":5,"domain":"Life","subdomain":"Underwriting","experiment":"test hypothesis","trl":8,"regulatoryRisk":"medium","refs":[{"label":"NAIC Life AI Model Regulation","url":"https://content.naic.org/cipr-topics/artificial-intelligence"}]}]` },
   { id:'atlas', name:'Atlas', icon:'🌍', domain:'Reinsurance', prompt:`Find 3 AI innovations in reinsurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"ML Cat Models","verdict":"SIGNAL","body":"ML improves cat loss estimates by 30%.","confidence":4,"domain":"Reinsurance","subdomain":"Cat Modeling","experiment":"test hypothesis","trl":7,"regulatoryRisk":"low","refs":[{"label":"Geneva Association Climate Risk","url":"https://www.genevaassociation.org/research-topics/climate-change-and-emerging-environmental-topics"}]}]` },
-  { id:'prism', name:'Prism', icon:'💎', domain:'Horizontal', prompt:`You are Prism 💎, YNOT.NOW's Horizontal Technology Scanner for the insurance industry. Your job is to find technology shifts happening across enterprise IT broadly, then surface the insurance-specific implication or deployment.
+  { id:'prism', name:'Prism', icon:'💎', domain:'Horizontal', maxTokens:2800, prompt:`You are Prism 💎, YNOT.NOW's Horizontal Technology Scanner for the insurance industry. Your job is to find technology shifts happening across enterprise IT broadly, then surface the insurance-specific implication or deployment.
 
 SCAN THESE CATEGORIES every run — look for news, releases, deployments, research, and VC signals in each:
 
@@ -27,11 +27,17 @@ SCAN THESE CATEGORIES every run — look for news, releases, deployments, resear
 11. FEDERATED LEARNING — Privacy-preserving ML across carrier consortia, regulatory data-sharing implications
 12. EDGE AI & IOT INTELLIGENCE — Telematics evolution, smart building sensors, wearables, connected vehicle data for underwriting
 
-For EACH finding: state the broader enterprise tech development first (what is happening globally), then state the specific insurance application, implication, or risk. Cite a real, verifiable source. Be honest about readiness: most horizontal tech is Experiment or Pilot stage in insurance even if Proven elsewhere.
+COVERAGE RULES:
+- Return exactly 6 findings
+- Cover at least 5 different categories from the list above — do not return more than 2 findings from the same category
+- Prioritise categories that are underrepresented in recent coverage: Synthetic Data, Post-Quantum Cryptography, Digital Twins, Federated Learning, Edge AI & IoT, Real-Time Decisioning
+- For EACH finding: state the broader enterprise tech development first (what is happening globally), then state the specific insurance application, implication, or risk
+- Cite a real, verifiable source — prefer sources from the live data provided
+- Be honest about readiness: most horizontal tech is Experiment or Pilot stage in insurance even if Proven elsewhere
 
-Return 3 findings. Use domain: "Horizontal" and subdomain from: Agentic AI | AI Dev Tooling | Foundation Models | Enterprise Copilots | Synthetic Data | Real-Time Decisioning | Model Risk & Governance | Data Infrastructure | Post-Quantum Cryptography | Digital Twins | Federated Learning | Edge AI & IoT
+Use domain: "Horizontal" and subdomain from: Agentic AI | AI Dev Tooling | Foundation Models | Enterprise Copilots | Synthetic Data | Real-Time Decisioning | Model Risk & Governance | Data Infrastructure | Post-Quantum Cryptography | Digital Twins | Federated Learning | Edge AI & IoT
 
-Return ONLY a valid JSON array: [{"title":"Vibe Coding Enters the Carrier Back Office","verdict":"WATCH","body":"AI-assisted dev tools crossing 1M enterprise seats, insurers building shadow tooling.","confidence":3,"domain":"Horizontal","subdomain":"AI Dev Tooling","experiment":"Audit one business unit for shadow AI tooling","trl":5,"regulatoryRisk":"medium","refs":[{"label":"GitHub Copilot report","url":"https://github.blog"}]}]` },
+Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a valid JSON array: [{"title":"Vibe Coding Enters the Carrier Back Office","verdict":"WATCH","body":"AI-assisted dev tools crossing 1M enterprise seats, insurers building shadow tooling.","confidence":3,"domain":"Horizontal","subdomain":"AI Dev Tooling","experiment":"Audit one business unit for shadow AI tooling","trl":5,"regulatoryRisk":"medium","refs":[{"label":"GitHub Copilot Enterprise","url":"https://github.blog/news-insights/product-news/github-copilot-the-agent-awakens/"}]}]` },
   { id:'null', name:'Null', icon:'⚔️', domain:'All', prompt:`Find 3 overhyped AI claims in insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"Blockchain Claims","verdict":"NOISE","body":"No major carrier deployed blockchain claims at scale.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":3,"regulatoryRisk":"low","refs":[{"label":"FCA Innovation Hub","url":"https://www.fca.org.uk/firms/innovation"}]}]` },
   { id:'weave', name:'Weave', icon:'🕸️', domain:'All', prompt:`Find 3 second-order AI effects in insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"Synthetic Data Democratisation","verdict":"SIGNAL","body":"Synthetic data lets small carriers compete.","confidence":4,"domain":"Horizontal","subdomain":"Data","experiment":"test hypothesis","trl":6,"regulatoryRisk":"medium","refs":[{"label":"EIOPA Digital Transformation","url":"https://www.eiopa.europa.eu/digital-transformation_en"}]}]` },
   { id:'deploy', name:'Deploy', icon:'🚀', domain:'All', prompt:`Find 3 AI solutions proven at scale today. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"NLP FNOL Automation","verdict":"SIGNAL","body":"NLP automates 60-80% of FNOL intake with ROI under 18 months.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC AI in Claims","url":"https://content.naic.org/cipr-topics/artificial-intelligence"}]}]` },
@@ -86,6 +92,53 @@ async function fetchLiveSources() {
     const hn3 = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=post+quantum+cryptography+OR+AI+governance+OR+model+risk&hitsPerPage=6&numericFilters=created_at_i>'+Math.floor((Date.now()-14*86400000)/1000));
     if (hn3) { const d = await hn3.json(); sources.hackerNewsSecurity=(d.hits||[]).map(h=>`${h.title} — ${h.url||''}`).join('\n'); }
   } catch(e) { sources.hackerNewsSecurity = ''; }
+
+  // arXiv — synthetic data + federated learning
+  try {
+    const a5 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:federated+AND+all:learning+OR+all:synthetic+AND+all:data+AND+all:privacy&sortBy=submittedDate&sortOrder=descending&max_results=6');
+    if (a5) { const xml = await a5.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivSynthetic=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
+  } catch(e) { sources.arxivSynthetic = ''; }
+
+  // arXiv — post-quantum cryptography
+  try {
+    const a6 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:post-quantum+AND+all:cryptography&sortBy=submittedDate&sortOrder=descending&max_results=5');
+    if (a6) { const xml = await a6.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https?:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivPqc=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
+  } catch(e) { sources.arxivPqc = ''; }
+
+  // arXiv — digital twins + edge AI + IoT
+  try {
+    const a7 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:digital+AND+all:twin+AND+all:simulation+OR+all:edge+AND+all:computing+AND+all:inference&sortBy=submittedDate&sortOrder=descending&max_results=6');
+    if (a7) { const xml = await a7.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https?:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivEdgeDigital=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
+  } catch(e) { sources.arxivEdgeDigital = ''; }
+
+  // arXiv — RAG, vector DBs, streaming ML inference
+  try {
+    const a8 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:retrieval+AND+all:augmented+AND+all:generation+OR+all:vector+AND+all:database+AND+all:embedding&sortBy=submittedDate&sortOrder=descending&max_results=5');
+    if (a8) { const xml = await a8.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https?:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivDataInfra=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
+  } catch(e) { sources.arxivDataInfra = ''; }
+
+  // NIST — AI standards, PQC, cybersecurity publications
+  try {
+    const nist = await safeFetch('https://www.nist.gov/news-events/news/rss.xml');
+    if (nist) {
+      const xml = await nist.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 8);
+      sources.nistNews = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.nistNews = ''; }
+
+  // dev.to — AI development articles (free API, no auth)
+  try {
+    const dev = await safeFetch('https://dev.to/api/articles?tag=ai&per_page=8&state=rising');
+    if (dev) {
+      const d = await dev.json();
+      sources.devTo = (d||[]).map(a => `${a.title} — ${a.url}`).join('\n');
+    }
+  } catch(e) { sources.devTo = ''; }
 
   // OpenAlex — insurance AI academic papers with real DOI URLs
   try {
@@ -147,9 +200,15 @@ function buildSourceContext(mindId, sources) {
   if (['atlas'].includes(mindId) && sources.arxivClimate) blocks.push(`=== LIVE: Recent Climate/Cat/Parametric Research Papers ===\n${sources.arxivClimate}`);
   if (['vita'].includes(mindId) && sources.arxivLife) blocks.push(`=== LIVE: Recent Longevity/Actuarial AI Research Papers ===\n${sources.arxivLife}`);
   if (['prism','faro'].includes(mindId)) {
-    if (sources.arxivHorizontal) blocks.push(`=== LIVE: Agentic AI / LLM Research Papers ===\n${sources.arxivHorizontal}`);
+    if (sources.arxivHorizontal) blocks.push(`=== LIVE: Agentic AI / LLM Research Papers (with arXiv URLs) ===\n${sources.arxivHorizontal}`);
+    if (sources.arxivSynthetic) blocks.push(`=== LIVE: Synthetic Data & Federated Learning Papers (with arXiv URLs) ===\n${sources.arxivSynthetic}`);
+    if (sources.arxivPqc) blocks.push(`=== LIVE: Post-Quantum Cryptography Papers (with arXiv URLs) ===\n${sources.arxivPqc}`);
+    if (sources.arxivEdgeDigital) blocks.push(`=== LIVE: Digital Twins, Edge AI & IoT Papers (with arXiv URLs) ===\n${sources.arxivEdgeDigital}`);
+    if (sources.arxivDataInfra) blocks.push(`=== LIVE: RAG, Vector DB & Real-Time ML Papers (with arXiv URLs) ===\n${sources.arxivDataInfra}`);
     if (sources.githubTrending) blocks.push(`=== LIVE: GitHub Trending Repos This Week ===\n${sources.githubTrending}`);
     if (sources.hackerNewsSecurity) blocks.push(`=== LIVE: Security/Governance/PQC News ===\n${sources.hackerNewsSecurity}`);
+    if (sources.nistNews) blocks.push(`=== LIVE: NIST Publications (AI Standards, PQC, Cybersecurity) ===\n${sources.nistNews}`);
+    if (sources.devTo) blocks.push(`=== LIVE: dev.to Rising AI Articles ===\n${sources.devTo}`);
   }
   if (['scout','vita','atlas','prism'].includes(mindId) && sources.arxiv) blocks.push(`=== LIVE: Recent Insurance + ML Research Papers ===\n${sources.arxiv}`);
   if (sources.openAlex) blocks.push(`=== LIVE: Academic Papers — Insurance AI with DOI URLs (OpenAlex) ===\n${sources.openAlex}`);
@@ -189,7 +248,7 @@ async function callMind(mind, liveSources) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1800,
+      max_tokens: mind.maxTokens || 1800,
       system: 'Respond ONLY with a valid JSON array. No markdown. Start with [ end with ].\n\nSOURCE RULES — these are mandatory:\n1. Every ref must have a real, publicly accessible URL that actually exists.\n2. NEVER use example.com, placeholder domains, or invented paths.\n3. NEVER invent arXiv IDs (e.g. /abs/2024.xxxxx is forbidden). If citing arXiv use https://arxiv.org only.\n4. Prefer URLs from the live sources provided in the prompt — those are real and verified.\n5. Acceptable fallback domains (when no specific URL is available): https://arxiv.org, https://content.naic.org, https://www.fca.org.uk, https://www.eiopa.europa.eu, https://www.genevaassociation.org, https://www.nist.gov, https://news.ycombinator.com, https://github.com.\n6. If you cannot find a real source for a finding, do not include that finding.',
       messages: [{ role: 'user', content: userContent }]
     })
@@ -263,7 +322,7 @@ module.exports = async function handler(req, res) {
 
   try {
     await supabaseCall('POST', 'findings', rows);
-    console.log('[YNOT] Run complete. Sources used: arxiv='+!!liveSources.arxiv+', hn='+!!liveSources.hackerNews+', github='+!!liveSources.githubTrending+', climate='+!!liveSources.arxivClimate+', life='+!!liveSources.arxivLife+', openAlex='+!!liveSources.openAlex+', federalRegister='+!!liveSources.federalRegister+', fcaRss='+!!liveSources.fcaRss+', reddit='+!!liveSources.reddit);
+    console.log('[YNOT] Run complete. Sources used: arxiv='+!!liveSources.arxiv+', hn='+!!liveSources.hackerNews+', github='+!!liveSources.githubTrending+', climate='+!!liveSources.arxivClimate+', life='+!!liveSources.arxivLife+', openAlex='+!!liveSources.openAlex+', federalRegister='+!!liveSources.federalRegister+', fcaRss='+!!liveSources.fcaRss+', reddit='+!!liveSources.reddit+', synthetic='+!!liveSources.arxivSynthetic+', pqc='+!!liveSources.arxivPqc+', edgeDigital='+!!liveSources.arxivEdgeDigital+', dataInfra='+!!liveSources.arxivDataInfra+', nist='+!!liveSources.nistNews+', devTo='+!!liveSources.devTo);
   } catch(err) {
     return res.status(500).json({ error: 'Storage failed', details: err.message });
   }
