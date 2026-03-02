@@ -447,6 +447,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .mr-links{display:flex;flex-direction:column;gap:8px;}
 .mr-link{font-size:14px;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--off);border-radius:8px;border:1.5px solid var(--rule);transition:all .15s;}
 .mr-link:hover{border-color:var(--ink);background:var(--white);}
+.mr-ref{font-size:14px;color:var(--mid);display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--off);border-radius:8px;border:1.5px solid var(--rule);}
 .modal-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;border-top:1px solid var(--rule);padding-top:20px;}
 .mm label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px;}
 .mm span{font-family:var(--ff-serif);font-size:20px;letter-spacing:-.01em;color:var(--ink);}
@@ -1347,10 +1348,15 @@ function openModal(f){
   else exp.style.display='none';
   const refs=document.getElementById('modalRefs');
   const refLinks=document.getElementById('modalRefLinks');
-  const validRefs=(f.refs||[]).filter(r=>r&&r.url&&!r.url.includes('example.com'));
-  if(validRefs.length){
+  const allRefs=(f.refs||[]).filter(r=>r&&r.label);
+  if(allRefs.length){
     refs.style.display='block';
-    refLinks.innerHTML=validRefs.map(r=>`<a class="mr-link" href="${r.url}" target="_blank" rel="noopener">↗ ${r.label}</a>`).join('');
+    refLinks.innerHTML=allRefs.map(r=>{
+      const fake=!r.url||r.url.includes('example.com');
+      return fake
+        ?`<span class="mr-ref">— ${r.label}</span>`
+        :`<a class="mr-link" href="${r.url}" target="_blank" rel="noopener">↗ ${r.label}</a>`;
+    }).join('');
   } else refs.style.display='none';
   document.getElementById('mmVerdict').textContent=v;
   document.getElementById('mmTrl').textContent=rl;

@@ -203,7 +203,7 @@ module.exports = async function handler(req, res) {
       domain: f.domain, subdomain: f.subdomain || null,
       confidence: Math.min(5, Math.max(1, parseInt(f.confidence) || 3)), trl: f.trl || 5,
       regulatory_risk: normalizeRisk(f.regulatoryRisk),
-      experiment: f.experiment || null, refs: (f.refs || []).filter(r => r && r.url && !r.url.includes('example.com'))
+      experiment: f.experiment || null, refs: f.refs || []
     };
   });
 
