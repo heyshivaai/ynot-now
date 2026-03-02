@@ -54,7 +54,9 @@ module.exports = async function handler(req, res) {
     const runCount = await supabaseGet('findings',
       '?select=run_id&order=run_date.desc'
     );
-    const uniqueRuns = new Set(runCount.map(r => r.run_id)).size;
+    // BASE_RUN_COUNT offsets runs deleted during initial setup (2026-03-02)
+    const BASE_RUN_COUNT = 5;
+    const uniqueRuns = new Set(runCount.map(r => r.run_id)).size + BASE_RUN_COUNT;
 
     const allFindings = await supabaseGet('findings', '?select=id');
 
