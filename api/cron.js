@@ -237,19 +237,27 @@ async function supabaseCall(method, table, body, query) {
   return text ? JSON.parse(text) : null;
 }
 
+const SYSTEM_PROMPT = 'Respond ONLY with a valid JSON array. No markdown. Start with [ end with ].\n\nSOURCE RULES — these are mandatory:\n1. Every ref must have a real, publicly accessible URL that actually exists.\n2. NEVER use example.com, placeholder domains, or invented paths.\n3. NEVER invent arXiv IDs (e.g. /abs/2024.xxxxx is forbidden). If citing arXiv use https://arxiv.org only.\n4. Prefer URLs from the live sources provided in the prompt — those are real and verified.\n5. Acceptable fallback domains (when no specific URL is available): https://arxiv.org, https://content.naic.org, https://www.fca.org.uk, https://www.eiopa.europa.eu, https://www.genevaassociation.org, https://www.nist.gov, https://news.ycombinator.com, https://github.com.\n6. If you cannot find a real source for a finding, do not include that finding.';
+
 async function callMind(mind, liveSources) {
-  const userContent = mind.prompt + buildSourceContext(mind.id, liveSources || {});
+  const sourceContext = buildSourceContext(mind.id, liveSources || {});
+  // Static mind prompt is cacheable; dynamic live sources are not
+  const userContent = [
+    { type: 'text', text: mind.prompt, cache_control: { type: 'ephemeral' } },
+    ...(sourceContext ? [{ type: 'text', text: sourceContext }] : [])
+  ];
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01'
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'prompt-caching-2024-07-31'
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: mind.maxTokens || 1800,
-      system: 'Respond ONLY with a valid JSON array. No markdown. Start with [ end with ].\n\nSOURCE RULES — these are mandatory:\n1. Every ref must have a real, publicly accessible URL that actually exists.\n2. NEVER use example.com, placeholder domains, or invented paths.\n3. NEVER invent arXiv IDs (e.g. /abs/2024.xxxxx is forbidden). If citing arXiv use https://arxiv.org only.\n4. Prefer URLs from the live sources provided in the prompt — those are real and verified.\n5. Acceptable fallback domains (when no specific URL is available): https://arxiv.org, https://content.naic.org, https://www.fca.org.uk, https://www.eiopa.europa.eu, https://www.genevaassociation.org, https://www.nist.gov, https://news.ycombinator.com, https://github.com.\n6. If you cannot find a real source for a finding, do not include that finding.',
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userContent }]
     })
   });
