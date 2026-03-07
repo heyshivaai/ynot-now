@@ -311,7 +311,13 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .pulse-week-left{display:flex;flex-direction:column;gap:4px;}
 .pulse-week-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);}
 .pulse-week-date{font-family:var(--ff-serif);font-size:22px;letter-spacing:-.01em;color:var(--ink);}
-.pulse-week-body{padding:24px 28px 28px;font-size:15px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;}
+.pulse-week-body{padding:24px 28px 28px;font-size:15px;line-height:1.85;color:var(--ink);font-family:inherit;}
+.pulse-week-body strong{color:var(--black);font-weight:600;}
+.pulse-trl-tag{font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;padding:3px 8px;border-radius:100px;margin-left:4px;font-weight:500;vertical-align:middle;}
+.pulse-trl-tag.trl-standard,.pulse-trl-tag.trl-proven{background:var(--black);color:var(--white);}
+.pulse-trl-tag.trl-pilot{background:#e0e0de;color:#333;}
+.pulse-trl-tag.trl-experiment{background:var(--off);color:var(--mid);border:1px solid var(--rule);}
+.pulse-trl-tag.trl-idea{background:var(--off);color:var(--rule);border:1px solid var(--rule);}
 .pulse-loading{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);padding:40px 0;}
 .pulse-empty{text-align:center;padding:60px 20px;}
 .pulse-empty-title{font-family:var(--ff-serif);font-size:20px;color:var(--ink);margin-bottom:8px;}
@@ -1482,6 +1488,24 @@ async function init(){
 }
 
 // ── WEEKLY PULSE ──────────────────────────────────────────────────────────────
+function renderPulseText(text){
+  // First escape HTML
+  var safe = (text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Convert **text** [Stage] to styled tags
+  safe = safe.replace(/\*\*([^*]+)\*\*\s*\[(Standard|Proven|Pilot|Experiment|Idea)\]/gi, function(match, techName, stage){
+    var stageClass = 'trl-' + stage.toLowerCase();
+    return '<strong>' + techName + '</strong><span class="pulse-trl-tag ' + stageClass + '">' + stage + '</span>';
+  });
+  // Also handle standalone [Stage] tags without bold
+  safe = safe.replace(/\[(Standard|Proven|Pilot|Experiment|Idea)\]/gi, function(match, stage){
+    var stageClass = 'trl-' + stage.toLowerCase();
+    return '<span class="pulse-trl-tag ' + stageClass + '">' + stage + '</span>';
+  });
+  // Convert remaining **text** to bold
+  safe = safe.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  return safe;
+}
+
 function renderWeeklyPulse(){
   var el=document.getElementById('pulseContent');
   if(!el)return;
@@ -1507,7 +1531,7 @@ function renderWeeklyPulse(){
           +'<div class="pulse-week-label">'+label+'</div>'
           +'</div>'
           +'</div>'
-          +'<div class="pulse-week-body">'+escHtml(post.post_text)+'</div>'
+          +'<div class="pulse-week-body">'+renderPulseText(post.post_text)+'</div>'
           +'</div>';
       }).join('');
     })

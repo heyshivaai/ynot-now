@@ -387,6 +387,14 @@ async function callMind(mind, liveSources) {
 
 // ── WEEKLY DIGEST GENERATION ─────────────────────────────────────────────────
 
+function trlToStage(trl) {
+  if (trl >= 8) return 'Standard';
+  if (trl >= 6) return 'Proven';
+  if (trl >= 4) return 'Pilot';
+  if (trl >= 2) return 'Experiment';
+  return 'Idea';
+}
+
 async function generateWeeklyDigest(findings, runDate) {
   var signals  = findings.filter(function(f){ return f.verdict === 'SIGNAL'; });
   var watches  = findings.filter(function(f){ return f.verdict === 'WATCH';  });
@@ -404,20 +412,30 @@ async function generateWeeklyDigest(findings, runDate) {
     return f.mind_icon + ' ' + f.mind_name + ': ' + f.title;
   }).join('\n');
 
+  // Include TRL stage for each finding
   var allLines = findings.map(function(f){
-    return '[' + f.verdict + '] ' + (f.mind_name||f.mind_id) + ' (' + f.domain + '): ' + f.title + ' — ' + (f.body||'').slice(0,200);
+    var stage = trlToStage(f.trl || 5);
+    return '[' + f.verdict + '] [TRL:' + stage + '] ' + (f.mind_name||f.mind_id) + ' (' + f.domain + '): ' + f.title + ' — ' + (f.body||'').slice(0,200);
   }).join('\n\n');
+
+  // Extract key TRL movements for the prompt
+  var trlSummary = findings.filter(function(f){ return f.verdict === 'SIGNAL'; }).slice(0,5).map(function(f){
+    return f.title + ' [' + trlToStage(f.trl || 5) + ']';
+  }).join(', ');
 
   var prompt =
     'You are the executive intelligence synthesis agent for YNOT.NOW — an independent technology signal platform for the insurance industry, tracking all emerging technology.\n\n' +
     'Week of ' + runDate + '. Eight specialist agents completed their scan. Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
+    'KEY TECHNOLOGIES WITH TRL STAGES: ' + trlSummary + '\n\n' +
     'ALL FINDINGS:\n' + allLines + '\n\n' +
-    'Write a tight executive briefing — 120 to 150 words maximum:\n' +
+    'Write a tight executive briefing — 130 to 160 words maximum:\n' +
     '- One sentence on the dominant theme this week\n' +
     '- Two or three sentences synthesising the most important developments across domains\n' +
+    '- IMPORTANT: For 2-3 key technologies mentioned, include their TRL stage inline using this exact format: **technology name** [Stage] — for example: **pre-inference governance** [Pilot] or **CAN bus collision AI** [Proven]\n' +
     '- One sentence on the most significant implication for insurance leaders\n' +
     '- One forward-looking sentence on what to watch next\n\n' +
-    'Tone: sharp, authoritative, board-level. Plain English. No bullets. No hashtags. No markdown. Return only the briefing text.';
+    'TRL Stages to use: Idea, Experiment, Pilot, Proven, Standard\n\n' +
+    'Tone: sharp, authoritative, board-level. Plain English. No bullets. No hashtags. Use **bold** only for technology names with TRL tags. Return only the briefing text.';
 
   var res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -429,7 +447,7 @@ async function generateWeeklyDigest(findings, runDate) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 300,
-      system: 'You write concise executive intelligence briefings for insurance industry leaders. Plain prose, no formatting, no bullet points.',
+      system: 'You write concise executive intelligence briefings for insurance industry leaders. Use **bold** for technology names when adding TRL stage tags like [Pilot] or [Proven]. No bullet points.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
