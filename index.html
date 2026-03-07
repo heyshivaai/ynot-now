@@ -305,32 +305,21 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .lab-last-updated{font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;color:var(--mid);margin-top:-16px;margin-bottom:28px;opacity:.65;}
 .lab-summary{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);margin-bottom:16px;}
 .lab-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);}
-.pulse-stack{display:flex;flex-direction:column;gap:40px;margin-top:8px;}
+.pulse-stack{display:flex;flex-direction:column;gap:32px;margin-top:8px;}
 .pulse-week{background:var(--white);border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;}
-.pulse-week-header{padding:24px 28px 20px;border-bottom:1px solid var(--rule);}
-.pulse-week-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
-.pulse-week-date{font-family:var(--ff-serif);font-size:26px;letter-spacing:-.02em;color:var(--ink);margin-bottom:14px;}
-.pulse-week-stats{display:flex;gap:10px;flex-wrap:wrap;}
-.pw-stat{font-family:var(--ff-mono);font-size:11px;letter-spacing:.04em;padding:4px 12px;border-radius:100px;border:1px solid;}
-.pw-stat.signal{color:#2a7a2a;border-color:#b3dab3;background:#f0faf0;}
-.pw-stat.watch{color:#8a5c10;border-color:#e0c87a;background:#fdf8ec;}
-.pw-stat.noise{color:#8a2020;border-color:#e0aaaa;background:#fdf0f0;}
-.pw-stat.total{color:var(--mid);border-color:var(--rule);background:var(--off);}
-.pulse-week-body{padding:20px 28px 24px;display:flex;flex-direction:column;gap:12px;}
-.pw-row{display:flex;gap:14px;align-items:flex-start;padding:12px 14px;border-radius:8px;background:var(--off);}
-.pw-row.signal{border-left:3px solid #4ade80;}
-.pw-row.watch{border-left:3px solid #f59e0b;}
-.pw-row.noise{border-left:3px solid #ef4444;}
-.pw-agent{font-size:18px;flex-shrink:0;margin-top:1px;}
-.pw-content{flex:1;min-width:0;}
-.pw-title{font-size:14px;font-weight:500;color:var(--ink);line-height:1.45;margin-bottom:4px;}
-.pw-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-.pw-verdict{font-family:var(--ff-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:100px;}
-.pw-verdict.signal{color:#2a7a2a;background:#e6f7e6;}
-.pw-verdict.watch{color:#8a5c10;background:#fdf3d0;}
-.pw-verdict.noise{color:#8a2020;background:#fde8e8;}
-.pw-mind{font-family:var(--ff-mono);font-size:10px;color:var(--mid);}
+.pulse-week-header{padding:22px 28px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.pulse-week-left{display:flex;flex-direction:column;gap:4px;}
+.pulse-week-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);}
+.pulse-week-date{font-family:var(--ff-serif);font-size:22px;letter-spacing:-.01em;color:var(--ink);}
+.pulse-copy-btn{font-family:var(--ff-mono);font-size:11px;letter-spacing:.04em;padding:7px 16px;border-radius:6px;border:1.5px solid var(--rule);background:var(--white);color:var(--mid);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.pulse-copy-btn:hover{border-color:var(--ink);color:var(--ink);}
+.pulse-copy-btn.copied{border-color:#2a7a2a;color:#2a7a2a;background:#f0faf0;}
+.pulse-week-body{padding:24px 28px;font-size:15px;line-height:1.75;color:var(--ink);white-space:pre-wrap;font-family:inherit;}
+.pulse-week-note{padding:0 28px 20px;font-family:var(--ff-mono);font-size:11px;color:var(--mid);letter-spacing:.03em;}
 .pulse-loading{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);padding:40px 0;}
+.pulse-empty{text-align:center;padding:60px 20px;}
+.pulse-empty-title{font-family:var(--ff-serif);font-size:20px;color:var(--ink);margin-bottom:8px;}
+.pulse-empty-sub{font-family:var(--ff-mono);font-size:12px;color:var(--mid);letter-spacing:.04em;}
 .pg-btn{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;padding:9px 22px;border:1.5px solid var(--rule);border-radius:100px;background:var(--white);color:var(--ink);cursor:pointer;transition:all .15s;}
 .pg-btn:hover:not([disabled]){border-color:var(--ink);background:var(--off);}
 .pg-btn[disabled]{opacity:.3;cursor:default;}
@@ -985,8 +974,8 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <section id="pulse">
   <div class="inner">
     <div class="eyebrow">Weekly Pulse</div>
-    <h2 class="section-h2">What the agents found<br><em>this week.</em></h2>
-    <p class="section-intro">A digest of signals from the last two Monday runs — grouped by agent, updated automatically every week.</p>
+    <h2 class="section-h2">This week in<br><em>AI × Insurance.</em></h2>
+    <p class="section-intro">A plain-English digest of what the eight agents found each week — written to be shared. Copy and post directly to LinkedIn.</p>
     <div id="pulseContent" class="pulse-stack">
       <div class="pulse-loading">Loading weekly pulse…</div>
     </div>
@@ -1476,7 +1465,6 @@ async function init(){
           if(lu)lu.textContent='Last updated '+fmt+' · Refreshes weekly';
         }
         updateStats();refresh();
-        renderWeeklyPulse(data);
         return;
       }
     }
@@ -1486,54 +1474,62 @@ async function init(){
 }
 
 // ── WEEKLY PULSE ──────────────────────────────────────────────────────────────
-function renderWeeklyPulse(data){
+function renderWeeklyPulse(){
   var el=document.getElementById('pulseContent');
   if(!el)return;
-  var runs=[];
-  if(data.findings&&data.findings.length)runs.push({date:data.run_date,findings:data.findings,label:'Latest run'});
-  if(data.prev_findings&&data.prev_findings.length)runs.push({date:data.prev_run_date,findings:data.prev_findings,label:'Previous run'});
-  if(!runs.length){el.innerHTML='<div class="pulse-loading">No runs yet — check back after Monday.</div>';return;}
+  el.innerHTML='<div class="pulse-loading">Loading digest…</div>';
+  fetch('/api/digest')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var posts=data.posts||[];
+      if(!posts.length){
+        el.innerHTML='<div class="pulse-empty">'
+          +'<div class="pulse-empty-title">First digest coming Monday.</div>'
+          +'<div class="pulse-empty-sub">The eight agents run every Monday at 6am UTC — their plain-English summary will appear here.</div>'
+          +'</div>';
+        return;
+      }
+      el.innerHTML=posts.map(function(post,i){
+        var d=new Date(post.run_date+'T12:00:00Z');
+        var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+        var label=i===0?'Latest · Week of '+dateStr:'Previous · Week of '+dateStr;
+        var uid='pulse-copy-'+i;
+        return'<div class="pulse-week">'
+          +'<div class="pulse-week-header">'
+          +'<div class="pulse-week-left">'
+          +'<div class="pulse-week-label">'+label+'</div>'
+          +'</div>'
+          +'<button class="pulse-copy-btn" id="'+uid+'" onclick="copyPulse(\''+uid+'\','+i+')">Copy for LinkedIn</button>'
+          +'</div>'
+          +'<div class="pulse-week-body" id="pulse-body-'+i+'">'+escHtml(post.post_text)+'</div>'
+          +'<div class="pulse-week-note">Paste directly into the YNOT.NOW LinkedIn page · ynot.now</div>'
+          +'</div>';
+      }).join('');
+    })
+    .catch(function(){
+      el.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load digest — try refreshing.</div></div>';
+    });
+}
 
-  var ICONS={scout:'🔭',vita:'🧬',atlas:'🌍',prism:'💎','null':'⚔️',weave:'🕸️',deploy:'🚀',faro:'🔦'};
-  var NAMES={scout:'Scout',vita:'Vita',atlas:'Atlas',prism:'Prism','null':'Null',weave:'Weave',deploy:'Deploy',faro:'Faro'};
+function escHtml(s){
+  return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
-  el.innerHTML=runs.map(function(run){
-    var d=new Date(run.date+'T12:00:00Z');
-    var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-    var sig=run.findings.filter(function(f){return f.verdict==='SIGNAL';}).length;
-    var wat=run.findings.filter(function(f){return f.verdict==='WATCH';}).length;
-    var noi=run.findings.filter(function(f){return f.verdict==='NOISE';}).length;
-
-    var rows=run.findings.map(function(f){
-      var v=(f.verdict||'').toLowerCase();
-      var icon=ICONS[f.mind_id]||'';
-      var name=NAMES[f.mind_id]||f.mind_name||f.mind_id;
-      return'<div class="pw-row '+v+'">'
-        +'<div class="pw-agent">'+icon+'</div>'
-        +'<div class="pw-content">'
-        +'<div class="pw-title">'+f.title+'</div>'
-        +'<div class="pw-meta">'
-        +'<span class="pw-verdict '+v+'">'+f.verdict+'</span>'
-        +'<span class="pw-mind">'+name+'</span>'
-        +'</div></div></div>';
-    }).join('');
-
-    return'<div class="pulse-week">'
-      +'<div class="pulse-week-header">'
-      +'<div class="pulse-week-label">'+run.label+'</div>'
-      +'<div class="pulse-week-date">Week of '+dateStr+'</div>'
-      +'<div class="pulse-week-stats">'
-      +(sig?'<span class="pw-stat signal">'+sig+' Signal'+(sig!==1?'s':'')+'</span>':'')
-      +(wat?'<span class="pw-stat watch">'+wat+' Watch</span>':'')
-      +(noi?'<span class="pw-stat noise">'+noi+' Noise</span>':'')
-      +'<span class="pw-stat total">'+run.findings.length+' total</span>'
-      +'</div></div>'
-      +'<div class="pulse-week-body">'+rows+'</div>'
-      +'</div>';
-  }).join('');
+function copyPulse(btnId,idx){
+  var body=document.getElementById('pulse-body-'+idx);
+  if(!body)return;
+  var text=body.textContent||body.innerText||'';
+  navigator.clipboard.writeText(text).then(function(){
+    var btn=document.getElementById(btnId);
+    if(!btn)return;
+    btn.textContent='Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='Copy for LinkedIn';btn.classList.remove('copied');},2500);
+  }).catch(function(){});
 }
 
 init();
+renderWeeklyPulse();
 
 // ── VISITOR COUNTER ──
 (function(){

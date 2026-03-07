@@ -279,6 +279,77 @@ async function callMind(mind, liveSources) {
   });
 }
 
+// ── WEEKLY DIGEST GENERATION ─────────────────────────────────────────────────
+
+async function generateWeeklyDigest(findings, runDate) {
+  var signals  = findings.filter(function(f){ return f.verdict === 'SIGNAL'; });
+  var watches  = findings.filter(function(f){ return f.verdict === 'WATCH';  });
+  var noises   = findings.filter(function(f){ return f.verdict === 'NOISE';  });
+
+  var signalLines = signals.map(function(f){
+    return f.mind_icon + ' ' + f.mind_name + ': ' + f.title + ' — ' + (f.body||'').slice(0,180);
+  }).join('\n\n');
+
+  var watchLines = watches.slice(0,3).map(function(f){
+    return f.mind_icon + ' ' + f.mind_name + ': ' + f.title;
+  }).join('\n');
+
+  var noiseLines = noises.slice(0,2).map(function(f){
+    return f.mind_icon + ' ' + f.mind_name + ': ' + f.title;
+  }).join('\n');
+
+  var prompt =
+    'Write a weekly LinkedIn digest post for YNOT.NOW — an independent AI intelligence platform for the insurance industry.\n\n' +
+    'Week of ' + runDate + '\n\n' +
+    'SIGNALS (' + signals.length + ' confirmed):\n' + signalLines + '\n\n' +
+    (watchLines ? 'WATCHING:\n' + watchLines + '\n\n' : '') +
+    (noiseLines ? 'NOISE CALLED OUT:\n' + noiseLines + '\n\n' : '') +
+    'Requirements:\n' +
+    '- Open with one sharp sentence capturing the most important signal this week\n' +
+    '- Write in plain English — no jargon, accessible to any insurance professional\n' +
+    '- Cover each SIGNAL finding in 1-2 sentences: what it is, why it matters\n' +
+    '- Briefly mention key WATCH findings as "ones to track"\n' +
+    '- Call out any NOISE findings in one line — what isn\'t living up to the hype\n' +
+    '- End with: "Full report → ynot.now"\n' +
+    '- Add 4-5 hashtags: always #InsurTech #AI #Insurance, plus 2 topical ones\n' +
+    '- Keep total under 1300 characters\n' +
+    '- Tone: sharp, authoritative, evidence-first — like a trusted analyst, not a marketer\n' +
+    '- Return ONLY the post text — no preamble, no markdown, no explanation';
+
+  var res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 700,
+      system: 'You write concise, authoritative LinkedIn posts for an insurance AI intelligence platform. You write for insurance professionals — clear, direct, evidence-first. Return only the post text.',
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) throw new Error('Claude digest generation failed: ' + res.status);
+  var data = await res.json();
+  return data.content[0].text.trim();
+}
+
+async function saveWeeklyDigest(allFindings, runId, runDate) {
+  console.log('[YNOT] Generating weekly digest...');
+  var postText = await generateWeeklyDigest(allFindings, runDate);
+  await supabaseCall('POST', 'weekly_posts', [{
+    run_id:   runId,
+    run_date: runDate,
+    post_text: postText,
+    status:   'ready'
+  }]);
+  console.log('[YNOT] Weekly digest saved to weekly_posts.');
+  return postText;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 module.exports = async function handler(req, res) {
   var auth = req.headers['authorization'] || '';
   if (auth !== 'Bearer ' + CRON_SECRET) {
@@ -335,10 +406,21 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Storage failed', details: err.message });
   }
 
+  // Generate and save the weekly digest post
+  var digestStatus = 'skipped';
+  try {
+    await saveWeeklyDigest(allFindings, runId, runDate);
+    digestStatus = 'ready';
+  } catch(dErr) {
+    console.error('[YNOT] Digest generation failed:', dErr.message);
+    digestStatus = 'error: ' + dErr.message;
+  }
+
   return res.status(200).json({
     success: true,
     run_id: runId,
     findings_count: allFindings.length,
+    digest: digestStatus,
     errors: errors
   });
 };
