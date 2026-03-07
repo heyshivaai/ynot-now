@@ -75,10 +75,14 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // Return cached posts if they exist
-    const cached = await sbGet('weekly_posts?order=run_date.desc&limit=2&status=eq.ready');
-    if (cached && cached.length) {
-      return res.status(200).json({ posts: cached });
+    // Return cached posts if they exist (table may not exist yet — that's fine)
+    try {
+      const cached = await sbGet('weekly_posts?order=run_date.desc&limit=2&status=eq.ready');
+      if (cached && cached.length) {
+        return res.status(200).json({ posts: cached });
+      }
+    } catch (e) {
+      console.warn('[pulse] weekly_posts not available, generating on-demand:', e.message);
     }
 
     // No cached posts — find the last two distinct runs in findings
