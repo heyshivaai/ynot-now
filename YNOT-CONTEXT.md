@@ -84,7 +84,7 @@ Every finding has these fields:
 
 ---
 
-## Live Data Sources (18 total)
+## Live Data Sources (25+ total)
 
 All sources are free public APIs — no API keys required. Fetched fresh every Monday before minds are called. Each has a 6-second timeout so a slow source never blocks the run.
 
@@ -109,9 +109,18 @@ All sources are free public APIs — no API keys required. Fetched fresh every M
 - **OpenAlex** — 250M papers, returns real DOI URLs (`doi.org/...`). Best source for citable specific paper URLs.
 - **NIST RSS** — AI standards, PQC progress, cybersecurity publications
 
-### Regulatory
+### Regulatory & Supervisory
 - **FCA RSS** — UK Financial Conduct Authority live news (enforcement, guidance, sandboxes)
 - **Federal Register** — US insurance AI regulation filings
+- **EIOPA** — European Insurance and Occupational Pensions Authority
+- **IAIS** — International Association of Insurance Supervisors (global standards)
+
+### Insurance Industry Research
+- **Geneva Association** — Global insurance think tank research
+- **Lloyd's of London** — Major reinsurance/specialty market research
+- **SOA (Society of Actuaries)** — Actuarial AI research, life/annuities focus
+- **CAS (Casualty Actuarial Society)** — P&C actuarial innovation and analytics
+- **BIS** — Bank for International Settlements (financial stability, systemic risk)
 
 ### Community & Developer
 - **GitHub Trending** — Weekly trending repositories
@@ -127,7 +136,12 @@ All sources are free public APIs — no API keys required. Fetched fresh every M
 | arXiv life/longevity | Vita |
 | arXiv insurance+ML | Scout, Vita, Atlas, Prism |
 | arXiv horizontal (all 5 queries), GitHub, HN security, NIST, dev.to | Prism, Faro |
-| FCA RSS | Null, Weave, Prism, Atlas |
+| FCA RSS, EIOPA, IAIS | Null, Weave, Prism, Atlas |
+| Lloyd's | Atlas, Scout, Deploy |
+| SOA | Vita, Faro, Prism |
+| CAS | Scout, Null, Deploy |
+| Geneva Association | Atlas, Weave, Faro |
+| BIS | Weave, Prism, Faro |
 
 ---
 

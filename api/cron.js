@@ -190,6 +190,104 @@ async function fetchLiveSources() {
     }
   } catch(e) { sources.reddit = ''; }
 
+  // Lloyd's of London — major reinsurance/specialty market research
+  try {
+    const lloyds = await safeFetch('https://www.lloyds.com/news-and-insights/news/rss');
+    if (lloyds) {
+      const xml = await lloyds.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
+      sources.lloyds = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.lloyds = ''; }
+
+  // Society of Actuaries (SOA) — actuarial AI research
+  try {
+    const soa = await safeFetch('https://www.soa.org/rss/');
+    if (soa) {
+      const xml = await soa.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
+      sources.soa = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.soa = ''; }
+
+  // Casualty Actuarial Society (CAS) — P&C actuarial innovation
+  try {
+    const cas = await safeFetch('https://www.casact.org/feed');
+    if (cas) {
+      const xml = await cas.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
+      sources.cas = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.cas = ''; }
+
+  // IAIS — International Association of Insurance Supervisors
+  try {
+    const iais = await safeFetch('https://www.iaisweb.org/rss/news');
+    if (iais) {
+      const xml = await iais.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
+      sources.iais = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.iais = ''; }
+
+  // EIOPA — European Insurance and Occupational Pensions Authority
+  try {
+    const eiopa = await safeFetch('https://www.eiopa.europa.eu/rss_en');
+    if (eiopa) {
+      const xml = await eiopa.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
+      sources.eiopa = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.eiopa = ''; }
+
+  // Geneva Association — global insurance think tank research
+  try {
+    const geneva = await safeFetch('https://www.genevaassociation.org/rss.xml');
+    if (geneva) {
+      const xml = await geneva.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
+      sources.genevaAssociation = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.genevaAssociation = ''; }
+
+  // BIS — Bank for International Settlements (financial stability, systemic risk)
+  try {
+    const bis = await safeFetch('https://www.bis.org/doclist/all_rss.rss');
+    if (bis) {
+      const xml = await bis.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
+      sources.bis = items.map(m => {
+        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
+        return title && link ? `${title} — ${link}` : '';
+      }).filter(Boolean).join('\n');
+    }
+  } catch(e) { sources.bis = ''; }
+
   return sources;
 }
 
@@ -215,6 +313,14 @@ function buildSourceContext(mindId, sources) {
   if (['scout','deploy','null','weave'].includes(mindId) && sources.federalRegister) blocks.push(`=== LIVE: US Federal Register — Insurance AI Regulation Filings ===\n${sources.federalRegister}`);
   if (['null','weave','prism','atlas'].includes(mindId) && sources.fcaRss) blocks.push(`=== LIVE: FCA (UK Financial Regulator) News ===\n${sources.fcaRss}`);
   if (['scout','null','weave','deploy'].includes(mindId) && sources.reddit) blocks.push(`=== LIVE: r/insurtech Community Signal ===\n${sources.reddit}`);
+  // New institutional sources
+  if (['atlas','scout','deploy'].includes(mindId) && sources.lloyds) blocks.push(`=== LIVE: Lloyd's of London Market Research ===\n${sources.lloyds}`);
+  if (['vita','faro','prism'].includes(mindId) && sources.soa) blocks.push(`=== LIVE: Society of Actuaries (SOA) Research ===\n${sources.soa}`);
+  if (['scout','null','deploy'].includes(mindId) && sources.cas) blocks.push(`=== LIVE: Casualty Actuarial Society (CAS) Publications ===\n${sources.cas}`);
+  if (['weave','null','prism','atlas'].includes(mindId) && sources.iais) blocks.push(`=== LIVE: IAIS Global Insurance Supervision ===\n${sources.iais}`);
+  if (['weave','null','prism','atlas'].includes(mindId) && sources.eiopa) blocks.push(`=== LIVE: EIOPA European Insurance Authority ===\n${sources.eiopa}`);
+  if (['atlas','weave','faro'].includes(mindId) && sources.genevaAssociation) blocks.push(`=== LIVE: Geneva Association Insurance Research ===\n${sources.genevaAssociation}`);
+  if (['weave','prism','faro'].includes(mindId) && sources.bis) blocks.push(`=== LIVE: BIS Financial Stability Publications ===\n${sources.bis}`);
   if (blocks.length === 0) return '';
   return '\n\n' + blocks.join('\n\n') + '\n\nUsing the above LIVE sources as your primary evidence base, identify the most significant findings. For each finding, cite one of the real URLs listed above wherever possible — copy the URL exactly as it appears. Only fall back to a known authoritative domain (arxiv.org, naic.org, fca.org.uk, etc.) if no live source is relevant. NEVER use example.com or invent any URL path.';
 }
@@ -237,7 +343,7 @@ async function supabaseCall(method, table, body, query) {
   return text ? JSON.parse(text) : null;
 }
 
-const SYSTEM_PROMPT = 'Respond ONLY with a valid JSON array. No markdown. Start with [ end with ].\n\nSOURCE RULES — these are mandatory:\n1. Every ref must have a real, publicly accessible URL that actually exists.\n2. NEVER use example.com, placeholder domains, or invented paths.\n3. NEVER invent arXiv IDs (e.g. /abs/2024.xxxxx is forbidden). If citing arXiv use https://arxiv.org only.\n4. Prefer URLs from the live sources provided in the prompt — those are real and verified.\n5. Acceptable fallback domains (when no specific URL is available): https://arxiv.org, https://content.naic.org, https://www.fca.org.uk, https://www.eiopa.europa.eu, https://www.genevaassociation.org, https://www.nist.gov, https://news.ycombinator.com, https://github.com.\n6. If you cannot find a real source for a finding, do not include that finding.';
+const SYSTEM_PROMPT = 'Respond ONLY with a valid JSON array. No markdown. Start with [ end with ].\n\nSOURCE RULES — these are mandatory:\n1. Every ref must have a real, publicly accessible URL that actually exists.\n2. NEVER use example.com, placeholder domains, or invented paths.\n3. NEVER invent arXiv IDs (e.g. /abs/2024.xxxxx is forbidden). If citing arXiv use https://arxiv.org only.\n4. Prefer URLs from the live sources provided in the prompt — those are real and verified.\n5. Acceptable fallback domains (when no specific URL is available): https://arxiv.org, https://content.naic.org, https://www.fca.org.uk, https://www.eiopa.europa.eu, https://www.genevaassociation.org, https://www.nist.gov, https://news.ycombinator.com, https://github.com, https://www.lloyds.com, https://www.soa.org, https://www.casact.org, https://www.iaisweb.org, https://www.bis.org, https://www.federalregister.gov.\n6. If you cannot find a real source for a finding, do not include that finding.';
 
 async function callMind(mind, liveSources) {
   const sourceContext = buildSourceContext(mind.id, liveSources || {});
