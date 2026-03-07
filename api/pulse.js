@@ -41,13 +41,12 @@ async function generateExecutiveBriefing(findings, runDate) {
     `You are the executive intelligence synthesis agent for YNOT.NOW — an independent technology signal platform for the insurance industry, tracking all emerging technology (AI, automation, data infrastructure, quantum, real-time decisioning, and more).\n\n` +
     `Week of ${runDate}. Eight specialist agents completed their scan. Total findings: ${findings.length} (${signals.length} Signals, ${watches.length} Watch, ${noises.length} Noise).\n\n` +
     `ALL FINDINGS:\n${lines}\n\n` +
-    `Write a concise executive-level weekly briefing:\n` +
-    `- Open with 1-2 sentences naming the dominant theme or most important shift this week\n` +
-    `- Synthesise what happened across domains as a coherent narrative — not finding-by-finding\n` +
-    `- Highlight the development with the greatest near-term implication for insurance leaders\n` +
-    `- Surface any meaningful pattern: convergence across signals, contradictions, acceleration or stalling\n` +
-    `- Close with one forward-looking sentence on what to watch next\n\n` +
-    `Tone: sharp, authoritative — like a trusted analyst briefing a board. Plain English. No bullet points. No hashtags. No markdown. 3–4 short paragraphs. Return only the briefing text.`;
+    `Write a tight executive briefing — 120 to 150 words maximum:\n` +
+    `- One sentence on the dominant theme this week\n` +
+    `- Two or three sentences synthesising the most important developments across domains\n` +
+    `- One sentence on the most significant implication for insurance leaders\n` +
+    `- One forward-looking sentence on what to watch next\n\n` +
+    `Tone: sharp, authoritative, board-level. Plain English. No bullets. No hashtags. No markdown. Return only the briefing text.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -58,7 +57,7 @@ async function generateExecutiveBriefing(findings, runDate) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 700,
+      max_tokens: 300,
       system: 'You write concise executive intelligence briefings for insurance industry leaders. Plain prose, no formatting, no bullet points.',
       messages: [{ role: 'user', content: prompt }]
     })
