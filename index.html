@@ -1444,7 +1444,7 @@ function loadSampleFindings(){
 // ── INIT — try DB, fall back to samples ──
 async function init(){
   try{
-    const r=await fetch('https://ynot-now.vercel.app/api/findings');
+    const r=await fetch('/api/findings');
     if(r.ok){
       const data=await r.json();
       if(data.findings&&data.findings.length>0){
@@ -1532,7 +1532,7 @@ init();
 
 // ── VISITOR COUNTER ──
 (function(){
-  var API='https://ynot-now.vercel.app/api/visitors';
+  var API='/api/visitors';
   function fmt(n){
     if(!n&&n!==0)return'—';
     if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
