@@ -47,6 +47,18 @@ module.exports = async function handler(req, res) {
       `?run_id=eq.${encodeURIComponent(run_id)}&order=verdict.asc,confidence.desc`
     );
 
+    // Fetch previous run for Weekly Pulse
+    const prevRunRow = await supabaseGet('findings',
+      `?select=run_id,run_date&run_id=neq.${encodeURIComponent(run_id)}&order=created_at.desc&limit=1`
+    );
+    let prev_findings = [], prev_run_date = null;
+    if (prevRunRow && prevRunRow.length) {
+      prev_run_date = prevRunRow[0].run_date;
+      prev_findings = await supabaseGet('findings',
+        `?run_id=eq.${encodeURIComponent(prevRunRow[0].run_id)}&order=verdict.asc,confidence.desc`
+      );
+    }
+
     const trajectory = await supabaseGet('trl_history',
       '?order=recorded_at.asc&select=technology_name,domain,trl,verdict,recorded_at,direction,previous_trl'
     );
@@ -61,11 +73,13 @@ module.exports = async function handler(req, res) {
     const allFindings = await supabaseGet('findings', '?select=id');
 
     return res.status(200).json({
-      findings:   findings,
-      trajectory: trajectory,
-      run_date:   run_date,
-      total_runs: uniqueRuns,
-      total_ever: allFindings.length,
+      findings:      findings,
+      prev_findings: prev_findings,
+      prev_run_date: prev_run_date,
+      trajectory:    trajectory,
+      run_date:      run_date,
+      total_runs:    uniqueRuns,
+      total_ever:    allFindings.length,
     });
 
   } catch (err) {
