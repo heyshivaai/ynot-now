@@ -975,7 +975,6 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
   <div class="inner">
     <div class="eyebrow">Weekly Pulse</div>
     <h2 class="section-h2">This week in<br><em>AI × Insurance.</em></h2>
-    <p class="section-intro">A plain-English digest of what the eight agents found each week — written to be shared. Copy and post directly to LinkedIn.</p>
     <div id="pulseContent" class="pulse-stack">
       <div class="pulse-loading">Loading weekly pulse…</div>
     </div>
@@ -1465,16 +1464,54 @@ async function init(){
           if(lu)lu.textContent='Last updated '+fmt+' · Refreshes weekly';
         }
         updateStats();refresh();
+        renderWeeklyPulse(data);
         return;
       }
     }
   }catch(e){console.log('DB not connected, showing curated findings');}
   // Show curated sample findings when DB is not yet connected
   loadSampleFindings();
+  renderWeeklyPulse(null);
 }
 
 // ── WEEKLY PULSE ──────────────────────────────────────────────────────────────
-function renderWeeklyPulse(){
+function buildFindingsDigest(findings,run_date){
+  if(!findings||!findings.length)return null;
+  var d=new Date((run_date||'')+'T12:00:00Z');
+  var dateStr=isNaN(d)?'this week':d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  var signals=findings.filter(function(f){return f.verdict==='SIGNAL';});
+  var watches=findings.filter(function(f){return f.verdict==='WATCH';});
+  var lines=[];
+  lines.push('🤖 YNOT.NOW Weekly AI Insurance Pulse — Week of '+dateStr);
+  lines.push('');
+  lines.push('Eight specialist AI minds scanned the insurance landscape this week. Here\'s what stood out:');
+  lines.push('');
+  if(signals.length){
+    lines.push('🟢 KEY SIGNALS ('+signals.length+' confirmed):');
+    signals.slice(0,4).forEach(function(f){
+      lines.push('• '+f.title+(f.domain?' ['+f.domain+']':'')+(f.confidence?' — '+f.confidence+'/5 confidence':''));
+    });
+    if(signals.length>4)lines.push('  + '+(signals.length-4)+' more signal'+(signals.length-4!==1?'s':''));
+    lines.push('');
+  }
+  if(watches.length){
+    lines.push('🟡 WORTH WATCHING ('+watches.length+'):');
+    watches.slice(0,3).forEach(function(f){
+      lines.push('• '+f.title+(f.domain?' ['+f.domain+']':''));
+    });
+    if(watches.length>3)lines.push('  + '+(watches.length-3)+' more');
+    lines.push('');
+  }
+  var domains=[...new Set(findings.map(function(f){return f.domain;}).filter(Boolean))];
+  if(domains.length)lines.push('Domains covered: '+domains.join(' · '));
+  lines.push('');
+  lines.push('Full findings + TRL trajectories at ynot.now — free, open, no vendor bias.');
+  lines.push('');
+  lines.push('#InsurTech #InsuranceAI #AIIntelligence #Insurance #YNOTNOW');
+  return lines.join('\n');
+}
+
+function renderWeeklyPulse(findingsData){
   var el=document.getElementById('pulseContent');
   if(!el)return;
   el.innerHTML='<div class="pulse-loading">Loading digest…</div>';
@@ -1482,29 +1519,61 @@ function renderWeeklyPulse(){
     .then(function(r){return r.json();})
     .then(function(data){
       var posts=data.posts||[];
-      if(!posts.length){
-        el.innerHTML='<div class="pulse-empty">'
-          +'<div class="pulse-empty-title">First digest coming Monday.</div>'
-          +'<div class="pulse-empty-sub">The eight agents run every Monday at 6am UTC — their plain-English summary will appear here.</div>'
-          +'</div>';
+      if(posts.length){
+        // Claude-written digest posts from weekly_posts table
+        el.innerHTML=posts.map(function(post,i){
+          var d=new Date(post.run_date+'T12:00:00Z');
+          var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+          var label=i===0?'Latest · Week of '+dateStr:'Previous · Week of '+dateStr;
+          var uid='pulse-copy-'+i;
+          return'<div class="pulse-week">'
+            +'<div class="pulse-week-header">'
+            +'<div class="pulse-week-left">'
+            +'<div class="pulse-week-label">'+label+'</div>'
+            +'</div>'
+            +'<button class="pulse-copy-btn" id="'+uid+'" onclick="copyPulse(\''+uid+'\','+i+')">Copy for LinkedIn</button>'
+            +'</div>'
+            +'<div class="pulse-week-body" id="pulse-body-'+i+'">'+escHtml(post.post_text)+'</div>'
+            +'<div class="pulse-week-note">Paste directly into the YNOT.NOW LinkedIn page · ynot.now</div>'
+            +'</div>';
+        }).join('');
         return;
       }
-      el.innerHTML=posts.map(function(post,i){
-        var d=new Date(post.run_date+'T12:00:00Z');
-        var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-        var label=i===0?'Latest · Week of '+dateStr:'Previous · Week of '+dateStr;
-        var uid='pulse-copy-'+i;
-        return'<div class="pulse-week">'
-          +'<div class="pulse-week-header">'
-          +'<div class="pulse-week-left">'
-          +'<div class="pulse-week-label">'+label+'</div>'
-          +'</div>'
-          +'<button class="pulse-copy-btn" id="'+uid+'" onclick="copyPulse(\''+uid+'\','+i+')">Copy for LinkedIn</button>'
-          +'</div>'
-          +'<div class="pulse-week-body" id="pulse-body-'+i+'">'+escHtml(post.post_text)+'</div>'
-          +'<div class="pulse-week-note">Paste directly into the YNOT.NOW LinkedIn page · ynot.now</div>'
-          +'</div>';
-      }).join('');
+      // Fallback: generate highlights from findings data already loaded
+      if(findingsData&&(findingsData.findings||findingsData.prev_findings)){
+        var cards=[];
+        var curr=buildFindingsDigest(findingsData.findings,findingsData.run_date);
+        if(curr){
+          var d0=new Date((findingsData.run_date||'')+'T12:00:00Z');
+          var ds0=isNaN(d0)?'Latest':d0.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+          cards.push({label:'Latest · Week of '+ds0,text:curr,id:'pulse-body-0',btnId:'pulse-copy-0'});
+        }
+        var prev=buildFindingsDigest(findingsData.prev_findings,findingsData.prev_run_date);
+        if(prev){
+          var d1=new Date((findingsData.prev_run_date||'')+'T12:00:00Z');
+          var ds1=isNaN(d1)?'Previous week':d1.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+          cards.push({label:'Previous · Week of '+ds1,text:prev,id:'pulse-body-1',btnId:'pulse-copy-1'});
+        }
+        if(cards.length){
+          el.innerHTML=cards.map(function(c){
+            return'<div class="pulse-week">'
+              +'<div class="pulse-week-header">'
+              +'<div class="pulse-week-left">'
+              +'<div class="pulse-week-label">'+c.label+'</div>'
+              +'</div>'
+              +'<button class="pulse-copy-btn" id="'+c.btnId+'" onclick="copyPulse(\''+c.btnId+'\',\''+c.id+'\')">Copy for LinkedIn</button>'
+              +'</div>'
+              +'<div class="pulse-week-body" id="'+c.id+'">'+escHtml(c.text)+'</div>'
+              +'<div class="pulse-week-note">Paste directly into the YNOT.NOW LinkedIn page · ynot.now</div>'
+              +'</div>';
+          }).join('');
+          return;
+        }
+      }
+      el.innerHTML='<div class="pulse-empty">'
+        +'<div class="pulse-empty-title">First digest coming Monday.</div>'
+        +'<div class="pulse-empty-sub">The eight agents run every Monday at 6am UTC — their summary will appear here.</div>'
+        +'</div>';
     })
     .catch(function(){
       el.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load digest — try refreshing.</div></div>';
@@ -1516,7 +1585,9 @@ function escHtml(s){
 }
 
 function copyPulse(btnId,idx){
-  var body=document.getElementById('pulse-body-'+idx);
+  // idx can be numeric (digest posts) or a full element id string (fallback)
+  var bodyId=typeof idx==='number'?'pulse-body-'+idx:idx;
+  var body=document.getElementById(bodyId);
   if(!body)return;
   var text=body.textContent||body.innerText||'';
   navigator.clipboard.writeText(text).then(function(){
@@ -1529,7 +1600,6 @@ function copyPulse(btnId,idx){
 }
 
 init();
-renderWeeklyPulse();
 
 // ── VISITOR COUNTER ──
 (function(){
