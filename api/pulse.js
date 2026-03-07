@@ -1,6 +1,6 @@
 // api/pulse.js
-// Returns the latest executive weekly briefings.
-// If weekly_posts is empty, generates on-demand from the latest findings run.
+// Returns executive weekly briefings.
+// If weekly_posts is empty, generates on-demand for the last two runs and caches them.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -76,34 +76,50 @@ module.exports = async function handler(req, res) {
 
   try {
     // Return cached posts if they exist
-    const posts = await sbGet('weekly_posts?order=run_date.desc&limit=2&status=eq.ready');
-    if (posts && posts.length) {
-      return res.status(200).json({ posts });
+    const cached = await sbGet('weekly_posts?order=run_date.desc&limit=2&status=eq.ready');
+    if (cached && cached.length) {
+      return res.status(200).json({ posts: cached });
     }
 
-    // No cached posts — generate on-demand from the latest findings run
-    const latestRow = await sbGet('findings?select=run_id,run_date&order=created_at.desc&limit=1');
-    if (!latestRow || !latestRow.length) {
+    // No cached posts — find the last two distinct runs in findings
+    const allRunRows = await sbGet('findings?select=run_id,run_date&order=run_date.desc');
+    if (!allRunRows || !allRunRows.length) {
       return res.status(200).json({ posts: [] });
     }
 
-    const { run_id, run_date } = latestRow[0];
-    const findings = await sbGet(`findings?run_id=eq.${encodeURIComponent(run_id)}&order=verdict.asc,confidence.desc`);
-    if (!findings || !findings.length) {
+    // Deduplicate to get up to 2 distinct runs
+    const seen = new Set();
+    const runs = [];
+    for (const row of allRunRows) {
+      if (!seen.has(row.run_id)) {
+        seen.add(row.run_id);
+        runs.push(row);
+        if (runs.length === 2) break;
+      }
+    }
+
+    // Generate briefings for each run (sequentially to avoid rate limits)
+    const generated = [];
+    for (const run of runs) {
+      const findings = await sbGet(`findings?run_id=eq.${encodeURIComponent(run.run_id)}&order=verdict.asc,confidence.desc`);
+      if (!findings || !findings.length) continue;
+      const postText = await generateExecutiveBriefing(findings, run.run_date);
+      generated.push({ run_id: run.run_id, run_date: run.run_date, post_text: postText, status: 'ready' });
+    }
+
+    if (!generated.length) {
       return res.status(200).json({ posts: [] });
     }
 
-    const postText = await generateExecutiveBriefing(findings, run_date);
-
-    // Cache it so subsequent visitors don't trigger another generation
+    // Cache all generated posts
     try {
-      await sbPost('weekly_posts', [{ run_id, run_date, post_text: postText, status: 'ready' }]);
+      await sbPost('weekly_posts', generated);
     } catch (e) {
       // weekly_posts table may not exist yet — proceed without caching
       console.warn('[pulse] Could not cache to weekly_posts:', e.message);
     }
 
-    return res.status(200).json({ posts: [{ run_id, run_date, post_text: postText }] });
+    return res.status(200).json({ posts: generated });
 
   } catch (err) {
     console.error('[pulse] Error:', err.message);
