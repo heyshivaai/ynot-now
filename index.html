@@ -311,11 +311,7 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .pulse-week-left{display:flex;flex-direction:column;gap:4px;}
 .pulse-week-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);}
 .pulse-week-date{font-family:var(--ff-serif);font-size:22px;letter-spacing:-.01em;color:var(--ink);}
-.pulse-copy-btn{font-family:var(--ff-mono);font-size:11px;letter-spacing:.04em;padding:7px 16px;border-radius:6px;border:1.5px solid var(--rule);background:var(--white);color:var(--mid);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;}
-.pulse-copy-btn:hover{border-color:var(--ink);color:var(--ink);}
-.pulse-copy-btn.copied{border-color:#2a7a2a;color:#2a7a2a;background:#f0faf0;}
-.pulse-week-body{padding:24px 28px;font-size:15px;line-height:1.75;color:var(--ink);white-space:pre-wrap;font-family:inherit;}
-.pulse-week-note{padding:0 28px 20px;font-family:var(--ff-mono);font-size:11px;color:var(--mid);letter-spacing:.03em;}
+.pulse-week-body{padding:24px 28px 28px;font-size:15px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;}
 .pulse-loading{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);padding:40px 0;}
 .pulse-empty{text-align:center;padding:60px 20px;}
 .pulse-empty-title{font-family:var(--ff-serif);font-size:20px;color:var(--ink);margin-bottom:8px;}
@@ -974,7 +970,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <section id="pulse">
   <div class="inner">
     <div class="eyebrow">Weekly Pulse</div>
-    <h2 class="section-h2">This week in<br><em>AI × Insurance.</em></h2>
+    <h2 class="section-h2">This week in<br><em>emerging tech × insurance.</em></h2>
     <div id="pulseContent" class="pulse-stack">
       <div class="pulse-loading">Loading weekly pulse…</div>
     </div>
@@ -1464,119 +1460,46 @@ async function init(){
           if(lu)lu.textContent='Last updated '+fmt+' · Refreshes weekly';
         }
         updateStats();refresh();
-        renderWeeklyPulse(data);
         return;
       }
     }
   }catch(e){console.log('DB not connected, showing curated findings');}
   // Show curated sample findings when DB is not yet connected
   loadSampleFindings();
-  renderWeeklyPulse(null);
 }
 
 // ── WEEKLY PULSE ──────────────────────────────────────────────────────────────
-function buildFindingsDigest(findings,run_date){
-  if(!findings||!findings.length)return null;
-  var d=new Date((run_date||'')+'T12:00:00Z');
-  var dateStr=isNaN(d)?'this week':d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  var signals=findings.filter(function(f){return f.verdict==='SIGNAL';});
-  var watches=findings.filter(function(f){return f.verdict==='WATCH';});
-  var lines=[];
-  lines.push('🤖 YNOT.NOW Weekly AI Insurance Pulse — Week of '+dateStr);
-  lines.push('');
-  lines.push('Eight specialist AI minds scanned the insurance landscape this week. Here\'s what stood out:');
-  lines.push('');
-  if(signals.length){
-    lines.push('🟢 KEY SIGNALS ('+signals.length+' confirmed):');
-    signals.slice(0,4).forEach(function(f){
-      lines.push('• '+f.title+(f.domain?' ['+f.domain+']':'')+(f.confidence?' — '+f.confidence+'/5 confidence':''));
-    });
-    if(signals.length>4)lines.push('  + '+(signals.length-4)+' more signal'+(signals.length-4!==1?'s':''));
-    lines.push('');
-  }
-  if(watches.length){
-    lines.push('🟡 WORTH WATCHING ('+watches.length+'):');
-    watches.slice(0,3).forEach(function(f){
-      lines.push('• '+f.title+(f.domain?' ['+f.domain+']':''));
-    });
-    if(watches.length>3)lines.push('  + '+(watches.length-3)+' more');
-    lines.push('');
-  }
-  var domains=[...new Set(findings.map(function(f){return f.domain;}).filter(Boolean))];
-  if(domains.length)lines.push('Domains covered: '+domains.join(' · '));
-  lines.push('');
-  lines.push('Full findings + TRL trajectories at ynot.now — free, open, no vendor bias.');
-  lines.push('');
-  lines.push('#InsurTech #InsuranceAI #AIIntelligence #Insurance #YNOTNOW');
-  return lines.join('\n');
-}
-
-function renderWeeklyPulse(findingsData){
+function renderWeeklyPulse(){
   var el=document.getElementById('pulseContent');
   if(!el)return;
-  el.innerHTML='<div class="pulse-loading">Loading digest…</div>';
-  fetch('/api/digest')
+  el.innerHTML='<div class="pulse-loading">Loading briefing…</div>';
+  fetch('/api/pulse')
     .then(function(r){return r.json();})
     .then(function(data){
       var posts=data.posts||[];
-      if(posts.length){
-        // Claude-written digest posts from weekly_posts table
-        el.innerHTML=posts.map(function(post,i){
-          var d=new Date(post.run_date+'T12:00:00Z');
-          var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-          var label=i===0?'Latest · Week of '+dateStr:'Previous · Week of '+dateStr;
-          var uid='pulse-copy-'+i;
-          return'<div class="pulse-week">'
-            +'<div class="pulse-week-header">'
-            +'<div class="pulse-week-left">'
-            +'<div class="pulse-week-label">'+label+'</div>'
-            +'</div>'
-            +'<button class="pulse-copy-btn" id="'+uid+'" onclick="copyPulse(\''+uid+'\','+i+')">Copy for LinkedIn</button>'
-            +'</div>'
-            +'<div class="pulse-week-body" id="pulse-body-'+i+'">'+escHtml(post.post_text)+'</div>'
-            +'<div class="pulse-week-note">Paste directly into the YNOT.NOW LinkedIn page · ynot.now</div>'
-            +'</div>';
-        }).join('');
+      if(!posts.length){
+        el.innerHTML='<div class="pulse-empty">'
+          +'<div class="pulse-empty-title">First briefing coming Monday.</div>'
+          +'<div class="pulse-empty-sub">The eight agents run every Monday at 6am UTC.</div>'
+          +'</div>';
         return;
       }
-      // Fallback: generate highlights from findings data already loaded
-      if(findingsData&&(findingsData.findings||findingsData.prev_findings)){
-        var cards=[];
-        var curr=buildFindingsDigest(findingsData.findings,findingsData.run_date);
-        if(curr){
-          var d0=new Date((findingsData.run_date||'')+'T12:00:00Z');
-          var ds0=isNaN(d0)?'Latest':d0.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-          cards.push({label:'Latest · Week of '+ds0,text:curr,id:'pulse-body-0',btnId:'pulse-copy-0'});
-        }
-        var prev=buildFindingsDigest(findingsData.prev_findings,findingsData.prev_run_date);
-        if(prev){
-          var d1=new Date((findingsData.prev_run_date||'')+'T12:00:00Z');
-          var ds1=isNaN(d1)?'Previous week':d1.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-          cards.push({label:'Previous · Week of '+ds1,text:prev,id:'pulse-body-1',btnId:'pulse-copy-1'});
-        }
-        if(cards.length){
-          el.innerHTML=cards.map(function(c){
-            return'<div class="pulse-week">'
-              +'<div class="pulse-week-header">'
-              +'<div class="pulse-week-left">'
-              +'<div class="pulse-week-label">'+c.label+'</div>'
-              +'</div>'
-              +'<button class="pulse-copy-btn" id="'+c.btnId+'" onclick="copyPulse(\''+c.btnId+'\',\''+c.id+'\')">Copy for LinkedIn</button>'
-              +'</div>'
-              +'<div class="pulse-week-body" id="'+c.id+'">'+escHtml(c.text)+'</div>'
-              +'<div class="pulse-week-note">Paste directly into the YNOT.NOW LinkedIn page · ynot.now</div>'
-              +'</div>';
-          }).join('');
-          return;
-        }
-      }
-      el.innerHTML='<div class="pulse-empty">'
-        +'<div class="pulse-empty-title">First digest coming Monday.</div>'
-        +'<div class="pulse-empty-sub">The eight agents run every Monday at 6am UTC — their summary will appear here.</div>'
-        +'</div>';
+      el.innerHTML=posts.map(function(post,i){
+        var d=new Date(post.run_date+'T12:00:00Z');
+        var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+        var label=i===0?'Latest · Week of '+dateStr:'Previous · Week of '+dateStr;
+        return'<div class="pulse-week">'
+          +'<div class="pulse-week-header">'
+          +'<div class="pulse-week-left">'
+          +'<div class="pulse-week-label">'+label+'</div>'
+          +'</div>'
+          +'</div>'
+          +'<div class="pulse-week-body">'+escHtml(post.post_text)+'</div>'
+          +'</div>';
+      }).join('');
     })
     .catch(function(){
-      el.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load digest — try refreshing.</div></div>';
+      el.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load briefing — try refreshing.</div></div>';
     });
 }
 
@@ -1584,22 +1507,8 @@ function escHtml(s){
   return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function copyPulse(btnId,idx){
-  // idx can be numeric (digest posts) or a full element id string (fallback)
-  var bodyId=typeof idx==='number'?'pulse-body-'+idx:idx;
-  var body=document.getElementById(bodyId);
-  if(!body)return;
-  var text=body.textContent||body.innerText||'';
-  navigator.clipboard.writeText(text).then(function(){
-    var btn=document.getElementById(btnId);
-    if(!btn)return;
-    btn.textContent='Copied ✓';
-    btn.classList.add('copied');
-    setTimeout(function(){btn.textContent='Copy for LinkedIn';btn.classList.remove('copied');},2500);
-  }).catch(function(){});
-}
-
 init();
+renderWeeklyPulse();
 
 // ── VISITOR COUNTER ──
 (function(){

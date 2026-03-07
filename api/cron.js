@@ -298,23 +298,21 @@ async function generateWeeklyDigest(findings, runDate) {
     return f.mind_icon + ' ' + f.mind_name + ': ' + f.title;
   }).join('\n');
 
+  var allLines = findings.map(function(f){
+    return '[' + f.verdict + '] ' + (f.mind_name||f.mind_id) + ' (' + f.domain + '): ' + f.title + ' — ' + (f.body||'').slice(0,200);
+  }).join('\n\n');
+
   var prompt =
-    'Write a weekly LinkedIn digest post for YNOT.NOW — an independent AI intelligence platform for the insurance industry.\n\n' +
-    'Week of ' + runDate + '\n\n' +
-    'SIGNALS (' + signals.length + ' confirmed):\n' + signalLines + '\n\n' +
-    (watchLines ? 'WATCHING:\n' + watchLines + '\n\n' : '') +
-    (noiseLines ? 'NOISE CALLED OUT:\n' + noiseLines + '\n\n' : '') +
-    'Requirements:\n' +
-    '- Open with one sharp sentence capturing the most important signal this week\n' +
-    '- Write in plain English — no jargon, accessible to any insurance professional\n' +
-    '- Cover each SIGNAL finding in 1-2 sentences: what it is, why it matters\n' +
-    '- Briefly mention key WATCH findings as "ones to track"\n' +
-    '- Call out any NOISE findings in one line — what isn\'t living up to the hype\n' +
-    '- End with: "Full report → ynot.now"\n' +
-    '- Add 4-5 hashtags: always #InsurTech #AI #Insurance, plus 2 topical ones\n' +
-    '- Keep total under 1300 characters\n' +
-    '- Tone: sharp, authoritative, evidence-first — like a trusted analyst, not a marketer\n' +
-    '- Return ONLY the post text — no preamble, no markdown, no explanation';
+    'You are the executive intelligence synthesis agent for YNOT.NOW — an independent technology signal platform for the insurance industry, tracking all emerging technology.\n\n' +
+    'Week of ' + runDate + '. Eight specialist agents completed their scan. Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
+    'ALL FINDINGS:\n' + allLines + '\n\n' +
+    'Write a concise executive-level weekly briefing:\n' +
+    '- Open with 1-2 sentences naming the dominant theme or most important shift this week\n' +
+    '- Synthesise what happened across domains as a coherent narrative — not finding-by-finding\n' +
+    '- Highlight the development with the greatest near-term implication for insurance leaders\n' +
+    '- Surface any meaningful pattern: convergence across signals, contradictions, acceleration or stalling\n' +
+    '- Close with one forward-looking sentence on what to watch next\n\n' +
+    'Tone: sharp, authoritative — like a trusted analyst briefing a board. Plain English. No bullet points. No hashtags. No markdown. 3-4 short paragraphs. Return only the briefing text.';
 
   var res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -326,7 +324,7 @@ async function generateWeeklyDigest(findings, runDate) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 700,
-      system: 'You write concise, authoritative LinkedIn posts for an insurance AI intelligence platform. You write for insurance professionals — clear, direct, evidence-first. Return only the post text.',
+      system: 'You write concise executive intelligence briefings for insurance industry leaders. Plain prose, no formatting, no bullet points.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
