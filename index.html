@@ -305,25 +305,32 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .lab-last-updated{font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;color:var(--mid);margin-top:-16px;margin-bottom:28px;opacity:.65;}
 .lab-summary{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);margin-bottom:16px;}
 .lab-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);}
-.pulse-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:32px;margin-top:8px;}
-.pulse-run{background:var(--white);border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;}
-.pulse-run-header{padding:20px 24px 16px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;gap:12px;}
-.pulse-run-date{font-family:var(--ff-serif);font-size:20px;letter-spacing:-.01em;color:var(--ink);}
-.pulse-run-meta{font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);}
-.pulse-agents{padding:16px 24px 20px;display:flex;flex-direction:column;gap:16px;}
-.pulse-agent{display:flex;flex-direction:column;gap:6px;}
-.pulse-agent-name{font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);display:flex;align-items:center;gap:6px;}
-.pulse-finding{padding:10px 14px;background:var(--off);border-radius:6px;border-left:3px solid var(--rule);}
-.pulse-finding.signal{border-left-color:#2a7a2a;}
-.pulse-finding.watch{border-left-color:#b87c1a;}
-.pulse-finding.noise{border-left-color:#c04040;}
-.pulse-finding-title{font-size:13px;color:var(--ink);line-height:1.45;font-weight:500;}
-.pulse-finding-verdict{font-family:var(--ff-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-top:4px;}
-.pulse-finding-verdict.signal{color:#2a7a2a;}
-.pulse-finding-verdict.watch{color:#b87c1a;}
-.pulse-finding-verdict.noise{color:#c04040;}
+.pulse-stack{display:flex;flex-direction:column;gap:40px;margin-top:8px;}
+.pulse-week{background:var(--white);border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;}
+.pulse-week-header{padding:24px 28px 20px;border-bottom:1px solid var(--rule);}
+.pulse-week-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+.pulse-week-date{font-family:var(--ff-serif);font-size:26px;letter-spacing:-.02em;color:var(--ink);margin-bottom:14px;}
+.pulse-week-stats{display:flex;gap:10px;flex-wrap:wrap;}
+.pw-stat{font-family:var(--ff-mono);font-size:11px;letter-spacing:.04em;padding:4px 12px;border-radius:100px;border:1px solid;}
+.pw-stat.signal{color:#2a7a2a;border-color:#b3dab3;background:#f0faf0;}
+.pw-stat.watch{color:#8a5c10;border-color:#e0c87a;background:#fdf8ec;}
+.pw-stat.noise{color:#8a2020;border-color:#e0aaaa;background:#fdf0f0;}
+.pw-stat.total{color:var(--mid);border-color:var(--rule);background:var(--off);}
+.pulse-week-body{padding:20px 28px 24px;display:flex;flex-direction:column;gap:12px;}
+.pw-row{display:flex;gap:14px;align-items:flex-start;padding:12px 14px;border-radius:8px;background:var(--off);}
+.pw-row.signal{border-left:3px solid #4ade80;}
+.pw-row.watch{border-left:3px solid #f59e0b;}
+.pw-row.noise{border-left:3px solid #ef4444;}
+.pw-agent{font-size:18px;flex-shrink:0;margin-top:1px;}
+.pw-content{flex:1;min-width:0;}
+.pw-title{font-size:14px;font-weight:500;color:var(--ink);line-height:1.45;margin-bottom:4px;}
+.pw-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.pw-verdict{font-family:var(--ff-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:100px;}
+.pw-verdict.signal{color:#2a7a2a;background:#e6f7e6;}
+.pw-verdict.watch{color:#8a5c10;background:#fdf3d0;}
+.pw-verdict.noise{color:#8a2020;background:#fde8e8;}
+.pw-mind{font-family:var(--ff-mono);font-size:10px;color:var(--mid);}
 .pulse-loading{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);padding:40px 0;}
-@media(max-width:600px){.pulse-grid{grid-template-columns:1fr;}}
 .pg-btn{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;padding:9px 22px;border:1.5px solid var(--rule);border-radius:100px;background:var(--white);color:var(--ink);cursor:pointer;transition:all .15s;}
 .pg-btn:hover:not([disabled]){border-color:var(--ink);background:var(--off);}
 .pg-btn[disabled]{opacity:.3;cursor:default;}
@@ -539,6 +546,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <a class="nav-a" href="#who">Who it's for</a>
       <a class="nav-a" href="#minds">AI Agents</a>
       <a class="nav-a" href="#lab">Signal Lab</a>
+      <a class="nav-a" href="#pulse">Weekly Pulse</a>
       <a class="nav-a" href="#about">About</a>
     </div>
     <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Open menu" aria-expanded="false">☰</button>
@@ -556,6 +564,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
   <a class="mm-a" href="#lab" onclick="closeMobileMenu()">Findings</a>
   <a class="mm-sub" href="#history" onclick="closeMobileMenu()">↳ Signal History</a>
   <a class="mm-sub" href="#regional" onclick="closeMobileMenu()">↳ Regional Intelligence</a>
+  <a class="mm-a" href="#pulse" onclick="closeMobileMenu()">Weekly Pulse</a>
   <div class="mm-section">More</div>
   <a class="mm-a" href="#about" onclick="closeMobileMenu()">About</a>
 </div>
@@ -808,7 +817,6 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 
     <div class="lab-nav">
       <a class="lab-nav-a on" href="#lab">Findings</a>
-      <a class="lab-nav-a" href="#pulse">Weekly Pulse</a>
       <a class="lab-nav-a" href="#history">Signal History</a>
       <a class="lab-nav-a" href="#regional">Regional Intelligence</a>
     </div>
@@ -979,7 +987,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
     <div class="eyebrow">Weekly Pulse</div>
     <h2 class="section-h2">What the agents found<br><em>this week.</em></h2>
     <p class="section-intro">A digest of signals from the last two Monday runs — grouped by agent, updated automatically every week.</p>
-    <div id="pulseContent" class="pulse-grid">
+    <div id="pulseContent" class="pulse-stack">
       <div class="pulse-loading">Loading weekly pulse…</div>
     </div>
   </div>
@@ -1482,48 +1490,45 @@ function renderWeeklyPulse(data){
   var el=document.getElementById('pulseContent');
   if(!el)return;
   var runs=[];
-  if(data.findings&&data.findings.length){
-    runs.push({date:data.run_date,findings:data.findings});
-  }
-  if(data.prev_findings&&data.prev_findings.length){
-    runs.push({date:data.prev_run_date,findings:data.prev_findings});
-  }
+  if(data.findings&&data.findings.length)runs.push({date:data.run_date,findings:data.findings,label:'Latest run'});
+  if(data.prev_findings&&data.prev_findings.length)runs.push({date:data.prev_run_date,findings:data.prev_findings,label:'Previous run'});
   if(!runs.length){el.innerHTML='<div class="pulse-loading">No runs yet — check back after Monday.</div>';return;}
 
-  var MIND_ORDER=['scout','vita','atlas','prism','null','weave','deploy','faro'];
-  var MIND_ICONS={scout:'🔭',vita:'🧬',atlas:'🌍',prism:'💎','null':'⚔️',weave:'🕸️',deploy:'🚀',faro:'🔦'};
-  var MIND_NAMES={scout:'Scout',vita:'Vita',atlas:'Atlas',prism:'Prism','null':'Null',weave:'Weave',deploy:'Deploy',faro:'Faro'};
+  var ICONS={scout:'🔭',vita:'🧬',atlas:'🌍',prism:'💎','null':'⚔️',weave:'🕸️',deploy:'🚀',faro:'🔦'};
+  var NAMES={scout:'Scout',vita:'Vita',atlas:'Atlas',prism:'Prism','null':'Null',weave:'Weave',deploy:'Deploy',faro:'Faro'};
 
-  el.innerHTML=runs.map(function(run,i){
+  el.innerHTML=runs.map(function(run){
     var d=new Date(run.date+'T12:00:00Z');
     var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-    var signals=run.findings.filter(function(f){return f.verdict==='SIGNAL';}).length;
-    var label=i===0?'Latest run':'Previous run';
+    var sig=run.findings.filter(function(f){return f.verdict==='SIGNAL';}).length;
+    var wat=run.findings.filter(function(f){return f.verdict==='WATCH';}).length;
+    var noi=run.findings.filter(function(f){return f.verdict==='NOISE';}).length;
 
-    var agentBlocks=MIND_ORDER.map(function(mid){
-      var mFindings=run.findings.filter(function(f){return f.mind_id===mid;});
-      if(!mFindings.length)return'';
-      var icon=MIND_ICONS[mid]||'';
-      var name=MIND_NAMES[mid]||mid;
-      var cards=mFindings.map(function(f){
-        var v=(f.verdict||'').toLowerCase();
-        return'<div class="pulse-finding '+v+'">'
-          +'<div class="pulse-finding-title">'+f.title+'</div>'
-          +'<div class="pulse-finding-verdict '+v+'">'+f.verdict+'</div>'
-          +'</div>';
-      }).join('');
-      return'<div class="pulse-agent">'
-        +'<div class="pulse-agent-name">'+icon+' '+name+'</div>'
-        +cards
-        +'</div>';
+    var rows=run.findings.map(function(f){
+      var v=(f.verdict||'').toLowerCase();
+      var icon=ICONS[f.mind_id]||'';
+      var name=NAMES[f.mind_id]||f.mind_name||f.mind_id;
+      return'<div class="pw-row '+v+'">'
+        +'<div class="pw-agent">'+icon+'</div>'
+        +'<div class="pw-content">'
+        +'<div class="pw-title">'+f.title+'</div>'
+        +'<div class="pw-meta">'
+        +'<span class="pw-verdict '+v+'">'+f.verdict+'</span>'
+        +'<span class="pw-mind">'+name+'</span>'
+        +'</div></div></div>';
     }).join('');
 
-    return'<div class="pulse-run">'
-      +'<div class="pulse-run-header">'
-      +'<div class="pulse-run-date">Week of '+dateStr+'</div>'
-      +'<div class="pulse-run-meta">'+label+' · '+signals+' signal'+(signals!==1?'s':'')+' · '+run.findings.length+' total</div>'
-      +'</div>'
-      +'<div class="pulse-agents">'+agentBlocks+'</div>'
+    return'<div class="pulse-week">'
+      +'<div class="pulse-week-header">'
+      +'<div class="pulse-week-label">'+run.label+'</div>'
+      +'<div class="pulse-week-date">Week of '+dateStr+'</div>'
+      +'<div class="pulse-week-stats">'
+      +(sig?'<span class="pw-stat signal">'+sig+' Signal'+(sig!==1?'s':'')+'</span>':'')
+      +(wat?'<span class="pw-stat watch">'+wat+' Watch</span>':'')
+      +(noi?'<span class="pw-stat noise">'+noi+' Noise</span>':'')
+      +'<span class="pw-stat total">'+run.findings.length+' total</span>'
+      +'</div></div>'
+      +'<div class="pulse-week-body">'+rows+'</div>'
       +'</div>';
   }).join('');
 }
