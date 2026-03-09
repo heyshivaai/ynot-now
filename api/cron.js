@@ -1,558 +1,148 @@
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const CRON_SECRET = process.env.CRON_SECRET;
+'use strict';
+var ANTHROPIC_KEY = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY || '';
+var SUPABASE_URL  = process.env.SUPABASE_URL  || '';
+var SUPABASE_KEY  = process.env.SUPABASE_KEY  || process.env.SUPABASE_SERVICE_KEY || '';
+var CRON_SECRET   = process.env.CRON_SECRET   || 'ynot-secret-2025';
+var TAVILY_KEY    = process.env.TAVILY_API_KEY || '';
+var CLAUDE_MODEL  = 'claude-sonnet-4-20250514';
 
-function normalizeVerdict(v){v=(v||'').toUpperCase();if(v.indexOf('SIGNAL')>=0)return 'SIGNAL';if(v.indexOf('NOISE')>=0)return 'NOISE';return 'WATCH';}
-function normalizeRisk(r){r=(r||'').toLowerCase();if(r.indexOf('high')>=0)return 'high';if(r.indexOf('low')>=0)return 'low';return 'medium';}
-function clamp(v,a,b){var n=parseInt(v);return isNaN(n)?3:Math.min(b,Math.max(a,n));}
-const MINDS = [
-  { id:'scout', name:'Scout', icon:'🔭', domain:'P&C', prompt:`Find 3 AI innovations in P&C insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"Computer Vision Claims","verdict":"SIGNAL","body":"CV models assess damage from photos with 94% accuracy.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC AI Working Group","url":"https://content.naic.org/cipr-topics/artificial-intelligence"}]}]` },
-  { id:'vita', name:'Vita', icon:'🧬', domain:'Life', prompt:`Find 3 AI innovations in Life insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"AI Underwriting","verdict":"SIGNAL","body":"LLM underwriting cuts decision time from weeks to minutes.","confidence":5,"domain":"Life","subdomain":"Underwriting","experiment":"test hypothesis","trl":8,"regulatoryRisk":"medium","refs":[{"label":"NAIC Life AI Model Regulation","url":"https://content.naic.org/cipr-topics/artificial-intelligence"}]}]` },
-  { id:'atlas', name:'Atlas', icon:'🌍', domain:'Reinsurance', prompt:`Find 3 AI innovations in reinsurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"ML Cat Models","verdict":"SIGNAL","body":"ML improves cat loss estimates by 30%.","confidence":4,"domain":"Reinsurance","subdomain":"Cat Modeling","experiment":"test hypothesis","trl":7,"regulatoryRisk":"low","refs":[{"label":"Geneva Association Climate Risk","url":"https://www.genevaassociation.org/research-topics/climate-change-and-emerging-environmental-topics"}]}]` },
-  { id:'prism', name:'Prism', icon:'💎', domain:'Horizontal', maxTokens:2800, prompt:`You are Prism 💎, YNOT.NOW's Horizontal Technology Scanner for the insurance industry. Your job is to find technology shifts happening across enterprise IT broadly, then surface the insurance-specific implication or deployment.
-
-SCAN THESE CATEGORIES every run — look for news, releases, deployments, research, and VC signals in each:
-
-1. AI-ASSISTED DEVELOPMENT — Vibe coding, AI code editors (Cursor, Copilot, Windsurf), low-code AI builders, prompt-to-app tools, how insurers/actuaries/ops teams are building internal tools faster
-2. AGENTIC AI — Multi-agent orchestration, autonomous AI workflows, agent frameworks (LangGraph, AutoGen, CrewAI), agentic RPA replacing traditional automation
-3. FOUNDATION MODELS & LLMS — New model releases with enterprise relevance, fine-tuning for FS/insurance, multimodal models applied to documents/images/voice in insurance workflows
-4. COPILOT-IN-EVERYTHING — Microsoft 365 Copilot, Salesforce Einstein, ServiceNow AI, SAP AI — enterprise platform AI embeds that insurers already run
-5. SYNTHETIC DATA — Generation for training, privacy-preserving data sharing, regulatory acceptance, synthetic claims/policy data use cases
-6. REAL-TIME DECISIONING — Streaming ML inference, event-driven architectures, real-time underwriting/fraud/pricing engines
-7. MODEL RISK & AI GOVERNANCE — Model cards, audit trails, EU AI Act compliance tooling, SR 11-7 updates, bias detection, explainability in regulated contexts
-8. DATA INFRASTRUCTURE — Vector databases, RAG architectures, knowledge graphs, data mesh, lakehouse patterns applied to insurance data estates
-9. POST-QUANTUM CRYPTOGRAPHY — NIST PQC standards progress, migration timelines, carrier/reinsurer readiness
-10. DIGITAL TWINS & SIMULATION — Physical and process twins in risk modelling, catastrophe simulation, actuarial scenario modelling
-11. FEDERATED LEARNING — Privacy-preserving ML across carrier consortia, regulatory data-sharing implications
-12. EDGE AI & IOT INTELLIGENCE — Telematics evolution, smart building sensors, wearables, connected vehicle data for underwriting
-
-COVERAGE RULES:
-- Return exactly 6 findings
-- Cover at least 5 different categories from the list above — do not return more than 2 findings from the same category
-- Prioritise categories that are underrepresented in recent coverage: Synthetic Data, Post-Quantum Cryptography, Digital Twins, Federated Learning, Edge AI & IoT, Real-Time Decisioning
-- For EACH finding: state the broader enterprise tech development first (what is happening globally), then state the specific insurance application, implication, or risk
-- Cite a real, verifiable source — prefer sources from the live data provided
-- Be honest about readiness: most horizontal tech is Experiment or Pilot stage in insurance even if Proven elsewhere
-
-Use domain: "Horizontal" and subdomain from: Agentic AI | AI Dev Tooling | Foundation Models | Enterprise Copilots | Synthetic Data | Real-Time Decisioning | Model Risk & Governance | Data Infrastructure | Post-Quantum Cryptography | Digital Twins | Federated Learning | Edge AI & IoT
-
-Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a valid JSON array: [{"title":"Vibe Coding Enters the Carrier Back Office","verdict":"WATCH","body":"AI-assisted dev tools crossing 1M enterprise seats, insurers building shadow tooling.","confidence":3,"domain":"Horizontal","subdomain":"AI Dev Tooling","experiment":"Audit one business unit for shadow AI tooling","trl":5,"regulatoryRisk":"medium","refs":[{"label":"GitHub Copilot Enterprise","url":"https://github.blog/news-insights/product-news/github-copilot-the-agent-awakens/"}]}]` },
-  { id:'null', name:'Null', icon:'⚔️', domain:'All', prompt:`Find 3 overhyped AI claims in insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"Blockchain Claims","verdict":"NOISE","body":"No major carrier deployed blockchain claims at scale.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":3,"regulatoryRisk":"low","refs":[{"label":"FCA Innovation Hub","url":"https://www.fca.org.uk/firms/innovation"}]}]` },
-  { id:'weave', name:'Weave', icon:'🕸️', domain:'All', prompt:`Find 3 second-order AI effects in insurance. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"Synthetic Data Democratisation","verdict":"SIGNAL","body":"Synthetic data lets small carriers compete.","confidence":4,"domain":"Horizontal","subdomain":"Data","experiment":"test hypothesis","trl":6,"regulatoryRisk":"medium","refs":[{"label":"EIOPA Digital Transformation","url":"https://www.eiopa.europa.eu/digital-transformation_en"}]}]` },
-  { id:'deploy', name:'Deploy', icon:'🚀', domain:'All', prompt:`Find 3 AI solutions proven at scale today. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"NLP FNOL Automation","verdict":"SIGNAL","body":"NLP automates 60-80% of FNOL intake with ROI under 18 months.","confidence":5,"domain":"P&C","subdomain":"Claims","experiment":"test hypothesis","trl":9,"regulatoryRisk":"low","refs":[{"label":"NAIC AI in Claims","url":"https://content.naic.org/cipr-topics/artificial-intelligence"}]}]` },
-  { id:'faro', name:'Faro', icon:'🔦', domain:'All', prompt:`Find 3 emerging insurance AI signals for 18-36 months. Every ref must be a real, existing URL — never example.com or invented paths. Return ONLY a JSON array: [{"title":"Actuarial Foundation Models","verdict":"WATCH","body":"LLMs fine-tuned on actuarial data showing early promise.","confidence":3,"domain":"Life","subdomain":"Actuarial","experiment":"test hypothesis","trl":4,"regulatoryRisk":"high","refs":[{"label":"arXiv","url":"https://arxiv.org"}]}]` }
+var MINDS = [
+  { id:'scout', name:'Scout', icon:'Scout', domain:'P&C', brief:'You are Scout, a specialist in P&C insurance AI. Find the most significant AI developments in property and casualty insurance this week: fraud detection, underwriting automation, claims processing, telematics, catastrophe modelling.', querySeeds:['AI fraud detection insurance 2026','P&C underwriting automation machine learning','claims AI automation property casualty','telematics AI underwriting 2026'] },
+  { id:'vita', name:'Vita', icon:'Vita', domain:'Life', brief:'You are Vita, a specialist in Life and Health insurance AI. Find the most significant AI developments in life insurance, health insurance, and longevity risk this week: mortality prediction, personalised underwriting, wearables, actuarial ML.', querySeeds:['life insurance AI underwriting 2026','health insurance AI claims automation','longevity risk machine learning actuarial','wearables insurance underwriting data'] },
+  { id:'lex', name:'Lex', icon:'Lex', domain:'Regulation', brief:'You are Lex, a specialist in insurance AI regulation. Find the most significant regulatory developments affecting AI in insurance this week: FCA, EIOPA, NAIC, EU AI Act, IAIS, model risk governance, explainability requirements.', querySeeds:['FCA AI insurance regulation 2026','EU AI Act insurance compliance','EIOPA digital transformation insurance','NAIC AI model risk governance explainability'] },
+  { id:'terra', name:'Terra', icon:'Terra', domain:'Climate', brief:'You are Terra, a specialist in climate risk and ESG for insurance. Find the most significant AI and data science developments in climate risk modelling, parametric insurance, ESG underwriting, and catastrophe prediction this week.', querySeeds:['climate risk AI insurance 2026','parametric insurance AI machine learning','ESG underwriting data analytics','catastrophe prediction AI model flood'] },
+  { id:'horizon', name:'Horizon', icon:'Horizon', domain:'Horizontal', brief:'You are Horizon, a specialist in horizontal enterprise AI with insurance implications. Find the most significant developments in foundation models, agentic AI, synthetic data, federated learning, post-quantum cryptography, and real-time decisioning that will impact insurance carriers this week.', querySeeds:['agentic AI enterprise insurance 2026','foundation model insurance applications','synthetic data insurance privacy federated learning','post-quantum cryptography financial services insurance'] }
 ];
 
-// ─── LIVE SOURCE FETCHER ────────────────────────────────────────────────────
-async function fetchLiveSources() {
-  const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
-  const safeFetch = async (url, opts) => {
-    try { return await Promise.race([fetch(url, opts || {}), timeout(6000)]); }
-    catch(e) { return null; }
-  };
-  const sources = {};
+function normalizeVerdict(v){var u=String(v||'').toUpperCase();if(u==='SIGNAL')return 'SIGNAL';if(u==='NOISE')return 'NOISE';return 'WATCH';}
+function normalizeRisk(r){var l=String(r||'').toLowerCase();if(l==='low')return 'low';if(l==='high')return 'high';return 'medium';}
 
-  try {
-    const hn = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=AI+insurance+enterprise&hitsPerPage=10&numericFilters=created_at_i>'+Math.floor((Date.now()-7*86400000)/1000));
-    if (hn) { const d = await hn.json(); sources.hackerNews = (d.hits||[]).map(h=>`${h.title} — ${h.url||''}`).join('\n'); }
-  } catch(e) { sources.hackerNews = ''; }
-
-  try {
-    const a = await safeFetch('https://export.arxiv.org/api/query?search_query=all:insurance+AND+all:machine+learning&sortBy=submittedDate&sortOrder=descending&max_results=8');
-    if (a) { const xml = await a.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const s=[...xml.matchAll(/<summary>([\s\S]*?)<\/summary>/g)].map(m=>m[1].trim().substring(0,200)); sources.arxiv=t.map((ti,i)=>`${ti}: ${s[i]||''}`).join('\n'); }
-  } catch(e) { sources.arxiv = ''; }
-
-  try {
-    const a2 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:agentic+AI+OR+all:LLM+enterprise&sortBy=submittedDate&sortOrder=descending&max_results=6');
-    if (a2) { const xml = await a2.text(); sources.arxivHorizontal=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()).join('\n'); }
-  } catch(e) { sources.arxivHorizontal = ''; }
-
-  try {
-    const hn2 = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=insurtech+underwriting+claims+AI&hitsPerPage=8&numericFilters=created_at_i>'+Math.floor((Date.now()-7*86400000)/1000));
-    if (hn2) { const d = await hn2.json(); sources.hackerNewsInsurtech=(d.hits||[]).map(h=>`${h.title} — ${h.url||''}`).join('\n'); }
-  } catch(e) { sources.hackerNewsInsurtech = ''; }
-
-  try {
-    const gh = await safeFetch('https://gh-trending-api.deno.dev/repositories?language=&since=weekly');
-    if (gh && gh.ok) { const d = await gh.json(); sources.githubTrending=(d||[]).slice(0,10).map(r=>`${r.name}: ${r.description||''}`).join('\n'); }
-  } catch(e) { sources.githubTrending = ''; }
-
-  try {
-    const a3 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:climate+risk+insurance+OR+all:catastrophe+model+OR+all:parametric+insurance&sortBy=submittedDate&sortOrder=descending&max_results=6');
-    if (a3) { const xml = await a3.text(); sources.arxivClimate=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()).join('\n'); }
-  } catch(e) { sources.arxivClimate = ''; }
-
-  try {
-    const a4 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:longevity+risk+OR+all:actuarial+machine+learning+OR+all:mortality+prediction&sortBy=submittedDate&sortOrder=descending&max_results=6');
-    if (a4) { const xml = await a4.text(); sources.arxivLife=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()).join('\n'); }
-  } catch(e) { sources.arxivLife = ''; }
-
-  try {
-    const hn3 = await safeFetch('https://hn.algolia.com/api/v1/search?tags=story&query=post+quantum+cryptography+OR+AI+governance+OR+model+risk&hitsPerPage=6&numericFilters=created_at_i>'+Math.floor((Date.now()-14*86400000)/1000));
-    if (hn3) { const d = await hn3.json(); sources.hackerNewsSecurity=(d.hits||[]).map(h=>`${h.title} — ${h.url||''}`).join('\n'); }
-  } catch(e) { sources.hackerNewsSecurity = ''; }
-
-  // arXiv — synthetic data + federated learning
-  try {
-    const a5 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:federated+AND+all:learning+OR+all:synthetic+AND+all:data+AND+all:privacy&sortBy=submittedDate&sortOrder=descending&max_results=6');
-    if (a5) { const xml = await a5.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivSynthetic=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
-  } catch(e) { sources.arxivSynthetic = ''; }
-
-  // arXiv — post-quantum cryptography
-  try {
-    const a6 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:post-quantum+AND+all:cryptography&sortBy=submittedDate&sortOrder=descending&max_results=5');
-    if (a6) { const xml = await a6.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https?:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivPqc=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
-  } catch(e) { sources.arxivPqc = ''; }
-
-  // arXiv — digital twins + edge AI + IoT
-  try {
-    const a7 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:digital+AND+all:twin+AND+all:simulation+OR+all:edge+AND+all:computing+AND+all:inference&sortBy=submittedDate&sortOrder=descending&max_results=6');
-    if (a7) { const xml = await a7.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https?:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivEdgeDigital=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
-  } catch(e) { sources.arxivEdgeDigital = ''; }
-
-  // arXiv — RAG, vector DBs, streaming ML inference
-  try {
-    const a8 = await safeFetch('https://export.arxiv.org/api/query?search_query=all:retrieval+AND+all:augmented+AND+all:generation+OR+all:vector+AND+all:database+AND+all:embedding&sortBy=submittedDate&sortOrder=descending&max_results=5');
-    if (a8) { const xml = await a8.text(); const t=[...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)].slice(1).map(m=>m[1].trim()); const ids=[...xml.matchAll(/<id>(https?:\/\/arxiv\.org\/abs\/[^<]+)<\/id>/g)].map(m=>m[1].trim().replace('http://arxiv','https://arxiv')); sources.arxivDataInfra=t.map((ti,i)=>`${ti} — ${ids[i]||'https://arxiv.org'}`).join('\n'); }
-  } catch(e) { sources.arxivDataInfra = ''; }
-
-  // NIST — AI standards, PQC, cybersecurity publications
-  try {
-    const nist = await safeFetch('https://www.nist.gov/news-events/news/rss.xml');
-    if (nist) {
-      const xml = await nist.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 8);
-      sources.nistNews = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.nistNews = ''; }
-
-  // dev.to — AI development articles (free API, no auth)
-  try {
-    const dev = await safeFetch('https://dev.to/api/articles?tag=ai&per_page=8&state=rising');
-    if (dev) {
-      const d = await dev.json();
-      sources.devTo = (d||[]).map(a => `${a.title} — ${a.url}`).join('\n');
-    }
-  } catch(e) { sources.devTo = ''; }
-
-  // OpenAlex — insurance AI academic papers with real DOI URLs
-  try {
-    const oa = await safeFetch('https://api.openalex.org/works?search=insurance+artificial+intelligence&sort=publication_date:desc&per-page=8&select=title,doi,open_access&mailto=hello@ynot.now');
-    if (oa) {
-      const d = await oa.json();
-      sources.openAlex = (d.results||[]).map(p => {
-        const url = p.doi || (p.open_access && p.open_access.oa_url) || '';
-        return url ? `${p.title} — ${url}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.openAlex = ''; }
-
-  // Federal Register — US insurance AI regulation filings
-  try {
-    const fr = await safeFetch('https://www.federalregister.gov/api/v1/articles.json?conditions[term]=insurance+artificial+intelligence&per_page=6&order=newest&fields[]=title&fields[]=html_url&fields[]=publication_date');
-    if (fr) {
-      const d = await fr.json();
-      sources.federalRegister = (d.results||[]).map(a => `${a.title} — ${a.html_url}`).join('\n');
-    }
-  } catch(e) { sources.federalRegister = ''; }
-
-  // FCA RSS — UK regulatory news
-  try {
-    const fca = await safeFetch('https://www.fca.org.uk/news/rss.xml');
-    if (fca) {
-      const xml = await fca.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 8);
-      sources.fcaRss = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.fcaRss = ''; }
-
-  // Reddit r/insurtech — community market signal
-  try {
-    const r = await safeFetch('https://www.reddit.com/r/insurtech/new.json?limit=10', {
-      headers: { 'User-Agent': 'YNOT.NOW/1.0 insurance AI intelligence platform' }
-    });
-    if (r && r.ok) {
-      const d = await r.json();
-      sources.reddit = (d.data?.children||[]).map(p => {
-        const post = p.data;
-        const url = post.url && !post.url.includes('reddit.com') ? post.url : `https://reddit.com${post.permalink}`;
-        return `${post.title} — ${url}`;
-      }).join('\n');
-    }
-  } catch(e) { sources.reddit = ''; }
-
-  // Lloyd's of London — major reinsurance/specialty market research
-  try {
-    const lloyds = await safeFetch('https://www.lloyds.com/news-and-insights/news/rss');
-    if (lloyds) {
-      const xml = await lloyds.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
-      sources.lloyds = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.lloyds = ''; }
-
-  // Society of Actuaries (SOA) — actuarial AI research
-  try {
-    const soa = await safeFetch('https://www.soa.org/rss/');
-    if (soa) {
-      const xml = await soa.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
-      sources.soa = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.soa = ''; }
-
-  // Casualty Actuarial Society (CAS) — P&C actuarial innovation
-  try {
-    const cas = await safeFetch('https://www.casact.org/feed');
-    if (cas) {
-      const xml = await cas.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
-      sources.cas = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.cas = ''; }
-
-  // IAIS — International Association of Insurance Supervisors
-  try {
-    const iais = await safeFetch('https://www.iaisweb.org/rss/news');
-    if (iais) {
-      const xml = await iais.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
-      sources.iais = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.iais = ''; }
-
-  // EIOPA — European Insurance and Occupational Pensions Authority
-  try {
-    const eiopa = await safeFetch('https://www.eiopa.europa.eu/rss_en');
-    if (eiopa) {
-      const xml = await eiopa.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
-      sources.eiopa = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.eiopa = ''; }
-
-  // Geneva Association — global insurance think tank research
-  try {
-    const geneva = await safeFetch('https://www.genevaassociation.org/rss.xml');
-    if (geneva) {
-      const xml = await geneva.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
-      sources.genevaAssociation = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.genevaAssociation = ''; }
-
-  // BIS — Bank for International Settlements (financial stability, systemic risk)
-  try {
-    const bis = await safeFetch('https://www.bis.org/doclist/all_rss.rss');
-    if (bis) {
-      const xml = await bis.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
-      sources.bis = items.map(m => {
-        const title = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const link = (m[1].match(/<link>(https?:\/\/[^<\s]+)<\/link>/) || [])[1]?.trim() || '';
-        return title && link ? `${title} — ${link}` : '';
-      }).filter(Boolean).join('\n');
-    }
-  } catch(e) { sources.bis = ''; }
-
-  return sources;
+async function supabaseCall(method,table,body,query){
+  var url=SUPABASE_URL+'/rest/v1/'+table+(query||'');
+  var opts={method:method,headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':method==='POST'?'return=minimal':''}};
+  if(body)opts.body=JSON.stringify(body);
+  var r=await fetch(url,opts);
+  if(!r.ok){var t=await r.text().catch(function(){return '';});throw new Error('Supabase '+method+' '+table+' '+r.status+': '+t);}
+  if(method==='GET')return r.json();
+  return null;
 }
 
-function buildSourceContext(mindId, sources) {
-  const blocks = [];
-  if (sources.hackerNews) blocks.push(`=== LIVE: Hacker News AI/Enterprise Stories This Week ===\n${sources.hackerNews}`);
-  if (['scout','deploy','null','weave'].includes(mindId) && sources.hackerNewsInsurtech) blocks.push(`=== LIVE: InsurTech/Claims/Underwriting News ===\n${sources.hackerNewsInsurtech}`);
-  if (['atlas'].includes(mindId) && sources.arxivClimate) blocks.push(`=== LIVE: Recent Climate/Cat/Parametric Research Papers ===\n${sources.arxivClimate}`);
-  if (['vita'].includes(mindId) && sources.arxivLife) blocks.push(`=== LIVE: Recent Longevity/Actuarial AI Research Papers ===\n${sources.arxivLife}`);
-  if (['prism','faro'].includes(mindId)) {
-    if (sources.arxivHorizontal) blocks.push(`=== LIVE: Agentic AI / LLM Research Papers (with arXiv URLs) ===\n${sources.arxivHorizontal}`);
-    if (sources.arxivSynthetic) blocks.push(`=== LIVE: Synthetic Data & Federated Learning Papers (with arXiv URLs) ===\n${sources.arxivSynthetic}`);
-    if (sources.arxivPqc) blocks.push(`=== LIVE: Post-Quantum Cryptography Papers (with arXiv URLs) ===\n${sources.arxivPqc}`);
-    if (sources.arxivEdgeDigital) blocks.push(`=== LIVE: Digital Twins, Edge AI & IoT Papers (with arXiv URLs) ===\n${sources.arxivEdgeDigital}`);
-    if (sources.arxivDataInfra) blocks.push(`=== LIVE: RAG, Vector DB & Real-Time ML Papers (with arXiv URLs) ===\n${sources.arxivDataInfra}`);
-    if (sources.githubTrending) blocks.push(`=== LIVE: GitHub Trending Repos This Week ===\n${sources.githubTrending}`);
-    if (sources.hackerNewsSecurity) blocks.push(`=== LIVE: Security/Governance/PQC News ===\n${sources.hackerNewsSecurity}`);
-    if (sources.nistNews) blocks.push(`=== LIVE: NIST Publications (AI Standards, PQC, Cybersecurity) ===\n${sources.nistNews}`);
-    if (sources.devTo) blocks.push(`=== LIVE: dev.to Rising AI Articles ===\n${sources.devTo}`);
-  }
-  if (['scout','vita','atlas','prism'].includes(mindId) && sources.arxiv) blocks.push(`=== LIVE: Recent Insurance + ML Research Papers ===\n${sources.arxiv}`);
-  if (sources.openAlex) blocks.push(`=== LIVE: Academic Papers — Insurance AI with DOI URLs (OpenAlex) ===\n${sources.openAlex}`);
-  if (['scout','deploy','null','weave'].includes(mindId) && sources.federalRegister) blocks.push(`=== LIVE: US Federal Register — Insurance AI Regulation Filings ===\n${sources.federalRegister}`);
-  if (['null','weave','prism','atlas'].includes(mindId) && sources.fcaRss) blocks.push(`=== LIVE: FCA (UK Financial Regulator) News ===\n${sources.fcaRss}`);
-  if (['scout','null','weave','deploy'].includes(mindId) && sources.reddit) blocks.push(`=== LIVE: r/insurtech Community Signal ===\n${sources.reddit}`);
-  // New institutional sources
-  if (['atlas','scout','deploy'].includes(mindId) && sources.lloyds) blocks.push(`=== LIVE: Lloyd's of London Market Research ===\n${sources.lloyds}`);
-  if (['vita','faro','prism'].includes(mindId) && sources.soa) blocks.push(`=== LIVE: Society of Actuaries (SOA) Research ===\n${sources.soa}`);
-  if (['scout','null','deploy'].includes(mindId) && sources.cas) blocks.push(`=== LIVE: Casualty Actuarial Society (CAS) Publications ===\n${sources.cas}`);
-  if (['weave','null','prism','atlas'].includes(mindId) && sources.iais) blocks.push(`=== LIVE: IAIS Global Insurance Supervision ===\n${sources.iais}`);
-  if (['weave','null','prism','atlas'].includes(mindId) && sources.eiopa) blocks.push(`=== LIVE: EIOPA European Insurance Authority ===\n${sources.eiopa}`);
-  if (['atlas','weave','faro'].includes(mindId) && sources.genevaAssociation) blocks.push(`=== LIVE: Geneva Association Insurance Research ===\n${sources.genevaAssociation}`);
-  if (['weave','prism','faro'].includes(mindId) && sources.bis) blocks.push(`=== LIVE: BIS Financial Stability Publications ===\n${sources.bis}`);
-  if (blocks.length === 0) return '';
-  return '\n\n' + blocks.join('\n\n') + '\n\nUsing the above LIVE sources as your primary evidence base, identify the most significant findings. For each finding, cite one of the real URLs listed above wherever possible — copy the URL exactly as it appears. Only fall back to a known authoritative domain (arxiv.org, naic.org, fca.org.uk, etc.) if no live source is relevant. NEVER use example.com or invent any URL path.';
-}
-// ─── END LIVE SOURCES ───────────────────────────────────────────────────────
-
-async function supabaseCall(method, table, body, query) {
-  query = query || '';
-  const url = SUPABASE_URL + '/rest/v1/' + table + query;
-  const headers = {
-    'Content-Type': 'application/json',
-    'apikey': SUPABASE_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_KEY
-  };
-  if (method === 'POST') headers['Prefer'] = 'return=representation';
-  const opts = { method: method, headers: headers };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
-  const text = await res.text();
-  if (!res.ok) throw new Error('Supabase ' + res.status + ': ' + text);
-  return text ? JSON.parse(text) : null;
+async function tavilySearch(query,maxResults){
+  try{
+    var r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TAVILY_KEY},body:JSON.stringify({query:query,search_depth:'basic',max_results:maxResults||5,include_answer:false,include_raw_content:false})});
+    if(!r.ok){console.warn('[YNOT] Tavily '+r.status+' for: '+query);return [];}
+    var data=await r.json();
+    return (data.results||[]).map(function(item){return {title:item.title||'',url:item.url||'',content:String(item.content||item.snippet||'').substring(0,400)};});
+  }catch(e){console.warn('[YNOT] Tavily error: '+e.message);return [];}
 }
 
-const SYSTEM_PROMPT = 'Respond ONLY with a valid JSON array. No markdown. Start with [ end with ].\n\nSOURCE RULES — these are mandatory:\n1. Every ref must have a real, publicly accessible URL that actually exists.\n2. NEVER use example.com, placeholder domains, or invented paths.\n3. NEVER invent arXiv IDs (e.g. /abs/2024.xxxxx is forbidden). If citing arXiv use https://arxiv.org only.\n4. Prefer URLs from the live sources provided in the prompt — those are real and verified.\n5. Acceptable fallback domains (when no specific URL is available): https://arxiv.org, https://content.naic.org, https://www.fca.org.uk, https://www.eiopa.europa.eu, https://www.genevaassociation.org, https://www.nist.gov, https://news.ycombinator.com, https://github.com, https://www.lloyds.com, https://www.soa.org, https://www.casact.org, https://www.iaisweb.org, https://www.bis.org, https://www.federalregister.gov.\n6. If you cannot find a real source for a finding, do not include that finding.';
-
-async function callMind(mind, liveSources) {
-  const sourceContext = buildSourceContext(mind.id, liveSources || {});
-  // Static mind prompt is cacheable; dynamic live sources are not
-  const userContent = [
-    { type: 'text', text: mind.prompt, cache_control: { type: 'ephemeral' } },
-    ...(sourceContext ? [{ type: 'text', text: sourceContext }] : [])
-  ];
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'prompt-caching-2024-07-31'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: mind.maxTokens || 1800,
-      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: userContent }]
-    })
-  });
-  if (!res.ok) throw new Error('Anthropic ' + res.status);
-  const data = await res.json();
-  const raw = data.content.map(function(c) { return c.text || ''; }).join('');
-  var parsed;
-  try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
-  catch(e) {
-    var m = raw.match(/\[[\s\S]*\]/);
-    if (!m) throw new Error('parse fail for ' + mind.id);
-    parsed = JSON.parse(m[0]);
-  }
-  return parsed.map(function(f) {
-    f.mind_id = mind.id;
-    f.mind_name = mind.name;
-    f.mind_icon = mind.icon;
-    return f;
-  });
-}
-
-// ── WEEKLY DIGEST GENERATION ─────────────────────────────────────────────────
-
-function trlToStage(trl) {
-  if (trl >= 8) return 'Standard';
-  if (trl >= 6) return 'Proven';
-  if (trl >= 4) return 'Pilot';
-  if (trl >= 2) return 'Experiment';
-  return 'Idea';
-}
-
-async function generateWeeklyDigest(findings, runDate) {
-  var signals  = findings.filter(function(f){ return f.verdict === 'SIGNAL'; });
-  var watches  = findings.filter(function(f){ return f.verdict === 'WATCH';  });
-  var noises   = findings.filter(function(f){ return f.verdict === 'NOISE';  });
-
-  var signalLines = signals.map(function(f){
-    return f.mind_icon + ' ' + f.mind_name + ': ' + f.title + ' — ' + (f.body||'').slice(0,180);
-  }).join('\n\n');
-
-  var watchLines = watches.slice(0,3).map(function(f){
-    return f.mind_icon + ' ' + f.mind_name + ': ' + f.title;
-  }).join('\n');
-
-  var noiseLines = noises.slice(0,2).map(function(f){
-    return f.mind_icon + ' ' + f.mind_name + ': ' + f.title;
-  }).join('\n');
-
-  // Include TRL stage for each finding
-  var allLines = findings.map(function(f){
-    var stage = trlToStage(f.trl || 5);
-    return '[' + f.verdict + '] [TRL:' + stage + '] ' + (f.mind_name||f.mind_id) + ' (' + f.domain + '): ' + f.title + ' — ' + (f.body||'').slice(0,200);
-  }).join('\n\n');
-
-  // Extract key TRL movements for the prompt
-  var trlSummary = findings.filter(function(f){ return f.verdict === 'SIGNAL'; }).slice(0,5).map(function(f){
-    return f.title + ' [' + trlToStage(f.trl || 5) + ']';
-  }).join(', ');
-
-  var prompt =
-    'You are the executive intelligence synthesis agent for YNOT.NOW — an independent technology signal platform for the insurance industry, tracking all emerging technology.\n\n' +
-    'Week of ' + runDate + '. Eight specialist agents completed their scan. Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
-    'KEY TECHNOLOGIES WITH TRL STAGES: ' + trlSummary + '\n\n' +
-    'ALL FINDINGS:\n' + allLines + '\n\n' +
-    'Write a tight executive briefing — 130 to 160 words maximum:\n' +
-    '- One sentence on the dominant theme this week\n' +
-    '- Two or three sentences synthesising the most important developments across domains\n' +
-    '- IMPORTANT: For 2-3 key technologies mentioned, include their TRL stage inline using this exact format: **technology name** [Stage] — for example: **pre-inference governance** [Pilot] or **CAN bus collision AI** [Proven]\n' +
-    '- One sentence on the most significant implication for insurance leaders\n' +
-    '- One forward-looking sentence on what to watch next\n\n' +
-    'TRL Stages to use: Idea, Experiment, Pilot, Proven, Standard\n\n' +
-    'Tone: sharp, authoritative, board-level. Plain English. No bullets. No hashtags. Use **bold** only for technology names with TRL tags. Return only the briefing text.';
-
-  var res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 300,
-      system: 'You write concise executive intelligence briefings for insurance industry leaders. Use **bold** for technology names when adding TRL stage tags like [Pilot] or [Proven]. No bullet points.',
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-  if (!res.ok) throw new Error('Claude digest generation failed: ' + res.status);
-  var data = await res.json();
+async function claudeCall(system,user,maxTokens){
+  var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:CLAUDE_MODEL,max_tokens:maxTokens||1200,system:system,messages:[{role:'user',content:user}]})});
+  if(!r.ok){var t=await r.text().catch(function(){return '';});throw new Error('Claude '+r.status+': '+t);}
+  var data=await r.json();
   return data.content[0].text.trim();
 }
 
-async function saveWeeklyDigest(allFindings, runId, runDate) {
+async function generateQueries(mind){
+  var system='You are '+mind.name+', an autonomous AI research agent. '+mind.brief+' Generate exactly 4 specific, targeted web search queries to find the most relevant and recent developments in your domain this week. Return ONLY a JSON array of 4 strings, no other text.';
+  var user='Generate your 4 search queries for this week. Focus on what is most likely to have changed or emerged in the last 7 days. Seed topics (make them more specific): '+mind.querySeeds.join(', ');
+  try{
+    var raw=await claudeCall(system,user,300);
+    var match=raw.match(/\[[\s\S]*?\]/);
+    if(!match)throw new Error('no JSON array');
+    var queries=JSON.parse(match[0]);
+    if(!Array.isArray(queries)||queries.length===0)throw new Error('empty');
+    return queries.slice(0,4).map(function(q){return String(q);});
+  }catch(e){
+    console.warn('[YNOT] '+mind.name+' query gen failed: '+e.message+' - using seeds');
+    return mind.querySeeds.slice(0,4);
+  }
+}
+
+async function fetchAgentResults(queries){
+  var allResults=await Promise.all(queries.map(function(q){return tavilySearch(q,4);}));
+  var seen={};var deduped=[];
+  allResults.forEach(function(results){results.forEach(function(item){if(item.url&&!seen[item.url]){seen[item.url]=true;deduped.push(item);}});});
+  return deduped;
+}
+
+async function analyseResults(mind,queries,results){
+  var resultsText=results.slice(0,12).map(function(r,i){return '['+(i+1)+'] '+r.title+'\nURL: '+r.url+'\n'+r.content;}).join('\n\n');
+  var system='You are '+mind.name+', an autonomous AI research agent. '+mind.brief+' You have searched the web using your own queries and received real live results. Analyse what you actually found and extract the most significant findings. Be honest: if evidence is weak, reflect that in verdict and confidence. Use real URLs from the search results as your refs - copy them exactly. Return ONLY a valid JSON array of 3-5 findings. Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"NOISE"), body (2-3 sentences: what it is + why it matters for insurance), confidence (1-5 integer), domain (string), subdomain (string), trl (1-9 integer), regulatoryRisk ("low"|"medium"|"high"), experiment (one actionable sentence for an insurance CTO), refs (array of {label, url} using real URLs from results). NEVER invent URLs.';
+  var user='Your search queries this week:\n'+queries.map(function(q,i){return (i+1)+'. '+q;}).join('\n')+'\n\nLive web results:\n\n'+resultsText+'\n\nProduce your findings. Return only the JSON array.';
+  try{
+    var raw=await claudeCall(system,user,1500);
+    var match=raw.match(/\[[\s\S]*\]/);
+    if(!match)throw new Error('no JSON array');
+    var findings=JSON.parse(match[0]);
+    if(!Array.isArray(findings))throw new Error('not array');
+    return findings.map(function(f){return Object.assign({},f,{mind_id:mind.id,mind_name:mind.name,mind_icon:mind.icon});});
+  }catch(e){console.error('[YNOT] '+mind.name+' analysis failed: '+e.message);return [];}
+}
+
+async function runAgent(mind){
+  console.log('[YNOT] '+mind.name+': generating queries...');
+  var queries=await generateQueries(mind);
+  console.log('[YNOT] '+mind.name+': '+queries.join(' | '));
+  var results=await fetchAgentResults(queries);
+  console.log('[YNOT] '+mind.name+': '+results.length+' unique results from Tavily');
+  if(results.length===0){console.warn('[YNOT] '+mind.name+': no results, skipping');return [];}
+  var findings=await analyseResults(mind,queries,results);
+  console.log('[YNOT] '+mind.name+': '+findings.length+' findings');
+  return findings;
+}
+
+async function generateWeeklyDigest(findings,runDate){
+  var signals=findings.filter(function(f){return f.verdict==='SIGNAL';});
+  var watches=findings.filter(function(f){return f.verdict==='WATCH';});
+  var noises=findings.filter(function(f){return f.verdict==='NOISE';});
+  var top=signals.slice(0,5).concat(watches.slice(0,3));
+  var findingsText=top.map(function(f){return f.title+' ['+f.verdict+', TRL '+(f.trl||'?')+', '+f.domain+']: '+String(f.body||'').substring(0,200);}).join('\n');
+  var prompt='Week of '+runDate+'. Five autonomous agents independently searched the web this week using self-generated queries. Total findings: '+findings.length+' ('+signals.length+' Signals, '+watches.length+' Watch, '+noises.length+' Noise).\n\nTop findings:\n'+findingsText+'\n\nWrite a LinkedIn-ready post for insurance and emerging tech executives. Format EXACTLY:\n\n[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n[CONTEXT] 1-2 sentences on what the agents found and why it matters. Mention agent count and finding counts naturally.\n\n-> [Finding title] - [One sharp sentence: what + why it matters for insurance leaders]\n-> [Finding title] - [One sharp sentence]\n-> [Finding title] - [One sharp sentence]\n\n[CLOSE] One forward-looking sentence. No "In conclusion". No "The future is...".\n\nAll findings this week -> ynot.now\n\n#InsurTech #AIinInsurance #Insurance #Innovation\n\nBanned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. Vary sentence length. Take a position.';
+  return claudeCall('You write sharp, opinionated intelligence posts for insurance executives. Sound like a practitioner who has read everything. Use specific numbers and named technologies. Never use corporate filler.',prompt,600);
+}
+
+async function saveWeeklyDigest(allFindings,runId,runDate){
   console.log('[YNOT] Generating weekly digest...');
-  var postText = await generateWeeklyDigest(allFindings, runDate);
-  await supabaseCall('POST', 'weekly_posts', [{
-    run_id:   runId,
-    run_date: runDate,
-    post_text: postText,
-    status:   'ready'
-  }]);
-  console.log('[YNOT] Weekly digest saved to weekly_posts.');
+  var postText=await generateWeeklyDigest(allFindings,runDate);
+  await supabaseCall('DELETE','weekly_posts',null,'?run_date=eq.'+runDate).catch(function(){});
+  await supabaseCall('POST','weekly_posts',[{run_id:runId,run_date:runDate,post_text:postText,status:'ready'}]);
+  console.log('[YNOT] Weekly digest saved.');
   return postText;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+module.exports=async function handler(req,res){
+  var auth=req.headers['authorization']||'';
+  var isExternalCall=auth.length>0;
+  if(isExternalCall&&auth!=='Bearer '+CRON_SECRET){return res.status(401).json({error:'Unauthorized'});}
+  if(!TAVILY_KEY){return res.status(500).json({error:'TAVILY_API_KEY not configured'});}
+  try{await supabaseCall('GET','findings',null,'?limit=1');}catch(err){return res.status(500).json({error:'Supabase connection failed',details:err.message});}
 
-module.exports = async function handler(req, res) {
-  // Vercel's internal cron scheduler fires this endpoint as a plain GET with no
-  // Authorization header — allow those through unconditionally.
-  // External callers (e.g. manual curl triggers) must still supply the Bearer secret.
-  // Security note: /api/cron is not linked or discoverable from the frontend.
-  // The worst-case risk of an unauthenticated GET is ~$0.15 of Anthropic spend — acceptable.
-  var auth = req.headers['authorization'] || '';
-  var isExternalCall = auth.length > 0;
-  if (isExternalCall && auth !== 'Bearer ' + CRON_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  var runDate=new Date().toISOString().split('T')[0];
+  var runId='run_'+Date.now();
+  var allFindings=[];var errors=[];
 
-  try {
-    await supabaseCall('GET', 'findings', null, '?limit=1');
-  } catch(err) {
-    return res.status(500).json({
-      error: 'Supabase connection failed',
-      details: err.message,
-      url_set: !!SUPABASE_URL,
-      key_set: !!SUPABASE_KEY
-    });
-  }
-
-  var runDate = new Date().toISOString().split('T')[0];
-  var runId = 'run_' + Date.now();
-  var allFindings = [];
-  var errors = [];
-
-  // Fetch live sources once per run — shared across all minds
-  console.log('[YNOT] Fetching live data sources...');
-  var liveSources = await fetchLiveSources();
-  console.log('[YNOT] Live sources fetched:', Object.keys(liveSources).filter(function(k){return liveSources[k];}).join(', '));
-
-  var outcomes = await Promise.allSettled(MINDS.map(function(m) { return callMind(m, liveSources); }));
-  outcomes.forEach(function(o, i) {
-    if (o.status === 'fulfilled') allFindings = allFindings.concat(o.value);
-    else errors.push({ mind: MINDS[i].id, error: o.reason && o.reason.message });
+  console.log('[YNOT] Phase 1: 5 primary agents running autonomously with Tavily...');
+  var outcomes=await Promise.allSettled(MINDS.map(function(m){return runAgent(m);}));
+  outcomes.forEach(function(o,i){
+    if(o.status==='fulfilled')allFindings=allFindings.concat(o.value);
+    else errors.push({mind:MINDS[i].id,error:o.reason&&o.reason.message});
   });
 
-  if (allFindings.length === 0) {
-    return res.status(500).json({ error: 'All minds failed', errors: errors });
-  }
+  if(allFindings.length===0){return res.status(500).json({error:'All agents failed',errors:errors});}
 
-  var rows = allFindings.map(function(f) {
-    return {
-      run_id: runId, run_date: runDate,
-      mind_id: f.mind_id, mind_name: f.mind_name, mind_icon: f.mind_icon,
-      title: f.title, verdict: normalizeVerdict(f.verdict), body: f.body || f.description || f.summary || 'No body provided',
-      domain: f.domain, subdomain: f.subdomain || null,
-      confidence: Math.min(5, Math.max(1, parseInt(f.confidence) || 3)), trl: f.trl || 5,
-      regulatory_risk: normalizeRisk(f.regulatoryRisk),
-      experiment: f.experiment || null, refs: f.refs || []
-    };
+  var rows=allFindings.map(function(f){
+    return {run_id:runId,run_date:runDate,mind_id:f.mind_id,mind_name:f.mind_name,mind_icon:f.mind_icon,title:f.title,verdict:normalizeVerdict(f.verdict),body:f.body||f.description||'No body provided',domain:f.domain,subdomain:f.subdomain||null,confidence:Math.min(5,Math.max(1,parseInt(f.confidence)||3)),trl:f.trl||5,regulatory_risk:normalizeRisk(f.regulatoryRisk||f.regulatory_risk),experiment:f.experiment||null,refs:f.refs||[]};
   });
 
-  try {
-    await supabaseCall('POST', 'findings', rows);
-    console.log('[YNOT] Run complete. Sources used: arxiv='+!!liveSources.arxiv+', hn='+!!liveSources.hackerNews+', github='+!!liveSources.githubTrending+', climate='+!!liveSources.arxivClimate+', life='+!!liveSources.arxivLife+', openAlex='+!!liveSources.openAlex+', federalRegister='+!!liveSources.federalRegister+', fcaRss='+!!liveSources.fcaRss+', reddit='+!!liveSources.reddit+', synthetic='+!!liveSources.arxivSynthetic+', pqc='+!!liveSources.arxivPqc+', edgeDigital='+!!liveSources.arxivEdgeDigital+', dataInfra='+!!liveSources.arxivDataInfra+', nist='+!!liveSources.nistNews+', devTo='+!!liveSources.devTo);
-  } catch(err) {
-    return res.status(500).json({ error: 'Storage failed', details: err.message });
-  }
+  try{
+    await supabaseCall('POST','findings',rows);
+    console.log('[YNOT] Phase 1 complete: '+allFindings.length+' findings stored. run_id='+runId);
+  }catch(err){return res.status(500).json({error:'Storage failed',details:err.message});}
 
-  // Generate and save the weekly digest post
-  var digestStatus = 'skipped';
-  try {
-    await saveWeeklyDigest(allFindings, runId, runDate);
-    digestStatus = 'ready';
-  } catch(dErr) {
-    console.error('[YNOT] Digest generation failed:', dErr.message);
-    digestStatus = 'error: ' + dErr.message;
-  }
+  var digestStatus='skipped';
+  try{await saveWeeklyDigest(allFindings,runId,runDate);digestStatus='ready';}
+  catch(dErr){console.error('[YNOT] Digest failed:',dErr.message);digestStatus='error: '+dErr.message;}
 
-  return res.status(200).json({
-    success: true,
-    run_id: runId,
-    findings_count: allFindings.length,
-    digest: digestStatus,
-    errors: errors
-  });
+  return res.status(200).json({success:true,phase:1,run_id:runId,run_date:runDate,findings_count:allFindings.length,digest:digestStatus,errors:errors,note:'Phase 2 synthesis (Null, Weave, Faro) runs at 06:02 UTC via cron-synthesise.js'});
 };
-
-
-
-
-
