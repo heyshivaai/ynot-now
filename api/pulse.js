@@ -68,15 +68,20 @@ async function generateExecutiveBriefing(findings, runDate) {
   ).join('\n\n');
 
   const prompt =
-    `You are the executive intelligence synthesis agent for YNOT.NOW — an independent technology signal platform for the insurance industry, tracking all emerging technology (AI, automation, data infrastructure, quantum, real-time decisioning, and more).\n\n` +
-    `Week of ${runDate}. Eight specialist agents completed their scan. Total findings: ${findings.length} (${signals.length} Signals, ${watches.length} Watch, ${noises.length} Noise).\n\n` +
+    `You are writing the weekly intelligence briefing for YNOT.NOW — a signal tracker for the insurance industry read by CTOs, Chief Innovation Officers, and senior strategy leaders.\n\n` +
+    `Week of ${runDate}. Eight specialist agents scanned the market. ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${noises.length} Noise.\n\n` +
     `ALL FINDINGS:\n${lines}\n\n` +
-    `Write a tight executive briefing — 120 to 150 words maximum:\n` +
-    `- One sentence on the dominant theme this week\n` +
-    `- Two or three sentences synthesising the most important developments across domains\n` +
-    `- One sentence on the most significant implication for insurance leaders\n` +
-    `- One forward-looking sentence on what to watch next\n\n` +
-    `Tone: sharp, authoritative, board-level. Plain English. No bullets. No hashtags. No markdown. Return only the briefing text.`;
+    `Write a 130–160 word briefing in plain prose. Four paragraphs, no bullets, no headers, no markdown.\n\n` +
+    `Paragraph 1 — The week\'s sharpest observation. Start with a specific finding, not a generalisation. Name the technology, the domain, or the number. Make a judgment call — do not just describe.\n\n` +
+    `Paragraph 2 — Two or three sentences connecting the most significant developments across different domains. Show the pattern, not just the list. Vary sentence length.\n\n` +
+    `Paragraph 3 — One sentence on the most consequential implication for insurance leaders right now. Be specific about who should care and why.\n\n` +
+    `Paragraph 4 — One forward-looking sentence. What should leaders be watching or doing before next Monday? No clichés.\n\n` +
+    `Rules:\n` +
+    `- Plain English. No jargon unless it is the precise term.\n` +
+    `- Do not use: leverage, landscape, transformative, game-changer, revolutionise, unlock, ecosystem, synergy, paradigm, holistic, robust, seamless.\n` +
+    `- Do not start with \'This week\' or \'AI is\' or \'The insurance industry\'.\n` +
+    `- Vary sentence length. Short sentences land harder.\n` +
+    `- Return only the briefing text.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -88,7 +93,7 @@ async function generateExecutiveBriefing(findings, runDate) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 300,
-      system: 'You write concise executive intelligence briefings for insurance industry leaders. Plain prose, no formatting, no bullet points.',
+      system: 'You write weekly intelligence briefings for senior insurance executives. Sharp, opinionated, specific. Plain prose only. No formatting, no bullets, no markdown. Vary sentence length. Make judgment calls, not just summaries.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
