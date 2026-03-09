@@ -310,10 +310,22 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .pulse-spotlight-header{padding:22px 28px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .pulse-spotlight-eyebrow{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:4px;}
 .pulse-spotlight-date{font-family:var(--ff-serif);font-size:22px;letter-spacing:-.01em;color:var(--ink);}
-.pulse-spotlight-body{padding:24px 28px 28px;font-size:15px;line-height:1.85;color:var(--ink);font-family:inherit;}
-.pulse-spotlight-body strong{color:var(--black);font-weight:600;}
-.pulse-spotlight-footer{padding:0 28px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.pulse-spotlight-body{padding:24px 28px 0;}
+.pulse-spotlight-footer{padding:20px 28px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--rule);margin-top:24px;}
 .pulse-spotlight-hint{font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;color:var(--mid);}
+/* Spotlight sections */
+.ps-hook{font-size:17px;line-height:1.65;font-weight:600;color:var(--black);letter-spacing:-.01em;margin-bottom:16px;}
+.ps-summary{font-family:var(--ff-mono);font-size:11px;letter-spacing:.04em;color:var(--mid);padding:12px 16px;background:var(--off);border-radius:6px;margin-bottom:20px;line-height:1.6;}
+.ps-bullets{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:20px;}
+.ps-bullet{display:flex;gap:14px;padding:14px 18px;border-bottom:1px solid var(--rule);align-items:flex-start;}
+.ps-bullet:last-child{border-bottom:none;}
+.ps-bullet-arrow{font-size:14px;color:var(--mid);flex-shrink:0;margin-top:1px;line-height:1.5;}
+.ps-bullet-text{font-size:14px;line-height:1.65;color:var(--ink);}
+.ps-bullet-title{font-weight:600;color:var(--black);}
+.ps-close{font-size:14px;line-height:1.7;color:var(--ink);margin-bottom:16px;font-style:italic;}
+.ps-attribution{font-family:var(--ff-mono);font-size:11px;letter-spacing:.04em;color:var(--mid);margin-bottom:8px;}
+.ps-attribution a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;}
+.ps-hashtags{font-family:var(--ff-mono);font-size:11px;letter-spacing:.03em;color:var(--mid);margin-bottom:4px;}
 .li-copy-btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;padding:8px 18px;border:1.5px solid var(--rule);border-radius:100px;background:var(--white);color:var(--ink);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .li-copy-btn:hover{border-color:#0a66c2;color:#0a66c2;background:#f0f6ff;}
 .li-copy-btn.done{border-color:#2e7d32;color:#2e7d32;background:#f0faf0;}
@@ -1589,22 +1601,83 @@ function linkPulseTerms(text){
   return result;
 }
 
-function renderPulseText(text){
-  // First escape HTML
-  var safe = (text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  // Convert **text** [Stage] to styled tags
+function renderPulseText(text, isSpotlight){
+  var raw = (text||'').trim();
+  if(!raw) return '';
+
+  // ── Spotlight: parse into structured sections ──────────────────────────────
+  if(isSpotlight){
+    var lines = raw.split(/\n/).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+    var hook=[], summary=[], bullets=[], close=[], attribution='', hashtags='';
+    var state='hook';
+    for(var i=0;i<lines.length;i++){
+      var l=lines[i];
+      if(l.startsWith('→ ') || l.startsWith('-> ')){
+        state='bullets';
+        bullets.push(l.replace(/^(→|->) /,''));
+      } else if(l.startsWith('#')){
+        hashtags=l; state='done';
+      } else if(l.match(/^All findings this week/i) || l.match(/^Full analysis/i)){
+        attribution=l; state='attr';
+      } else if(state==='hook' && hook.length>0 && l.match(/^(Eight|\d+) agents?/i)){
+        summary.push(l); state='summary';
+      } else if(state==='summary' && !l.match(/^(Eight|\d+) agents?/i)){
+        state='close'; close.push(l);
+      } else if(state==='bullets'){
+        state='close'; close.push(l);
+      } else if(state==='close' && state!=='attr' && state!=='done'){
+        close.push(l);
+      } else if(state==='hook'){
+        hook.push(l);
+      }
+    }
+    // If parsing failed to separate sections cleanly, fall back to plain render
+    if(!hook.length) return renderPulseText(text, false);
+
+    var html='';
+    // Hook
+    html+='<div class="ps-hook">'+escHtml(hook.join(' '))+'</div>';
+    // Summary pill
+    if(summary.length) html+='<div class="ps-summary">'+escHtml(summary.join(' '))+'</div>';
+    // Bullets
+    if(bullets.length){
+      html+='<div class="ps-bullets">';
+      bullets.forEach(function(b){
+        var parts=b.split(/—|--/);
+        var title=parts[0]?parts[0].trim():'';
+        var body=parts.slice(1).join('—').trim();
+        html+='<div class="ps-bullet">';
+        html+='<span class="ps-bullet-arrow">→</span>';
+        html+='<span class="ps-bullet-text">';
+        if(title&&body) html+='<span class="ps-bullet-title">'+escHtml(title)+'</span> — '+escHtml(body);
+        else html+=escHtml(b);
+        html+='</span></div>';
+      });
+      html+='</div>';
+    }
+    // Close
+    if(close.length) html+='<div class="ps-close">'+escHtml(close.join(' '))+'</div>';
+    // Attribution
+    if(attribution){
+      var attrHtml=escHtml(attribution).replace('ynot.now','<a href="https://ynot.now" target="_blank">ynot.now</a>');
+      html+='<div class="ps-attribution">'+attrHtml+'</div>';
+    }
+    // Hashtags
+    if(hashtags) html+='<div class="ps-hashtags">'+escHtml(hashtags)+'</div>';
+    return html;
+  }
+
+  // ── Archive / fallback: plain text with minimal styling ───────────────────
+  var safe = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   safe = safe.replace(/\*\*([^*]+)\*\*\s*\[(Standard|Proven|Pilot|Experiment|Idea)\]/gi, function(match, techName, stage){
     var stageClass = 'trl-' + stage.toLowerCase();
     return '<strong>' + techName + '</strong><span class="pulse-trl-tag ' + stageClass + '">' + stage + '</span>';
   });
-  // Also handle standalone [Stage] tags without bold
   safe = safe.replace(/\[(Standard|Proven|Pilot|Experiment|Idea)\]/gi, function(match, stage){
     var stageClass = 'trl-' + stage.toLowerCase();
     return '<span class="pulse-trl-tag ' + stageClass + '">' + stage + '</span>';
   });
-  // Convert remaining **text** to bold
   safe = safe.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // Link known insurance/AI terms to explanatory pages
   safe = linkPulseTerms(safe);
   return safe;
 }
@@ -1746,7 +1819,7 @@ function renderWeeklyPulse(){
         +'<div class="pulse-spotlight-date">'+spotDate+'</div>'
         +'</div>'
         +'</div>'
-        +'<div class="pulse-spotlight-body">'+renderPulseText(spotText)+'</div>'
+        +'<div class="pulse-spotlight-body">'+renderPulseText(spotText,true)+'</div>'
         +'<div class="pulse-spotlight-footer">'
         +'<span class="pulse-spotlight-hint">Ready to share on LinkedIn</span>'
         +'<button class="li-copy-btn" id="liCopyBtn" onclick="copySpotlight()" title="Copy post to clipboard">'
