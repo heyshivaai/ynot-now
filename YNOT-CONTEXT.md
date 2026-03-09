@@ -6,7 +6,7 @@
 
 **Live URL:** https://ynot-now.vercel.app
 **GitHub:** https://github.com/heyshivaai/ynot-now
-**Last updated:** 2026-03-06
+**Last updated:** 2026-03-09
 
 ---
 
@@ -160,7 +160,7 @@ All sources are free public APIs — no API keys required. Fetched fresh every M
 | `api/cron.js` | Weekly cron — calls all 8 minds, stores findings to Supabase |
 | `api/findings.js` | Serves findings to frontend from Supabase cache |
 | `api/think.js` | Live Anthropic proxy — fallback if no cached findings |
-| `api/pulse.js` | Weekly Pulse — Claude synthesises a 120–150 word executive briefing from the latest run's findings; generates briefings for last two runs on first load |
+| `api/pulse.js` | Weekly Pulse — generates a LinkedIn-format executive briefing from the latest run's findings; server-side paginated; returns `spotlight` + `top_findings[]` + `archive`; supports `?force=true` to bypass cache |
 | `api/digest.js` | Digest endpoint |
 | `api/visitors.js` | Visitor counter |
 
@@ -175,6 +175,17 @@ All sources are free public APIs — no API keys required. Fetched fresh every M
 - **Model:** `claude-sonnet-4-20250514`
 - **Prompt caching:** enabled (`anthropic-beta: prompt-caching-2024-07-31`) — system prompt and each mind's static prompt are cached, dynamic live sources are not
 - **Cost:** ~$0.15 per weekly run
+
+### Cron Auth Pattern
+Vercel's internal cron scheduler calls `/api/cron` with **no `Authorization` header**. The auth check in `api/cron.js` must only enforce the `Bearer` secret when an `Authorization` header is actually present:
+```js
+var auth = req.headers['authorization'] || '';
+var isExternalCall = auth.length > 0;
+if (isExternalCall && auth !== 'Bearer ' + CRON_SECRET) {
+  return res.status(401).json({ error: 'Unauthorized' });
+}
+```
+Do **not** revert this to a strict check — it will silently block every automated Monday run.
 
 ### Hosting & Deploy
 - **Vercel** (primary) — cron via `vercel.json` schedule `0 6 * * 1` (Monday 6am UTC)
@@ -211,8 +222,9 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 - Prism covers 6 different horizontal tech categories per run (was 3)
 - 18 live data sources feeding into minds before analysis
 - Run history preserved — `BASE_RUN_COUNT = 5` in `findings.js` accounts for runs deleted during initial setup
-- **Weekly Pulse** — `api/pulse.js` generates a 120–150 word Claude executive briefing per run; loads last two runs on first visit; handles missing `weekly_posts` table gracefully
+- **Weekly Pulse** — fully redesigned as of 2026-03-09 (see Weekly Pulse section below)
 - About section updated for boards + exec leadership audience
+- GitHub auth: repo owner is `heyshivaai` (heyshiva.ai@gmail.com); Manus uses PAT stored per-session
 
 ### Known limitations
 - Scout, Vita, Atlas, Null, Weave, Deploy, Faro still return only 3 findings each — could be increased
@@ -231,6 +243,90 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 - **Honest about readiness** — most horizontal tech is Experiment/Pilot stage in insurance even if Proven elsewhere
 - **No subscriptions, no ads** — intelligence as a shared public resource
 - **Static frontend** — no React, no build step, no npm dependencies
+
+---
+
+---
+
+## Weekly Pulse — Design & Technical Spec (locked 2026-03-09)
+
+### Purpose
+The Weekly Pulse is the primary content surface. It serves two audiences simultaneously:
+1. **Website visitors** — scannable, structured, visually clear
+2. **LinkedIn** — the same post is copy-ready for LinkedIn with one click
+
+### Post Format (enforced in `pulse.js` prompt — do not change without updating this doc)
+
+The briefing must follow this exact structure, with each section on its own line:
+
+```
+[Hook — one specific, slightly provocative sentence from a real finding. No generic openers.]
+
+[Agent summary — "N agents scanned the market this week and delivered X findings — Y Signals, Z Watch, W Noise — with [dominant theme] dominating across [domains]."]
+
+→ [Finding Title] — [one sharp sentence: what + why it matters]
+→ [Finding Title] — [one sharp sentence]
+→ [Finding Title] — [one sharp sentence]
+
+[Close — one forward-looking sentence. No clichés. No "game-changer", "landscape", "transformative", "leverage".]
+
+All findings this week → ynot.now
+
+#InsurTech #AIinInsurance #Insurance #Innovation
+```
+
+**Banned words in the prompt:** leverage, landscape, transformative, game-changer, revolutionize, unprecedented, cutting-edge, robust, seamless, unlock, empower, harness, synergy, paradigm.
+
+### Visual Rendering (enforced in `index.html` — do not flatten back to plain text)
+
+The `renderPulseText(text, isSpotlight, topFindings)` function parses the post into distinct visual sections:
+
+| Section | CSS class | Visual treatment |
+|---|---|---|
+| Hook | `.ps-hook` | 17px bold serif, high contrast |
+| Agent summary | `.ps-summary` | Monospace pill on off-white background |
+| Bullets | `.ps-bullets` | Bordered card list, `→` arrow, bold title + plain body |
+| Learn more button | `.ps-learn-btn` | Small pill button; toggled per bullet |
+| Finding drawer | `.ps-finding-drawer` | Inline expandable; shows verdict badge, domain, TRL, full body, source refs |
+| Close | `.ps-close` | 14px italic |
+| Attribution | `.ps-attribution` | Monospace, `ynot.now` hyperlinked |
+| Hashtags | `.ps-hashtags` | Monospace, muted |
+
+The footer has a top border separator and a **"Copy for LinkedIn"** button that copies the original plain text (not the rendered HTML).
+
+### Expandable Finding Drawers
+
+Each bullet is fuzzy-matched to a finding from `top_findings[]` using keyword overlap (≥40% threshold). Matched bullets get a **"Learn more"** toggle that reveals:
+- Verdict badge (SIGNAL/WATCH/NOISE with colour coding)
+- Domain · Subdomain
+- TRL level
+- Full `body` text
+- Up to 3 source refs as clickable links
+
+The `pulse.js` API returns `top_findings[]` (top 5 SIGNAL/WATCH findings by confidence) alongside the spotlight post on every `section=all` or `section=spotlight` request.
+
+### API Pagination
+
+`/api/pulse` supports server-side pagination — the browser never loads more than one page of archive posts at a time:
+
+| Param | Default | Purpose |
+|---|---|---|
+| `section` | `all` | `all` \| `spotlight` \| `archive` |
+| `page` | `0` | Zero-indexed archive page |
+| `limit` | `5` | Posts per page (max 20) |
+| `force` | `false` | Set `true` to bypass `weekly_posts` cache and regenerate |
+
+The `weekly_posts` table caches generated posts. The fallback (when table is empty) queries `findings` ordered by `created_at desc` to always pick the most recent run.
+
+### Date Labels
+
+All dates shown to users are snapped to the **Monday of the ISO week** using `toMondayDate()` — a Saturday dev run and a Monday prod run in the same week show the same label. Never display raw `run_date` directly.
+
+### Supabase Schema Note
+The `weekly_posts` table should have a `linkedin_post` column for future use:
+```sql
+ALTER TABLE weekly_posts ADD COLUMN IF NOT EXISTS linkedin_post text;
+```
 
 ---
 
