@@ -167,7 +167,7 @@ module.exports = async function handler(req, res) {
 
     // ── Fall back: generate on-demand for last 2 runs ─────────────────────────
     if (!allPosts) {
-      const { data: runRows } = await sbGet('findings?select=run_id,run_date&order=run_date.desc');
+      const { data: runRows } = await sbGet('findings?select=run_id,run_date,created_at&order=created_at.desc');
       if (!runRows || !runRows.length) {
         return res.status(200).json({ spotlight: null, archive: { posts: [], total: 0, page, limit } });
       }
