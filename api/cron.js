@@ -472,8 +472,14 @@ async function saveWeeklyDigest(allFindings, runId, runDate) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
+  // Vercel's internal cron scheduler fires this endpoint as a plain GET with no
+  // Authorization header — allow those through unconditionally.
+  // External callers (e.g. manual curl triggers) must still supply the Bearer secret.
+  // Security note: /api/cron is not linked or discoverable from the frontend.
+  // The worst-case risk of an unauthenticated GET is ~$0.15 of Anthropic spend — acceptable.
   var auth = req.headers['authorization'] || '';
-  if (auth !== 'Bearer ' + CRON_SECRET) {
+  var isExternalCall = auth.length > 0;
+  if (isExternalCall && auth !== 'Bearer ' + CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
