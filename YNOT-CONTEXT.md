@@ -23,41 +23,54 @@ Every finding is scored, sourced, and free. No subscriptions. No vendor relation
 
 ---
 
-## The Eight Minds
+## The Eight Minds (Multi-Agent Architecture as of 2026-03-09)
 
-Each mind runs weekly via a single Vercel Cron job (`api/cron.js`). They run in parallel via `Promise.allSettled`. Each returns a JSON array of findings.
+**CRITICAL: Atlas/Prism/Deploy have been replaced by Lex/Terra/Horizon. Do not revert.**
 
-| Mind | Icon | Domain | What it scans | Findings/run |
-|------|------|--------|---------------|-------------|
-| **Scout** | 🔭 | P&C | Agentic claims, CV damage assessment, telematics+LLM pricing, fraud GNNs, NLP submission intake, digital twin property risk | 3 |
-| **Vita** | 🧬 | Life & Annuities | AI accelerated underwriting, wearable risk scoring, continuous underwriting, longevity modelling, mental health risk AI, actuarial foundation models | 3 |
-| **Atlas** | 🌍 | Reinsurance | ML cat models, satellite imagery, parametric trigger AI, climate projections, synthetic cat data, treaty language NLP | 3 |
-| **Prism** | 💎 | Horizontal Tech | 12 enterprise tech categories (see below) — finds the global shift, then the insurance implication | **6** |
-| **Null** | ⚔️ | All | Overhyped claims, thin evidence, deployments that haven't matched expectations — the noise detector | 3 |
-| **Weave** | 🕸️ | All | Second and third-order effects: systemic shifts, workforce bifurcation, distribution economics, regulatory ripples | 3 |
-| **Deploy** | 🚀 | All | Proven at scale today — in production at multiple carriers, ROI under 18 months, works with legacy systems | 3 |
-| **Faro** | 🔦 | All | 18–36 month horizon signals — genuine early indicators, not speculation | 3 |
+The system runs in two phases every Monday. Phase 1 agents run first and autonomously search the web. Phase 2 synthesis agents then read all Phase 1 findings before doing their own targeted search and analysis.
 
-**Total findings per weekly run: 27**
+### Phase 1 Agents (06:00 UTC, `api/cron.js`)
+
+| Mind | Icon | Domain | Role | Findings/run |
+|------|------|--------|------|--------------|
+| **Scout** | 🔭 | P&C | Claims automation, underwriting AI, telematics, fraud detection | 3–6 |
+| **Vita** | 🧬 | Life & Annuities | AI underwriting, wearables, longevity modelling, actuarial foundation models | 3–6 |
+| **Lex** | ⚖️ | Regulation | FCA, EIOPA, NAIC, EU AI Act, IAIS, model risk governance | 3–6 |
+| **Terra** | 🌍 | Climate & ESG | Climate risk AI, parametric insurance, ESG underwriting, cat modelling | 3–6 |
+| **Horizon** | 🌐 | Horizontal Tech | Foundation models, agentic AI, synthetic data, federated learning, PQC | 3–6 |
+
+### Phase 2 Synthesis Agents (06:02 UTC, `api/cron-synthesise.js`)
+
+| Mind | Icon | Role | What they do |
+|------|------|------|--------------|
+| **Null** | ⚔️ | Sceptic | Reads ALL Phase 1 findings, challenges hype, calls out AI washing, detects noise |
+| **Weave** | 🕸️ | Systems thinker | Reads ALL Phase 1 findings, finds second-order cross-domain effects |
+| **Faro** | 🔦 | Horizon scanner | Reads ALL Phase 1 findings, identifies 18–36 month early signals others missed |
+
+**Total findings per weekly run: ~27–42 (varies by Tavily results quality)**
+
+### How Agents Work (True Multi-Agent)
+
+1. Each Phase 1 agent **generates its own 3-4 Tavily search queries** based on its domain brief
+2. Tavily fetches live web results for each query
+3. Each agent analyses its own results and produces structured findings
+4. Phase 2 agents read ALL Phase 1 findings as context, then generate synthesis queries
+5. Phase 2 agents search Tavily for additional evidence, then produce cross-agent insights
+6. Phase 2 regenerates the full weekly digest incorporating all 8 agents' work
 
 ---
 
-## Prism's 12 Horizontal Tech Categories
+## Horizon's Horizontal Tech Focus Areas
 
-Prism is the most complex mind — it covers all of enterprise IT and finds insurance implications. It returns 6 findings per run covering at least 5 different categories.
+Horizon (formerly Prism) covers horizontal enterprise AI technologies with insurance implications:
 
-1. **AI-Assisted Development** — Vibe coding, Cursor, Copilot, Windsurf, prompt-to-app
-2. **Agentic AI** — Multi-agent orchestration, LangGraph, AutoGen, CrewAI, agentic RPA
-3. **Foundation Models & LLMs** — New releases, fine-tuning for FS/insurance, multimodal
-4. **Copilot-in-Everything** — Microsoft 365 Copilot, Salesforce Einstein, ServiceNow AI, SAP AI
-5. **Synthetic Data** — Training data generation, privacy-preserving sharing, regulatory acceptance
-6. **Real-Time Decisioning** — Streaming ML inference, event-driven architectures, real-time underwriting/fraud/pricing
-7. **Model Risk & AI Governance** — Model cards, EU AI Act compliance, SR 11-7, bias detection, explainability
-8. **Data Infrastructure** — Vector DBs, RAG architectures, knowledge graphs, data mesh, lakehouse
-9. **Post-Quantum Cryptography** — NIST PQC standards, migration timelines, carrier readiness
-10. **Digital Twins & Simulation** — Risk modelling twins, cat simulation, actuarial scenario modelling
-11. **Federated Learning** — Privacy-preserving ML across carrier consortia, data-sharing regulation
-12. **Edge AI & IoT Intelligence** — Telematics, smart building sensors, wearables, connected vehicle data
+1. **Agentic AI** — Multi-agent orchestration, LangGraph, AutoGen, CrewAI, agentic RPA
+2. **Foundation Models & LLMs** — New releases, fine-tuning for FS/insurance, multimodal
+3. **Synthetic Data** — Training data generation, privacy-preserving sharing, regulatory acceptance
+4. **Real-Time Decisioning** — Streaming ML inference, event-driven architectures, real-time underwriting/fraud/pricing
+5. **Model Risk & AI Governance** — Model cards, EU AI Act compliance, SR 11-7, bias detection, explainability
+6. **Post-Quantum Cryptography** — NIST PQC standards, migration timelines, carrier readiness
+7. **Federated Learning** — Privacy-preserving ML across carrier consortia, data-sharing regulation
 
 ---
 
@@ -157,7 +170,8 @@ All sources are free public APIs — no API keys required. Fetched fresh every M
 ### Backend (Vercel Serverless)
 | File | Purpose |
 |------|---------|
-| `api/cron.js` | Weekly cron — calls all 8 minds, stores findings to Supabase |
+| `api/cron.js` | Phase 1 cron — Scout, Vita, Lex, Terra, Horizon each autonomously search Tavily and produce findings |
+| `api/cron-synthesise.js` | Phase 2 cron — Null, Weave, Faro read Phase 1 findings, search Tavily, produce synthesis findings + regenerate digest |
 | `api/findings.js` | Serves findings to frontend from Supabase cache |
 | `api/think.js` | Live Anthropic proxy — fallback if no cached findings |
 | `api/pulse.js` | Weekly Pulse — generates a LinkedIn-format executive briefing from the latest run's findings; server-side paginated; returns `spotlight` + `top_findings[]` + `archive`; supports `?force=true` to bypass cache |
@@ -188,7 +202,7 @@ if (isExternalCall && auth !== 'Bearer ' + CRON_SECRET) {
 Do **not** revert this to a strict check — it will silently block every automated Monday run.
 
 ### Hosting & Deploy
-- **Vercel** (primary) — cron via `vercel.json` schedule `0 6 * * 1` (Monday 6am UTC)
+- **Vercel** (primary) — two cron jobs: `0 6 * * 1` (Phase 1) and `2 6 * * 1` (Phase 2)
 - **Netlify** (configured as backup) — via `netlify.toml`
 - GitHub push to `main` → auto-deploys on Vercel
 
@@ -199,6 +213,7 @@ Do **not** revert this to a strict check — it will silently block every automa
 | `SUPABASE_URL` | `https://wsplocidlmtfpvzudzdz.supabase.co` |
 | `SUPABASE_SERVICE_KEY` | Supabase service role key |
 | `CRON_SECRET` | `ynot-secret-2025` — authorises cron trigger |
+| `TAVILY_API_KEY` | Tavily search API key — required for autonomous agent web search |
 
 ---
 
@@ -213,26 +228,25 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 
 ---
 
-## Current State (as of 2026-03-06)
+## Current State (as of 2026-03-09)
 
 ### What's working well
-- 27 findings per run across all 8 minds
+- **True multi-agent system** — agents autonomously generate queries, search Tavily, and Phase 2 agents read Phase 1 findings before producing synthesis
+- Atlas/Prism/Deploy replaced by Lex/Terra/Horizon — DO NOT revert
+- Tavily API integrated for live autonomous web search (`TAVILY_API_KEY` in Vercel env vars)
+- Two-phase cron architecture to stay within Vercel free tier 60s timeout
 - 0 fake/placeholder URLs — all refs are real, publicly accessible sources
-- Prompt caching enabled — reduces cost on parallel calls
-- Prism covers 6 different horizontal tech categories per run (was 3)
-- 18 live data sources feeding into minds before analysis
-- Run history preserved — `BASE_RUN_COUNT = 5` in `findings.js` accounts for runs deleted during initial setup
 - **Weekly Pulse** — fully redesigned as of 2026-03-09 (see Weekly Pulse section below)
 - About section updated for boards + exec leadership audience
 - GitHub auth: repo owner is `heyshivaai` (heyshiva.ai@gmail.com); Manus uses PAT stored per-session
 
 ### Known limitations
-- Scout, Vita, Atlas, Null, Weave, Deploy, Faro still return only 3 findings each — could be increased
 - No user accounts, no personalisation, no bookmarking
 - No email/Slack digest for weekly findings
 - Signal History and Regional Intelligence sections in frontend are stubs
 - `trl_history` table populated but not prominently used in UI
 - No search or full-text filter across findings
+- Agent memory (Emerging/Confirmed/Fading signal trajectory) is logic-layer only — no dedicated Supabase table yet
 
 ---
 
@@ -332,11 +346,12 @@ ALTER TABLE weekly_posts ADD COLUMN IF NOT EXISTS linkedin_post text;
 
 ## Open Questions / Potential Next Steps
 
-- Should Scout, Vita, Atlas also be increased from 3 → 6 findings?
 - Email digest: weekly summary of top signals delivered to subscribers
 - Regional intelligence layer: EU vs US vs APAC regulatory divergence
 - Comparison view: how has a specific technology's TRL changed over weeks?
 - Could Null become more targeted — e.g. debunking a specific vendor claim each week?
 - Should findings link to a permanent URL (e.g. `/findings/run_id/slug`) for sharing?
-- arXiv queries return paper titles but not abstracts — adding summaries would improve AI citation quality
 - Should the platform eventually accept community-submitted signals for human editorial review?
+- Add a dedicated `agent_memory` Supabase table for proper signal trajectory tracking (Emerging/Confirmed/Fading)
+- Upgrade to Vercel Pro to remove 60s function timeout and consolidate back to a single cron job
+- Add inter-agent communication: let Phase 2 agents ask Phase 1 agents follow-up questions
