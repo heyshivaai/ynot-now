@@ -63,25 +63,50 @@ async function generateExecutiveBriefing(findings, runDate) {
   const watches = findings.filter(f => f.verdict === 'WATCH');
   const noises  = findings.filter(f => f.verdict === 'NOISE');
 
-  const lines = findings.map(f =>
-    `[${f.verdict}] ${f.mind_name || f.mind_id} (${f.domain}): ${f.title} — ${(f.body || '').slice(0, 200)}`
-  ).join('\n\n');
+  // Pick the 3 most compelling findings for bullets: high-confidence SIGNALs first, then WATCHes
+  const ranked = [
+    ...signals.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
+    ...watches.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
+    ...noises.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+  ].slice(0, 5);
+
+  const bulletData = ranked.map(f => {
+    const trlLabel = { 9:'Proven',8:'Proven',7:'Standard',6:'Standard',5:'Pilot',4:'Pilot',3:'Experiment',2:'Experiment',1:'Idea' }[f.trl] || 'Watch';
+    return `[${f.verdict} · ${trlLabel}] ${f.title} (${f.domain}/${f.subdomain || f.domain}): ${(f.body || '').slice(0, 180)}`;
+  }).join('\n\n');
+
+  const allLines = findings.map(f =>
+    `[${f.verdict}] ${f.mind_name || f.mind_id} (${f.domain}): ${f.title} — ${(f.body || '').slice(0, 150)}`
+  ).join('\n');
 
   const prompt =
-    `You are writing the weekly intelligence briefing for YNOT.NOW — a signal tracker for the insurance industry read by CTOs, Chief Innovation Officers, and senior strategy leaders.\n\n` +
-    `Week of ${runDate}. Eight specialist agents scanned the market. ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${noises.length} Noise.\n\n` +
-    `ALL FINDINGS:\n${lines}\n\n` +
-    `Write a 130–160 word briefing in plain prose. Four paragraphs, no bullets, no headers, no markdown.\n\n` +
-    `Paragraph 1 — The week\'s sharpest observation. Start with a specific finding, not a generalisation. Name the technology, the domain, or the number. Make a judgment call — do not just describe.\n\n` +
-    `Paragraph 2 — Two or three sentences connecting the most significant developments across different domains. Show the pattern, not just the list. Vary sentence length.\n\n` +
-    `Paragraph 3 — One sentence on the most consequential implication for insurance leaders right now. Be specific about who should care and why.\n\n` +
-    `Paragraph 4 — One forward-looking sentence. What should leaders be watching or doing before next Monday? No clichés.\n\n` +
+    `You are writing the weekly post for YNOT.NOW — a technology signal tracker for the insurance industry, read by CTOs, Chief Innovation Officers, and senior strategy leaders.\n\n` +
+    `Week of ${runDate}. Eight specialist agents (each covering a different domain) scanned the market and produced ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${noises.length} Noise.\n\n` +
+    `TOP FINDINGS FOR BULLETS:\n${bulletData}\n\n` +
+    `ALL FINDINGS (for context only):\n${allLines}\n\n` +
+    `Write a single post that works both on the YNOT.NOW website and as a LinkedIn post. Use EXACTLY this structure — no deviations:\n\n` +
+    `LINE 1 (Hook): One sentence. Specific. Slightly provocative or surprising. Must reference a real finding. No generic openers like "This week in AI" or "AI is transforming". Make it feel like something a sharp practitioner would say.\n\n` +
+    `BLANK LINE\n\n` +
+    `LINE 2 (Agent scan summary): One sentence that tells readers what the agents found this week — mention the total findings count, the split (Signals/Watch/Noise), and the dominant domain or theme. Example pattern: "Eight agents scanned the market this week. ${findings.length} findings — ${signals.length} Signals, ${watches.length} Watch, ${noises.length} Noise — with [dominant theme] as the clearest pattern."\n\n` +
+    `BLANK LINE\n\n` +
+    `BULLETS (exactly 3, each on its own line starting with →):\n` +
+    `→ [Finding title, 6 words max] — [one sharp sentence: what it is + why it matters to an insurance leader. Max 22 words.]\n` +
+    `→ [Finding title, 6 words max] — [one sharp sentence. Max 22 words.]\n` +
+    `→ [Finding title, 6 words max] — [one sharp sentence. Max 22 words.]\n\n` +
+    `BLANK LINE\n\n` +
+    `CLOSE: One sentence. What should insurance leaders be doing or watching before next Monday? Direct. No clichés.\n\n` +
+    `BLANK LINE\n\n` +
+    `ATTRIBUTION LINE: Exactly this text: Full analysis + all findings → ynot.now\n\n` +
+    `BLANK LINE\n\n` +
+    `HASHTAGS LINE: Exactly this text: #InsurTech #AIinInsurance #Insurance #Innovation\n\n` +
     `Rules:\n` +
     `- Plain English. No jargon unless it is the precise term.\n` +
     `- Do not use: leverage, landscape, transformative, game-changer, revolutionise, unlock, ecosystem, synergy, paradigm, holistic, robust, seamless.\n` +
-    `- Do not start with \'This week\' or \'AI is\' or \'The insurance industry\'.\n` +
-    `- Vary sentence length. Short sentences land harder.\n` +
-    `- Return only the briefing text.`;
+    `- No markdown, no bold, no asterisks — plain text only.\n` +
+    `- No em-dashes (—) in the hook or close. Use a period or comma.\n` +
+    `- Do not start any sentence with "I".\n` +
+    `- Total post: 160–220 words.\n` +
+    `- Return ONLY the post text, nothing else.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -92,8 +117,8 @@ async function generateExecutiveBriefing(findings, runDate) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 300,
-      system: 'You write weekly intelligence briefings for senior insurance executives. Sharp, opinionated, specific. Plain prose only. No formatting, no bullets, no markdown. Vary sentence length. Make judgment calls, not just summaries.',
+      max_tokens: 500,
+      system: 'You write the weekly post for YNOT.NOW, a technology signal tracker for the insurance industry. The post must work on the website and on LinkedIn. Sharp, specific, opinionated. Plain text only — no markdown, no bold, no asterisks. Use → for bullets exactly as instructed. Follow the structure precisely.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
