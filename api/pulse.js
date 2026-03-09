@@ -96,7 +96,7 @@ async function generateExecutiveBriefing(findings, runDate) {
     `BLANK LINE\n\n` +
     `CLOSE: One sentence. What should insurance leaders be doing or watching before next Monday? Direct. No clichés.\n\n` +
     `BLANK LINE\n\n` +
-    `ATTRIBUTION LINE: Exactly this text: Full analysis + all findings → ynot.now\n\n` +
+    `ATTRIBUTION LINE: Exactly this text: All findings this week \u2192 ynot.now\n\n` +
     `BLANK LINE\n\n` +
     `HASHTAGS LINE: Exactly this text: #InsurTech #AIinInsurance #Insurance #Innovation\n\n` +
     `Rules:\n` +
