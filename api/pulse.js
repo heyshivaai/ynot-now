@@ -1,27 +1,47 @@
 // api/pulse.js
-// Returns executive weekly briefings ordered newest first.
-// Deduplicates by ISO week so only one post per Monday-week is returned.
+// Returns executive weekly briefings with server-side pagination.
+//
+// GET /api/pulse                    → spotlight (latest week) + first archive page
+// GET /api/pulse?section=spotlight  → latest week only (1 post)
+// GET /api/pulse?section=archive&page=0&limit=5 → paginated archive (excludes latest week)
+//
+// All responses include { total, page, limit, posts[] } for archive,
+// or { post } for spotlight.
+//
+// Deduplicates by ISO week so only one post per Monday-week is ever returned.
 // If weekly_posts is empty, generates on-demand for the last two runs and caches them.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 
-// Return the ISO Monday date string for any given date string (YYYY-MM-DD)
+const ARCHIVE_DEFAULT_LIMIT = 5;
+const ARCHIVE_MAX_LIMIT = 20;
+
+// Return the ISO Monday date string (YYYY-MM-DD) for any given date string
 function toMonday(dateStr) {
   const d = new Date(dateStr + 'T12:00:00Z');
   const day = d.getUTCDay(); // 0=Sun, 1=Mon ... 6=Sat
-  const diff = (day === 0) ? -6 : 1 - day; // days to subtract to reach Monday
+  const diff = (day === 0) ? -6 : 1 - day;
   d.setUTCDate(d.getUTCDate() + diff);
-  return d.toISOString().split('T')[0]; // YYYY-MM-DD of that Monday
+  return d.toISOString().split('T')[0];
 }
 
 async function sbGet(path) {
   const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      // Ask Supabase to return the total count in the Content-Range header
+      'Prefer': 'count=exact'
+    }
   });
   if (!res.ok) throw new Error('Supabase ' + res.status);
-  return res.json();
+  const data = await res.json();
+  // Parse total from Content-Range: 0-4/42
+  const cr = res.headers.get('content-range') || '';
+  const total = cr.includes('/') ? parseInt(cr.split('/')[1], 10) : null;
+  return { data, total };
 }
 
 async function sbPost(table, rows) {
@@ -73,8 +93,22 @@ async function generateExecutiveBriefing(findings, runDate) {
     })
   });
   if (!res.ok) throw new Error('Claude ' + res.status);
-  const data = await res.json();
-  return data.content[0].text.trim();
+  const d = await res.json();
+  return d.content[0].text.trim();
+}
+
+// Deduplicate an array of posts to one per Monday-week (keep newest per week)
+function dedupByWeek(posts) {
+  const seenWeeks = new Set();
+  const out = [];
+  for (const post of posts) {
+    const week = toMonday(post.run_date);
+    if (!seenWeeks.has(week)) {
+      seenWeeks.add(week);
+      out.push({ ...post, week_of: week });
+    }
+  }
+  return out;
 }
 
 module.exports = async function handler(req, res) {
@@ -83,67 +117,88 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
+  const section = req.query.section || 'all'; // 'all' | 'spotlight' | 'archive'
+  const page    = Math.max(0, parseInt(req.query.page  || '0', 10));
+  const limit   = Math.min(ARCHIVE_MAX_LIMIT, Math.max(1, parseInt(req.query.limit || String(ARCHIVE_DEFAULT_LIMIT), 10)));
+
   try {
-    // Return all cached posts, deduplicated to one per Monday-week, newest first
+    // ── Try weekly_posts cache first ──────────────────────────────────────────
+    let allPosts = null;
     try {
-      const cached = await sbGet('weekly_posts?order=run_date.desc&status=eq.ready');
-      if (cached && cached.length) {
-        // Deduplicate: keep only the most recent post per Monday-week
-        const seenWeeks = new Set();
-        const deduped = [];
-        for (const post of cached) {
-          const week = toMonday(post.run_date);
-          if (!seenWeeks.has(week)) {
-            seenWeeks.add(week);
-            deduped.push({ ...post, week_of: week });
-          }
-        }
-        return res.status(200).json({ posts: deduped });
+      // Fetch all posts ordered newest first — we need them all to deduplicate by week.
+      // weekly_posts grows at 1 row/week so this is always a small table.
+      const { data } = await sbGet('weekly_posts?order=run_date.desc&status=eq.ready');
+      if (data && data.length) {
+        allPosts = dedupByWeek(data); // one entry per Monday-week, newest first
       }
     } catch (e) {
       console.warn('[pulse] weekly_posts not available, generating on-demand:', e.message);
     }
 
-    // No cached posts — find the last two distinct runs in findings
-    const allRunRows = await sbGet('findings?select=run_id,run_date&order=run_date.desc');
-    if (!allRunRows || !allRunRows.length) {
-      return res.status(200).json({ posts: [] });
-    }
-
-    // Deduplicate to get up to 2 distinct runs
-    const seen = new Set();
-    const runs = [];
-    for (const row of allRunRows) {
-      if (!seen.has(row.run_id)) {
-        seen.add(row.run_id);
-        runs.push(row);
-        if (runs.length === 2) break;
+    // ── Fall back: generate on-demand for last 2 runs ─────────────────────────
+    if (!allPosts) {
+      const { data: runRows } = await sbGet('findings?select=run_id,run_date&order=run_date.desc');
+      if (!runRows || !runRows.length) {
+        return res.status(200).json({ spotlight: null, archive: { posts: [], total: 0, page, limit } });
       }
+      // Deduplicate run_ids, take up to 2
+      const seenRuns = new Set();
+      const runs = [];
+      for (const row of runRows) {
+        if (!seenRuns.has(row.run_id)) {
+          seenRuns.add(row.run_id);
+          runs.push(row);
+          if (runs.length === 2) break;
+        }
+      }
+      const generated = [];
+      for (const run of runs) {
+        const { data: findings } = await sbGet(`findings?run_id=eq.${encodeURIComponent(run.run_id)}&order=verdict.asc,confidence.desc`);
+        if (!findings || !findings.length) continue;
+        const postText = await generateExecutiveBriefing(findings, run.run_date);
+        generated.push({ run_id: run.run_id, run_date: run.run_date, post_text: postText, status: 'ready' });
+      }
+      if (!generated.length) {
+        return res.status(200).json({ spotlight: null, archive: { posts: [], total: 0, page, limit } });
+      }
+      try { await sbPost('weekly_posts', generated); } catch (e) { /* table may not exist yet */ }
+      allPosts = dedupByWeek(generated);
     }
 
-    // Generate briefings for each run (sequentially to avoid rate limits)
-    const generated = [];
-    for (const run of runs) {
-      const findings = await sbGet(`findings?run_id=eq.${encodeURIComponent(run.run_id)}&order=verdict.asc,confidence.desc`);
-      if (!findings || !findings.length) continue;
-      const postText = await generateExecutiveBriefing(findings, run.run_date);
-      generated.push({ run_id: run.run_id, run_date: run.run_date, post_text: postText, status: 'ready' });
+    // ── Build response ────────────────────────────────────────────────────────
+    const spotlight = allPosts[0] || null;
+    const archiveAll = allPosts.slice(1); // everything except the current week
+    const archiveTotal = archiveAll.length;
+    const archivePage = archiveAll.slice(page * limit, page * limit + limit);
+    const totalPages = Math.ceil(archiveTotal / limit);
+
+    if (section === 'spotlight') {
+      return res.status(200).json({ spotlight });
     }
 
-    if (!generated.length) {
-      return res.status(200).json({ posts: [] });
+    if (section === 'archive') {
+      return res.status(200).json({
+        archive: {
+          posts: archivePage,
+          total: archiveTotal,
+          total_pages: totalPages,
+          page,
+          limit
+        }
+      });
     }
 
-    // Cache all generated posts
-    try {
-      await sbPost('weekly_posts', generated);
-    } catch (e) {
-      console.warn('[pulse] Could not cache to weekly_posts:', e.message);
-    }
-
-    // Add week_of field before returning
-    const withWeek = generated.map(p => ({ ...p, week_of: toMonday(p.run_date) }));
-    return res.status(200).json({ posts: withWeek });
+    // Default 'all': spotlight + first archive page — used on initial page load
+    return res.status(200).json({
+      spotlight,
+      archive: {
+        posts: archivePage,
+        total: archiveTotal,
+        total_pages: totalPages,
+        page,
+        limit
+      }
+    });
 
   } catch (err) {
     console.error('[pulse] Error:', err.message);

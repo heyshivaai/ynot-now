@@ -1604,10 +1604,12 @@ function renderPulseText(text){
   return safe;
 }
 
+// ── Weekly Pulse: server-side paginated archive ──────────────────────────────
+
 // Snap any date string to the Monday of its ISO week
 function toMondayDate(dateStr){
   var d=new Date(dateStr+'T12:00:00Z');
-  var day=d.getUTCDay(); // 0=Sun
+  var day=d.getUTCDay();
   var diff=(day===0)?-6:1-day;
   d.setUTCDate(d.getUTCDate()+diff);
   return d;
@@ -1617,43 +1619,64 @@ function fmtMonday(dateStr){
   return d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
 }
 
-var ARCHIVE_PAGE_SIZE=5;
-var archivePosts=[];
-var archivePage=0;
+// Archive state — server-side pagination
+var ARCHIVE_LIMIT=5;
+var archiveCurrentPage=0;
+var archiveTotalPages=0;
+var archiveLoading=false;
 
-function renderArchivePage(){
+function fetchArchivePage(page){
+  if(archiveLoading)return;
+  archiveLoading=true;
   var list=document.getElementById('pulseArchiveList');
   var pager=document.getElementById('pulseArchivePager');
-  if(!list)return;
-  var start=archivePage*ARCHIVE_PAGE_SIZE;
-  var slice=archivePosts.slice(start,start+ARCHIVE_PAGE_SIZE);
-  list.innerHTML=slice.map(function(post,i){
-    var idx=start+i;
-    var dateStr=fmtMonday(post.week_of||post.run_date);
-    return'<div class="pulse-archive-item" data-idx="'+idx+'" onclick="toggleArchiveItem(this,'+idx+')">'
-      +'<span class="pulse-archive-item-date">Week of '+dateStr+'</span>'
-      +'<span class="pulse-archive-item-arrow">›</span>'
-      +'</div>'
-      +'<div class="pulse-archive-body" id="archive-body-'+idx+'">'+renderPulseText(post.post_text)+'</div>';
-  }).join('');
-  // Pager
-  var total=archivePosts.length;
-  var pages=Math.ceil(total/ARCHIVE_PAGE_SIZE);
-  if(pages<=1){pager.innerHTML='';return;}
-  pager.innerHTML='<button class="pg-btn" onclick="archiveGoPage('+(archivePage-1)+')" '+(archivePage===0?'disabled':'')+'>&#8592; Prev</button>'
-    +'<span class="pg-info">'+(archivePage+1)+' / '+pages+'</span>'
-    +'<button class="pg-btn" onclick="archiveGoPage('+(archivePage+1)+')" '+(archivePage>=pages-1?'disabled':'')+'>Next &#8594;</button>';
+  if(list) list.innerHTML='<div class="pulse-loading" style="padding:20px 0">Loading…</div>';
+  fetch('/api/pulse?section=archive&page='+page+'&limit='+ARCHIVE_LIMIT)
+    .then(function(r){return r.json();})
+    .then(function(data){
+      archiveLoading=false;
+      var arc=data.archive||{};
+      var posts=arc.posts||[];
+      archiveCurrentPage=arc.page||0;
+      archiveTotalPages=arc.total_pages||0;
+      var total=arc.total||0;
+      if(!list)return;
+      if(!posts.length){
+        list.innerHTML='';
+        if(pager)pager.innerHTML='';
+        return;
+      }
+      list.innerHTML=posts.map(function(post,i){
+        var uid='ap-'+page+'-'+i;
+        var dateStr=fmtMonday(post.week_of||post.run_date);
+        return'<div class="pulse-archive-item" data-uid="'+uid+'" onclick="toggleArchiveItem(this,\''+uid+'\')">'  
+          +'<span class="pulse-archive-item-date">Week of '+dateStr+'</span>'
+          +'<span class="pulse-archive-item-arrow">›</span>'
+          +'</div>'
+          +'<div class="pulse-archive-body" id="archive-body-'+uid+'">'+renderPulseText(post.post_text)+'</div>';
+      }).join('');
+      // Pager
+      if(!pager)return;
+      if(archiveTotalPages<=1){pager.innerHTML='';return;}
+      pager.innerHTML=
+        '<button class="pg-btn" onclick="archiveGoPage('+(archiveCurrentPage-1)+')" '+(archiveCurrentPage===0?'disabled':'')+'>&#8592; Prev</button>'
+        +'<span class="pg-info">'+(archiveCurrentPage+1)+' / '+archiveTotalPages+'</span>'
+        +'<button class="pg-btn" onclick="archiveGoPage('+(archiveCurrentPage+1)+')" '+(archiveCurrentPage>=archiveTotalPages-1?'disabled':'')+'>Next &#8594;</button>';
+    })
+    .catch(function(){
+      archiveLoading=false;
+      if(list)list.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load archive — try refreshing.</div></div>';
+    });
 }
 function archiveGoPage(p){
-  archivePage=p;
-  renderArchivePage();
-  document.getElementById('pulseArchive').scrollIntoView({behavior:'smooth',block:'start'});
+  fetchArchivePage(p);
+  var arc=document.getElementById('pulseArchive');
+  if(arc)arc.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function toggleArchiveItem(el,idx){
-  var body=document.getElementById('archive-body-'+idx);
+function toggleArchiveItem(el,uid){
+  var body=document.getElementById('archive-body-'+uid);
   if(!body)return;
   var isOpen=body.classList.contains('visible');
-  // Close all open items first
   document.querySelectorAll('.pulse-archive-body.visible').forEach(function(b){b.classList.remove('visible');});
   document.querySelectorAll('.pulse-archive-item.open').forEach(function(i){i.classList.remove('open');});
   if(!isOpen){
@@ -1666,21 +1689,24 @@ function renderWeeklyPulse(){
   var el=document.getElementById('pulseContent');
   if(!el)return;
   el.innerHTML='<div class="pulse-loading">Loading briefing…</div>';
-  fetch('/api/pulse')
+  // Initial load: fetch spotlight + first archive page in one request
+  fetch('/api/pulse?section=all&page=0&limit='+ARCHIVE_LIMIT)
     .then(function(r){return r.json();})
     .then(function(data){
-      var posts=data.posts||[];
-      if(!posts.length){
+      var spotlight=data.spotlight;
+      var arc=data.archive||{};
+      var archivePosts=arc.posts||[];
+      archiveCurrentPage=arc.page||0;
+      archiveTotalPages=arc.total_pages||0;
+      if(!spotlight){
         el.innerHTML='<div class="pulse-empty">'
           +'<div class="pulse-empty-title">First briefing coming Monday.</div>'
           +'<div class="pulse-empty-sub">The eight agents run every Monday at 6am UTC.</div>'
           +'</div>';
         return;
       }
-      var latest=posts[0];
-      var past=posts.slice(1);
-      // Spotlight: current week
-      var spotDate=fmtMonday(latest.week_of||latest.run_date);
+      // Spotlight
+      var spotDate=fmtMonday(spotlight.week_of||spotlight.run_date);
       var html='<div class="pulse-spotlight">'
         +'<div class="pulse-spotlight-header">'
         +'<div>'
@@ -1688,12 +1714,10 @@ function renderWeeklyPulse(){
         +'<div class="pulse-spotlight-date">'+spotDate+'</div>'
         +'</div>'
         +'</div>'
-        +'<div class="pulse-spotlight-body">'+renderPulseText(latest.post_text)+'</div>'
+        +'<div class="pulse-spotlight-body">'+renderPulseText(spotlight.post_text)+'</div>'
         +'</div>';
-      // Archive: all previous weeks
-      if(past.length){
-        archivePosts=past;
-        archivePage=0;
+      // Archive shell (populated after innerHTML set)
+      if(archivePosts.length||archiveTotalPages>0){
         html+='<div id="pulseArchive">'
           +'<div class="pulse-archive-heading">Past Briefings</div>'
           +'<div class="pulse-archive-list" id="pulseArchiveList"></div>'
@@ -1701,7 +1725,28 @@ function renderWeeklyPulse(){
           +'</div>';
       }
       el.innerHTML=html;
-      if(past.length) renderArchivePage();
+      // Render the first archive page directly from the data we already have
+      if(archivePosts.length){
+        var list=document.getElementById('pulseArchiveList');
+        var pager=document.getElementById('pulseArchivePager');
+        if(list){
+          list.innerHTML=archivePosts.map(function(post,i){
+            var uid='ap-0-'+i;
+            var dateStr=fmtMonday(post.week_of||post.run_date);
+            return'<div class="pulse-archive-item" data-uid="'+uid+'" onclick="toggleArchiveItem(this,\''+uid+'\')">'  
+              +'<span class="pulse-archive-item-date">Week of '+dateStr+'</span>'
+              +'<span class="pulse-archive-item-arrow">›</span>'
+              +'</div>'
+              +'<div class="pulse-archive-body" id="archive-body-'+uid+'">'+renderPulseText(post.post_text)+'</div>';
+          }).join('');
+        }
+        if(pager&&archiveTotalPages>1){
+          pager.innerHTML=
+            '<button class="pg-btn" disabled>&#8592; Prev</button>'
+            +'<span class="pg-info">1 / '+archiveTotalPages+'</span>'
+            +'<button class="pg-btn" onclick="archiveGoPage(1)" '+(archiveTotalPages<=1?'disabled':'')+'>Next &#8594;</button>';
+        }
+      }
     })
     .catch(function(){
       el.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load briefing — try refreshing.</div></div>';
