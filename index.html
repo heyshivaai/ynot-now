@@ -305,7 +305,29 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .lab-last-updated{font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;color:var(--mid);margin-top:-16px;margin-bottom:28px;opacity:.65;}
 .lab-summary{font-family:var(--ff-mono);font-size:12px;letter-spacing:.06em;color:var(--mid);margin-bottom:16px;}
 .lab-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);}
-.pulse-stack{display:flex;flex-direction:column;gap:32px;margin-top:8px;}
+/* ── Weekly Pulse: Spotlight ── */
+.pulse-spotlight{background:var(--white);border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;margin-bottom:48px;}
+.pulse-spotlight-header{padding:22px 28px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.pulse-spotlight-eyebrow{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:4px;}
+.pulse-spotlight-date{font-family:var(--ff-serif);font-size:22px;letter-spacing:-.01em;color:var(--ink);}
+.pulse-spotlight-body{padding:24px 28px 28px;font-size:15px;line-height:1.85;color:var(--ink);font-family:inherit;}
+.pulse-spotlight-body strong{color:var(--black);font-weight:600;}
+/* ── Weekly Pulse: Archive ── */
+.pulse-archive-heading{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:16px;}
+.pulse-archive-list{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;}
+.pulse-archive-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .12s;}
+.pulse-archive-item:last-child{border-bottom:none;}
+.pulse-archive-item:hover{background:var(--off);}
+.pulse-archive-item.open{background:var(--off);}
+.pulse-archive-item-date{font-family:var(--ff-mono);font-size:12px;letter-spacing:.04em;color:var(--ink);}
+.pulse-archive-item-arrow{font-family:var(--ff-mono);font-size:11px;color:var(--mid);transition:transform .15s;flex-shrink:0;}
+.pulse-archive-item.open .pulse-archive-item-arrow{transform:rotate(90deg);}
+.pulse-archive-body{display:none;padding:20px 24px 24px;border-bottom:1px solid var(--rule);font-size:14px;line-height:1.8;color:var(--ink);background:var(--white);}
+.pulse-archive-body.visible{display:block;}
+.pulse-archive-body strong{color:var(--black);font-weight:600;}
+.pulse-archive-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:20px;}
+/* ── Shared ── */
+.pulse-stack{display:flex;flex-direction:column;gap:0;margin-top:8px;}
 .pulse-week{background:var(--white);border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;}
 .pulse-week-header{padding:22px 28px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .pulse-week-left{display:flex;flex-direction:column;gap:4px;}
@@ -1582,6 +1604,64 @@ function renderPulseText(text){
   return safe;
 }
 
+// Snap any date string to the Monday of its ISO week
+function toMondayDate(dateStr){
+  var d=new Date(dateStr+'T12:00:00Z');
+  var day=d.getUTCDay(); // 0=Sun
+  var diff=(day===0)?-6:1-day;
+  d.setUTCDate(d.getUTCDate()+diff);
+  return d;
+}
+function fmtMonday(dateStr){
+  var d=toMondayDate(dateStr);
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
+}
+
+var ARCHIVE_PAGE_SIZE=5;
+var archivePosts=[];
+var archivePage=0;
+
+function renderArchivePage(){
+  var list=document.getElementById('pulseArchiveList');
+  var pager=document.getElementById('pulseArchivePager');
+  if(!list)return;
+  var start=archivePage*ARCHIVE_PAGE_SIZE;
+  var slice=archivePosts.slice(start,start+ARCHIVE_PAGE_SIZE);
+  list.innerHTML=slice.map(function(post,i){
+    var idx=start+i;
+    var dateStr=fmtMonday(post.week_of||post.run_date);
+    return'<div class="pulse-archive-item" data-idx="'+idx+'" onclick="toggleArchiveItem(this,'+idx+')">'
+      +'<span class="pulse-archive-item-date">Week of '+dateStr+'</span>'
+      +'<span class="pulse-archive-item-arrow">›</span>'
+      +'</div>'
+      +'<div class="pulse-archive-body" id="archive-body-'+idx+'">'+renderPulseText(post.post_text)+'</div>';
+  }).join('');
+  // Pager
+  var total=archivePosts.length;
+  var pages=Math.ceil(total/ARCHIVE_PAGE_SIZE);
+  if(pages<=1){pager.innerHTML='';return;}
+  pager.innerHTML='<button class="pg-btn" onclick="archiveGoPage('+(archivePage-1)+')" '+(archivePage===0?'disabled':'')+'>&#8592; Prev</button>'
+    +'<span class="pg-info">'+(archivePage+1)+' / '+pages+'</span>'
+    +'<button class="pg-btn" onclick="archiveGoPage('+(archivePage+1)+')" '+(archivePage>=pages-1?'disabled':'')+'>Next &#8594;</button>';
+}
+function archiveGoPage(p){
+  archivePage=p;
+  renderArchivePage();
+  document.getElementById('pulseArchive').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function toggleArchiveItem(el,idx){
+  var body=document.getElementById('archive-body-'+idx);
+  if(!body)return;
+  var isOpen=body.classList.contains('visible');
+  // Close all open items first
+  document.querySelectorAll('.pulse-archive-body.visible').forEach(function(b){b.classList.remove('visible');});
+  document.querySelectorAll('.pulse-archive-item.open').forEach(function(i){i.classList.remove('open');});
+  if(!isOpen){
+    body.classList.add('visible');
+    el.classList.add('open');
+  }
+}
+
 function renderWeeklyPulse(){
   var el=document.getElementById('pulseContent');
   if(!el)return;
@@ -1597,19 +1677,31 @@ function renderWeeklyPulse(){
           +'</div>';
         return;
       }
-      el.innerHTML=posts.map(function(post,i){
-        var d=new Date(post.run_date+'T12:00:00Z');
-        var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-        var label=i===0?'Latest · Week of '+dateStr:'Previous · Week of '+dateStr;
-        return'<div class="pulse-week">'
-          +'<div class="pulse-week-header">'
-          +'<div class="pulse-week-left">'
-          +'<div class="pulse-week-label">'+label+'</div>'
-          +'</div>'
-          +'</div>'
-          +'<div class="pulse-week-body">'+renderPulseText(post.post_text)+'</div>'
+      var latest=posts[0];
+      var past=posts.slice(1);
+      // Spotlight: current week
+      var spotDate=fmtMonday(latest.week_of||latest.run_date);
+      var html='<div class="pulse-spotlight">'
+        +'<div class="pulse-spotlight-header">'
+        +'<div>'
+        +'<div class="pulse-spotlight-eyebrow">This Week’s Briefing</div>'
+        +'<div class="pulse-spotlight-date">'+spotDate+'</div>'
+        +'</div>'
+        +'</div>'
+        +'<div class="pulse-spotlight-body">'+renderPulseText(latest.post_text)+'</div>'
+        +'</div>';
+      // Archive: all previous weeks
+      if(past.length){
+        archivePosts=past;
+        archivePage=0;
+        html+='<div id="pulseArchive">'
+          +'<div class="pulse-archive-heading">Past Briefings</div>'
+          +'<div class="pulse-archive-list" id="pulseArchiveList"></div>'
+          +'<div class="pulse-archive-pager" id="pulseArchivePager"></div>'
           +'</div>';
-      }).join('');
+      }
+      el.innerHTML=html;
+      if(past.length) renderArchivePage();
     })
     .catch(function(){
       el.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load briefing — try refreshing.</div></div>';

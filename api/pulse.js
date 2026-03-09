@@ -1,10 +1,20 @@
 // api/pulse.js
-// Returns executive weekly briefings.
+// Returns executive weekly briefings ordered newest first.
+// Deduplicates by ISO week so only one post per Monday-week is returned.
 // If weekly_posts is empty, generates on-demand for the last two runs and caches them.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+
+// Return the ISO Monday date string for any given date string (YYYY-MM-DD)
+function toMonday(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const day = d.getUTCDay(); // 0=Sun, 1=Mon ... 6=Sat
+  const diff = (day === 0) ? -6 : 1 - day; // days to subtract to reach Monday
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().split('T')[0]; // YYYY-MM-DD of that Monday
+}
 
 async function sbGet(path) {
   const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
@@ -74,11 +84,21 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // Return cached posts if they exist (table may not exist yet — that's fine)
+    // Return all cached posts, deduplicated to one per Monday-week, newest first
     try {
-      const cached = await sbGet('weekly_posts?order=run_date.desc&limit=2&status=eq.ready');
+      const cached = await sbGet('weekly_posts?order=run_date.desc&status=eq.ready');
       if (cached && cached.length) {
-        return res.status(200).json({ posts: cached });
+        // Deduplicate: keep only the most recent post per Monday-week
+        const seenWeeks = new Set();
+        const deduped = [];
+        for (const post of cached) {
+          const week = toMonday(post.run_date);
+          if (!seenWeeks.has(week)) {
+            seenWeeks.add(week);
+            deduped.push({ ...post, week_of: week });
+          }
+        }
+        return res.status(200).json({ posts: deduped });
       }
     } catch (e) {
       console.warn('[pulse] weekly_posts not available, generating on-demand:', e.message);
@@ -118,11 +138,12 @@ module.exports = async function handler(req, res) {
     try {
       await sbPost('weekly_posts', generated);
     } catch (e) {
-      // weekly_posts table may not exist yet — proceed without caching
       console.warn('[pulse] Could not cache to weekly_posts:', e.message);
     }
 
-    return res.status(200).json({ posts: generated });
+    // Add week_of field before returning
+    const withWeek = generated.map(p => ({ ...p, week_of: toMonday(p.run_date) }));
+    return res.status(200).json({ posts: withWeek });
 
   } catch (err) {
     console.error('[pulse] Error:', err.message);
