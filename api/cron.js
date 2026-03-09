@@ -15,8 +15,8 @@ var MINDS = [
   },
   {
     id: 'vita', name: 'Vita', icon: 'Vita', domain: 'Life',
-    brief: 'You are Vita, a specialist in Life and Health insurance AI. Find the most significant AI developments in life insurance, health insurance, and longevity risk: mortality prediction, personalised underwriting, wearables, actuarial ML. You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
-    querySeeds: ['life insurance AI underwriting 2026','health insurance AI claims automation','longevity risk machine learning actuarial','wearables insurance underwriting data']
+    brief: 'You are Vita, a specialist in Life insurance, Annuities, and Retirement AI. Find the most significant AI developments in life insurance, annuity products, retirement income planning, and longevity risk: mortality prediction, personalised life underwriting, wearables for life insurance, actuarial ML, retirement AI. DO NOT include health insurance, pharmacy benefits, hospital systems, or healthcare IT (e.g. Optum, Epic, payers, providers, hospital claims). You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
+    querySeeds: ['life insurance AI underwriting 2026','annuity retirement income AI machine learning','longevity risk mortality prediction actuarial ML','wearables life insurance underwriting data']
   },
   {
     id: 'lex', name: 'Lex', icon: 'Lex', domain: 'Regulation',

@@ -58,12 +58,15 @@ async function sbPost(table, rows) {
   if (!res.ok) throw new Error('Supabase save ' + res.status);
 }
 
-async function generateExecutiveBriefing(findings, runDate) {
+async function generateExecutiveBriefing(findings, runDate, prevFindings) {
   const signals = findings.filter(f => f.verdict === 'SIGNAL');
   const watches = findings.filter(f => f.verdict === 'WATCH');
   const noises  = findings.filter(f => f.verdict === 'NOISE');
 
-  // Pick the 3 most compelling findings for bullets: high-confidence SIGNALs first, then WATCHes
+  // Agent summary line — goes in the card header, NOT the post body
+  const agentSummary = `Eight agents · ${findings.length} findings — ${signals.length} Signals, ${watches.length} Watch, ${noises.length} Noise`;
+
+  // Pick the 3 most compelling findings for bullets: high-confidence SIGNALs first
   const ranked = [
     ...signals.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
     ...watches.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
@@ -72,28 +75,45 @@ async function generateExecutiveBriefing(findings, runDate) {
 
   const bulletData = ranked.map(f => {
     const trlLabel = { 9:'Proven',8:'Proven',7:'Standard',6:'Standard',5:'Pilot',4:'Pilot',3:'Experiment',2:'Experiment',1:'Idea' }[f.trl] || 'Watch';
-    return `[${f.verdict} · ${trlLabel}] ${f.title} (${f.domain}/${f.subdomain || f.domain}): ${(f.body || '').slice(0, 180)}`;
+    return `[${f.verdict} · ${trlLabel} · ${f.signal_status || 'NEW'}] ${f.title} (${f.domain}/${f.subdomain || f.domain}): ${(f.body || '').slice(0, 180)}`;
   }).join('\n\n');
 
   const allLines = findings.map(f =>
     `[${f.verdict}] ${f.mind_name || f.mind_id} (${f.domain}): ${f.title} — ${(f.body || '').slice(0, 150)}`
   ).join('\n');
 
+  // What changed from last week
+  let changedContext = '';
+  if (prevFindings && prevFindings.length) {
+    const prevTitles = prevFindings.map(f => f.title.toLowerCase());
+    const newThisWeek = findings.filter(f => {
+      const words = f.title.toLowerCase().split(/\s+/);
+      return !prevTitles.some(pt => words.filter(w => w.length > 4 && pt.includes(w)).length >= 2);
+    }).slice(0, 3).map(f => f.title);
+    const recurring = findings.filter(f => f.signal_status === 'CONFIRMED' || f.signal_status === 'RECURRING').slice(0, 2).map(f => f.title);
+    if (newThisWeek.length || recurring.length) {
+      changedContext = `\n\nCHANGES FROM LAST WEEK:\n`;
+      if (newThisWeek.length) changedContext += `New this week: ${newThisWeek.join(', ')}\n`;
+      if (recurring.length) changedContext += `Recurring/confirmed signals: ${recurring.join(', ')}\n`;
+    }
+  }
+
   const prompt =
     `You are writing the weekly post for YNOT.NOW — a technology signal tracker for the insurance industry, read by CTOs, Chief Innovation Officers, and senior strategy leaders.\n\n` +
-    `Week of ${runDate}. Eight specialist agents (each covering a different domain) scanned the market and produced ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${noises.length} Noise.\n\n` +
+    `SCOPE: Life insurance, annuities, retirement products, P&C insurance (personal lines, commercial lines, specialty), and horizontal/deep tech with insurance implications. DO NOT include health insurance, pharmacy benefits, or healthcare IT findings (e.g. Optum, Epic, hospital systems).\n\n` +
+    `Week of ${runDate}. Eight specialist agents scanned the market and produced ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${noises.length} Noise.\n\n` +
     `TOP FINDINGS FOR BULLETS:\n${bulletData}\n\n` +
-    `ALL FINDINGS (for context only):\n${allLines}\n\n` +
-    `Write a single post that works both on the YNOT.NOW website and as a LinkedIn post. Use EXACTLY this structure — no deviations:\n\n` +
-    `LINE 1 (Hook): One sentence. Specific. Slightly provocative or surprising. Must reference a real finding. No generic openers like "This week in AI" or "AI is transforming". Make it feel like something a sharp practitioner would say.\n\n` +
-    `BLANK LINE\n\n` +
-    `LINE 2 (Agent scan summary): One sentence that tells readers what the agents found this week — mention the total findings count, the split (Signals/Watch/Noise), and the dominant domain or theme. Example pattern: "Eight agents scanned the market this week. ${findings.length} findings — ${signals.length} Signals, ${watches.length} Watch, ${noises.length} Noise — with [dominant theme] as the clearest pattern."\n\n` +
+    `ALL FINDINGS (for context only):\n${allLines}\n` +
+    changedContext + `\n` +
+    `Write a single post. Use EXACTLY this structure — no deviations:\n\n` +
+    `LINE 1 (Hook): One sentence. Specific. Slightly provocative or surprising. Must reference a real finding from the scope above. No generic openers. No health insurance examples. Make it feel like something a sharp P&C or Life insurance CTO would say.\n\n` +
     `BLANK LINE\n\n` +
     `BULLETS (exactly 3, each on its own line starting with →):\n` +
-    `→ [Finding title, 6 words max] — [one sharp sentence: what it is + why it matters to an insurance leader. Max 22 words.]\n` +
+    `→ [Finding title, 6 words max] — [one sharp sentence: what it is + why it matters. Max 22 words.]\n` +
     `→ [Finding title, 6 words max] — [one sharp sentence. Max 22 words.]\n` +
     `→ [Finding title, 6 words max] — [one sharp sentence. Max 22 words.]\n\n` +
     `BLANK LINE\n\n` +
+    (changedContext ? `WHAT CHANGED: One sentence only. What is new or different compared to last week? Reference a specific signal that is emerging or confirmed. Start with "From last week:"\n\nBLANK LINE\n\n` : '') +
     `CLOSE: One sentence. What should insurance leaders be doing or watching before next Monday? Direct. No clichés.\n\n` +
     `BLANK LINE\n\n` +
     `ATTRIBUTION LINE: Exactly this text: All findings this week \u2192 ynot.now\n\n` +
@@ -103,9 +123,8 @@ async function generateExecutiveBriefing(findings, runDate) {
     `- Plain English. No jargon unless it is the precise term.\n` +
     `- Do not use: leverage, landscape, transformative, game-changer, revolutionise, unlock, ecosystem, synergy, paradigm, holistic, robust, seamless.\n` +
     `- No markdown, no bold, no asterisks — plain text only.\n` +
-    `- No em-dashes (—) in the hook or close. Use a period or comma.\n` +
     `- Do not start any sentence with "I".\n` +
-    `- Total post: 160–220 words.\n` +
+    `- Total post: 150–210 words.\n` +
     `- Return ONLY the post text, nothing else.`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -118,13 +137,13 @@ async function generateExecutiveBriefing(findings, runDate) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
-      system: 'You write the weekly post for YNOT.NOW, a technology signal tracker for the insurance industry. The post must work on the website and on LinkedIn. Sharp, specific, opinionated. Plain text only — no markdown, no bold, no asterisks. Use → for bullets exactly as instructed. Follow the structure precisely.',
+      system: 'You write the weekly post for YNOT.NOW, a technology signal tracker for the insurance industry (Life, Annuities, P&C, Horizontal Tech — NOT health insurance). Sharp, specific, opinionated. Plain text only — no markdown, no bold, no asterisks. Use → for bullets exactly as instructed. Follow the structure precisely.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
   if (!res.ok) throw new Error('Claude ' + res.status);
   const d = await res.json();
-  return d.content[0].text.trim();
+  return { postText: d.content[0].text.trim(), agentSummary };
 }
 
 // Deduplicate an array of posts to one per Monday-week (keep newest per week)
@@ -185,11 +204,18 @@ module.exports = async function handler(req, res) {
         }
       }
       const generated = [];
-      for (const run of runs) {
+      for (let i = 0; i < runs.length; i++) {
+        const run = runs[i];
         const { data: findings } = await sbGet(`findings?run_id=eq.${encodeURIComponent(run.run_id)}&order=verdict.asc,confidence.desc`);
         if (!findings || !findings.length) continue;
-        const postText = await generateExecutiveBriefing(findings, run.run_date);
-        generated.push({ run_id: run.run_id, run_date: run.run_date, post_text: postText, status: 'ready' });
+        // Pass previous week's findings for 'what changed' context
+        let prevFindings = [];
+        if (i < runs.length - 1) {
+          const { data: pf } = await sbGet(`findings?run_id=eq.${encodeURIComponent(runs[i+1].run_id)}&select=title,signal_status&order=confidence.desc&limit=20`);
+          prevFindings = pf || [];
+        }
+        const { postText, agentSummary } = await generateExecutiveBriefing(findings, run.run_date, prevFindings);
+        generated.push({ run_id: run.run_id, run_date: run.run_date, post_text: postText, agent_summary: agentSummary, status: 'ready' });
       }
       if (!generated.length) {
         return res.status(200).json({ spotlight: null, archive: { posts: [], total: 0, page, limit } });
