@@ -150,19 +150,22 @@ module.exports = async function handler(req, res) {
   const section = req.query.section || 'all'; // 'all' | 'spotlight' | 'archive'
   const page    = Math.max(0, parseInt(req.query.page  || '0', 10));
   const limit   = Math.min(ARCHIVE_MAX_LIMIT, Math.max(1, parseInt(req.query.limit || String(ARCHIVE_DEFAULT_LIMIT), 10)));
+  const force   = req.query.force === 'true'; // bypass cache and regenerate
 
   try {
-    // ── Try weekly_posts cache first ──────────────────────────────────────────
+    // ── Try weekly_posts cache first (skip if force=true) ────────────────────
     let allPosts = null;
-    try {
-      // Fetch all posts ordered newest first — we need them all to deduplicate by week.
-      // weekly_posts grows at 1 row/week so this is always a small table.
-      const { data } = await sbGet('weekly_posts?order=run_date.desc&status=eq.ready');
-      if (data && data.length) {
-        allPosts = dedupByWeek(data); // one entry per Monday-week, newest first
+    if (!force) {
+      try {
+        // Fetch all posts ordered newest first — we need them all to deduplicate by week.
+        // weekly_posts grows at 1 row/week so this is always a small table.
+        const { data } = await sbGet('weekly_posts?order=run_date.desc&status=eq.ready');
+        if (data && data.length) {
+          allPosts = dedupByWeek(data); // one entry per Monday-week, newest first
+        }
+      } catch (e) {
+        console.warn('[pulse] weekly_posts not available, generating on-demand:', e.message);
       }
-    } catch (e) {
-      console.warn('[pulse] weekly_posts not available, generating on-demand:', e.message);
     }
 
     // ── Fall back: generate on-demand for last 2 runs ─────────────────────────
