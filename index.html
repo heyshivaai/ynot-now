@@ -326,6 +326,21 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .ps-attribution{font-family:var(--ff-mono);font-size:11px;letter-spacing:.04em;color:var(--mid);margin-bottom:8px;}
 .ps-attribution a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;}
 .ps-hashtags{font-family:var(--ff-mono);font-size:11px;letter-spacing:.03em;color:var(--mid);margin-bottom:4px;}
+/* Expandable finding drawer */
+.ps-learn-btn{display:inline-block;font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;padding:2px 9px;border:1px solid var(--rule);border-radius:100px;background:transparent;color:var(--mid);cursor:pointer;transition:all .12s;white-space:nowrap;vertical-align:middle;margin-left:6px;}
+.ps-learn-btn:hover{border-color:var(--ink);color:var(--ink);}
+.ps-finding-drawer{display:none;margin:10px 0 4px 28px;padding:14px 16px;background:var(--off);border-radius:8px;border-left:3px solid var(--rule);}
+.ps-finding-drawer.open{display:block;}
+.ps-finding-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.ps-finding-verdict{font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;padding:3px 9px;border-radius:100px;font-weight:600;}
+.pv-signal{background:#000;color:#fff;}
+.pv-watch{background:#e8e8e6;color:#333;}
+.pv-noise{background:#f5f5f3;color:#999;}
+.ps-finding-domain{font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;color:var(--mid);}
+.ps-finding-trl{font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;color:var(--mid);margin-left:auto;}
+.ps-finding-body{font-size:13px;line-height:1.7;color:var(--ink);margin:0 0 10px;}
+.ps-finding-refs{display:flex;flex-direction:column;gap:4px;}
+.ps-finding-ref{font-size:12px;color:var(--mid);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 .li-copy-btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;padding:8px 18px;border:1.5px solid var(--rule);border-radius:100px;background:var(--white);color:var(--ink);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .li-copy-btn:hover{border-color:#0a66c2;color:#0a66c2;background:#f0f6ff;}
 .li-copy-btn.done{border-color:#2e7d32;color:#2e7d32;background:#f0faf0;}
@@ -1601,7 +1616,7 @@ function linkPulseTerms(text){
   return result;
 }
 
-function renderPulseText(text, isSpotlight){
+function renderPulseText(text, isSpotlight, topFindings){
   var raw = (text||'').trim();
   if(!raw) return '';
 
@@ -1639,19 +1654,61 @@ function renderPulseText(text, isSpotlight){
     html+='<div class="ps-hook">'+escHtml(hook.join(' '))+'</div>';
     // Summary pill
     if(summary.length) html+='<div class="ps-summary">'+escHtml(summary.join(' '))+'</div>';
-    // Bullets
+    // Bullets — match each to a finding for expandable detail
+    var findings=topFindings||[];
+    function findMatch(bulletTitle){
+      var bt=(bulletTitle||'').toLowerCase().replace(/[^a-z0-9 ]/g,'');
+      var best=null, bestScore=0;
+      for(var fi=0;fi<findings.length;fi++){
+        var ft=(findings[fi].title||'').toLowerCase().replace(/[^a-z0-9 ]/g,'');
+        var words=bt.split(' ').filter(function(w){return w.length>3;});
+        var matches=words.filter(function(w){return ft.indexOf(w)>=0;}).length;
+        var score=words.length>0?matches/words.length:0;
+        if(score>bestScore){bestScore=score;best=findings[fi];}
+      }
+      return bestScore>=0.4?best:null;
+    }
     if(bullets.length){
       html+='<div class="ps-bullets">';
-      bullets.forEach(function(b){
+      bullets.forEach(function(b,bi){
         var parts=b.split(/—|--/);
         var title=parts[0]?parts[0].trim():'';
         var body=parts.slice(1).join('—').trim();
-        html+='<div class="ps-bullet">';
+        var match=findMatch(title);
+        var uid='psb-'+bi;
+        html+='<div class="ps-bullet" id="'+uid+'">';
         html+='<span class="ps-bullet-arrow">→</span>';
         html+='<span class="ps-bullet-text">';
         if(title&&body) html+='<span class="ps-bullet-title">'+escHtml(title)+'</span> — '+escHtml(body);
         else html+=escHtml(b);
-        html+='</span></div>';
+        if(match){
+          html+=' <button class="ps-learn-btn" onclick="toggleFinding(\'' +uid+'\')" aria-expanded="false">Learn more</button>';
+          html+='</span>';
+          // Detail drawer
+          var refs=match.refs||[];
+          var refsHtml='';
+          if(refs.length){
+            refsHtml='<div class="ps-finding-refs">';
+            refs.slice(0,3).forEach(function(r){
+              var label=r.label||r.url||'';
+              refsHtml+='<a href="'+escHtml(r.url)+'" target="_blank" rel="noopener" class="ps-finding-ref">'+escHtml(label)+'</a>';
+            });
+            refsHtml+='</div>';
+          }
+          var verdictClass='pv-'+((match.verdict||'').toLowerCase());
+          html+='<div class="ps-finding-drawer" id="'+uid+'-drawer">';
+          html+='<div class="ps-finding-meta">';
+          html+='<span class="ps-finding-verdict '+verdictClass+'">'+escHtml(match.verdict||'')+'</span>';
+          if(match.domain) html+='<span class="ps-finding-domain">'+escHtml(match.domain)+(match.subdomain?' · '+escHtml(match.subdomain):'')+'</span>';
+          if(match.trl) html+='<span class="ps-finding-trl">TRL '+match.trl+'</span>';
+          html+='</div>';
+          html+='<p class="ps-finding-body">'+escHtml(match.body||'')+'</p>';
+          html+=refsHtml;
+          html+='</div>';
+        } else {
+          html+='</span>';
+        }
+        html+='</div>';
       });
       html+='</div>';
     }
@@ -1798,6 +1855,7 @@ function renderWeeklyPulse(){
     .then(function(r){return r.json();})
     .then(function(data){
       var spotlight=data.spotlight;
+      var topFindings=data.top_findings||[];
       var arc=data.archive||{};
       var archivePosts=arc.posts||[];
       archiveCurrentPage=arc.page||0;
@@ -1819,7 +1877,7 @@ function renderWeeklyPulse(){
         +'<div class="pulse-spotlight-date">'+spotDate+'</div>'
         +'</div>'
         +'</div>'
-        +'<div class="pulse-spotlight-body">'+renderPulseText(spotText,true)+'</div>'
+        +'<div class="pulse-spotlight-body">'+renderPulseText(spotText,true,topFindings)+'</div>'
         +'<div class="pulse-spotlight-footer">'
         +'<span class="pulse-spotlight-hint">Ready to share on LinkedIn</span>'
         +'<button class="li-copy-btn" id="liCopyBtn" onclick="copySpotlight()" title="Copy post to clipboard">'
@@ -1865,6 +1923,15 @@ function renderWeeklyPulse(){
     .catch(function(){
       el.innerHTML='<div class="pulse-empty"><div class="pulse-empty-sub">Could not load briefing — try refreshing.</div></div>';
     });
+}
+
+function toggleFinding(uid){
+  var drawer=document.getElementById(uid+'-drawer');
+  var btn=document.querySelector('#'+uid+' .ps-learn-btn');
+  if(!drawer)return;
+  var open=drawer.classList.toggle('open');
+  if(btn)btn.setAttribute('aria-expanded',open?'true':'false');
+  if(btn)btn.textContent=open?'Close':'Learn more';
 }
 
 function escHtml(s){

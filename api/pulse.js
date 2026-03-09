@@ -198,15 +198,44 @@ module.exports = async function handler(req, res) {
       allPosts = dedupByWeek(generated);
     }
 
-    // ── Build response ────────────────────────────────────────────────────────
+    // ── Build response ──────────────────────────────────────────
     const spotlight = allPosts[0] || null;
     const archiveAll = allPosts.slice(1); // everything except the current week
     const archiveTotal = archiveAll.length;
     const archivePage = archiveAll.slice(page * limit, page * limit + limit);
     const totalPages = Math.ceil(archiveTotal / limit);
 
+    // ── Fetch top findings for the spotlight run (for expandable bullets) ──────
+    let topFindings = [];
+    if (spotlight && (section === 'spotlight' || section === 'all')) {
+      try {
+        const { data: fd } = await sbGet(
+          `findings?run_id=eq.${encodeURIComponent(spotlight.run_id)}&order=confidence.desc&limit=10`
+        );
+        if (fd && fd.length) {
+          // Return top 5 SIGNALs + WATCHes, with key fields only
+          topFindings = fd
+            .filter(f => f.verdict === 'SIGNAL' || f.verdict === 'WATCH')
+            .slice(0, 5)
+            .map(f => ({
+              id: f.id,
+              title: f.title,
+              verdict: f.verdict,
+              domain: f.domain,
+              subdomain: f.subdomain,
+              trl: f.trl,
+              confidence: f.confidence,
+              body: f.body,
+              refs: f.refs
+            }));
+        }
+      } catch (e) {
+        console.warn('[pulse] Could not fetch top findings:', e.message);
+      }
+    }
+
     if (section === 'spotlight') {
-      return res.status(200).json({ spotlight });
+      return res.status(200).json({ spotlight, top_findings: topFindings });
     }
 
     if (section === 'archive') {
@@ -224,6 +253,7 @@ module.exports = async function handler(req, res) {
     // Default 'all': spotlight + first archive page — used on initial page load
     return res.status(200).json({
       spotlight,
+      top_findings: topFindings,
       archive: {
         posts: archivePage,
         total: archiveTotal,
