@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgenticEvaluation",
+  "type": "object",
+  "properties": {
+    "agent_name": { "type": "string" },
+    "version": { "type": "string" },
+    "evaluated_at": { "type": "string", "format": "date-time" },
+    "environment": { "type": "string", "enum": ["dev", "staging", "prod"] },
+    "overall_status": { "type": "string", "enum": ["PASS", "CONDITIONAL_PASS", "FAIL"] },
+    "five_v": {
+      "type": "object",
+      "properties": {
+        "veracity": { "$ref": "#/$defs/v_dimension" },
+        "value": { "$ref": "#/$defs/v_dimension" },
+        "vulnerability": { "$ref": "#/$defs/v_dimension" },
+        "variability": { "$ref": "#/$defs/v_dimension" },
+        "visibility": { "$ref": "#/$defs/v_dimension" }
+      },
+      "required": ["veracity", "value", "vulnerability", "variability", "visibility"]
+    },
+    "gates": {
+      "type": "object",
+      "properties": {
+        "role_clarity": { "$ref": "#/$defs/gate" },
+        "output_standard": { "$ref": "#/$defs/gate" },
+        "user_experience": { "$ref": "#/$defs/gate" },
+        "failure_handling": { "$ref": "#/$defs/gate" },
+        "calibration_architecture": { "$ref": "#/$defs/gate" }
+      },
+      "required": [
+        "role_clarity",
+        "output_standard",
+        "user_experience",
+        "failure_handling",
+        "calibration_architecture"
+      ]
+    },
+    "architecture": {
+      "type": "object",
+      "properties": {
+        "agent_roster": { "type": "array", "items": { "type": "string" } },
+        "orchestration_model": { "type": "string" },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "memory_layers": { "type": "array", "items": { "type": "string" } },
+        "human_in_loop": { "type": "boolean" }
+      }
+    },
+    "benchmarks": {
+      "type": "object",
+      "properties": {
+        "planning": { "type": "string" },
+        "tool_use": { "type": "string" },
+        "trajectory": { "type": "string" },
+        "cost_latency": { "type": "string" }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "required": ["agent_name", "version", "evaluated_at", "overall_status", "five_v", "gates"],
+  "$defs": {
+    "v_dimension": {
+      "type": "object",
+      "properties": {
+        "score": { "type": "number", "minimum": 0, "maximum": 5 },
+        "findings": { "type": "string" },
+        "risks": { "type": "string" },
+        "remediation": { "type": "string" }
+      },
+      "required": ["score"]
+    },
+    "gate": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PASS", "CONDITIONAL", "FAIL"]
+        },
+        "notes": { "type": "string" }
+      },
+      "required": ["status"]
+    }
+  }
+}
