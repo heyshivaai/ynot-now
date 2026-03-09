@@ -6,143 +6,397 @@ var CRON_SECRET   = process.env.CRON_SECRET   || 'ynot-secret-2025';
 var TAVILY_KEY    = process.env.TAVILY_API_KEY || '';
 var CLAUDE_MODEL  = 'claude-sonnet-4-20250514';
 
+// ── AGENT DEFINITIONS ──────────────────────────────────────────────────────
 var MINDS = [
-  { id:'scout', name:'Scout', icon:'Scout', domain:'P&C', brief:'You are Scout, a specialist in P&C insurance AI. Find the most significant AI developments in property and casualty insurance this week: fraud detection, underwriting automation, claims processing, telematics, catastrophe modelling.', querySeeds:['AI fraud detection insurance 2026','P&C underwriting automation machine learning','claims AI automation property casualty','telematics AI underwriting 2026'] },
-  { id:'vita', name:'Vita', icon:'Vita', domain:'Life', brief:'You are Vita, a specialist in Life and Health insurance AI. Find the most significant AI developments in life insurance, health insurance, and longevity risk this week: mortality prediction, personalised underwriting, wearables, actuarial ML.', querySeeds:['life insurance AI underwriting 2026','health insurance AI claims automation','longevity risk machine learning actuarial','wearables insurance underwriting data'] },
-  { id:'lex', name:'Lex', icon:'Lex', domain:'Regulation', brief:'You are Lex, a specialist in insurance AI regulation. Find the most significant regulatory developments affecting AI in insurance this week: FCA, EIOPA, NAIC, EU AI Act, IAIS, model risk governance, explainability requirements.', querySeeds:['FCA AI insurance regulation 2026','EU AI Act insurance compliance','EIOPA digital transformation insurance','NAIC AI model risk governance explainability'] },
-  { id:'terra', name:'Terra', icon:'Terra', domain:'Climate', brief:'You are Terra, a specialist in climate risk and ESG for insurance. Find the most significant AI and data science developments in climate risk modelling, parametric insurance, ESG underwriting, and catastrophe prediction this week.', querySeeds:['climate risk AI insurance 2026','parametric insurance AI machine learning','ESG underwriting data analytics','catastrophe prediction AI model flood'] },
-  { id:'horizon', name:'Horizon', icon:'Horizon', domain:'Horizontal', brief:'You are Horizon, a specialist in horizontal enterprise AI with insurance implications. Find the most significant developments in foundation models, agentic AI, synthetic data, federated learning, post-quantum cryptography, and real-time decisioning that will impact insurance carriers this week.', querySeeds:['agentic AI enterprise insurance 2026','foundation model insurance applications','synthetic data insurance privacy federated learning','post-quantum cryptography financial services insurance'] }
+  {
+    id: 'scout', name: 'Scout', icon: 'Scout', domain: 'P&C',
+    brief: 'You are Scout, a specialist in P&C insurance AI. Your job is to find the most significant AI developments in property and casualty insurance: fraud detection, underwriting automation, claims processing, telematics, catastrophe modelling. You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
+    querySeeds: ['AI fraud detection insurance 2026','P&C underwriting automation machine learning','claims AI automation property casualty','telematics AI underwriting 2026']
+  },
+  {
+    id: 'vita', name: 'Vita', icon: 'Vita', domain: 'Life',
+    brief: 'You are Vita, a specialist in Life and Health insurance AI. Find the most significant AI developments in life insurance, health insurance, and longevity risk: mortality prediction, personalised underwriting, wearables, actuarial ML. You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
+    querySeeds: ['life insurance AI underwriting 2026','health insurance AI claims automation','longevity risk machine learning actuarial','wearables insurance underwriting data']
+  },
+  {
+    id: 'lex', name: 'Lex', icon: 'Lex', domain: 'Regulation',
+    brief: 'You are Lex, a specialist in insurance AI regulation. Find the most significant regulatory developments affecting AI in insurance: FCA, EIOPA, NAIC, EU AI Act, IAIS, model risk governance, explainability requirements. You have memory of what you found in previous weeks — use it to track regulatory signal evolution.',
+    querySeeds: ['FCA AI insurance regulation 2026','EU AI Act insurance compliance','EIOPA digital transformation insurance','NAIC AI model risk governance explainability']
+  },
+  {
+    id: 'terra', name: 'Terra', icon: 'Terra', domain: 'Climate',
+    brief: 'You are Terra, a specialist in climate risk and ESG for insurance. Find the most significant AI and data science developments in climate risk modelling, parametric insurance, ESG underwriting, and catastrophe prediction. You have memory of what you found in previous weeks — use it to track signal evolution.',
+    querySeeds: ['climate risk AI insurance 2026','parametric insurance AI machine learning','ESG underwriting data analytics','catastrophe prediction AI model flood']
+  },
+  {
+    id: 'horizon', name: 'Horizon', icon: 'Horizon', domain: 'Horizontal',
+    brief: 'You are Horizon, a specialist in horizontal enterprise AI with insurance implications. Find the most significant developments in foundation models, agentic AI, synthetic data, federated learning, post-quantum cryptography, and real-time decisioning that will impact insurance carriers. You have memory of what you found in previous weeks — use it to track signal evolution.',
+    querySeeds: ['agentic AI enterprise insurance 2026','foundation model insurance applications','synthetic data insurance privacy federated learning','post-quantum cryptography financial services insurance']
+  }
 ];
 
-function normalizeVerdict(v){var u=String(v||'').toUpperCase();if(u==='SIGNAL')return 'SIGNAL';if(u==='NOISE')return 'NOISE';return 'WATCH';}
-function normalizeRisk(r){var l=String(r||'').toLowerCase();if(l==='low')return 'low';if(l==='high')return 'high';return 'medium';}
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function normalizeVerdict(v) {
+  var u = String(v || '').toUpperCase();
+  if (u === 'SIGNAL') return 'SIGNAL';
+  if (u === 'NOISE') return 'NOISE';
+  return 'WATCH';
+}
+function normalizeRisk(r) {
+  var l = String(r || '').toLowerCase();
+  if (l === 'low') return 'low';
+  if (l === 'high') return 'high';
+  return 'medium';
+}
 
-async function supabaseCall(method,table,body,query){
-  var url=SUPABASE_URL+'/rest/v1/'+table+(query||'');
-  var opts={method:method,headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':method==='POST'?'return=minimal':''}};
-  if(body)opts.body=JSON.stringify(body);
-  var r=await fetch(url,opts);
-  if(!r.ok){var t=await r.text().catch(function(){return '';});throw new Error('Supabase '+method+' '+table+' '+r.status+': '+t);}
-  if(method==='GET')return r.json();
+async function supabaseCall(method, table, body, query) {
+  var url = SUPABASE_URL + '/rest/v1/' + table + (query || '');
+  var opts = {
+    method: method,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Prefer': method === 'POST' ? 'return=minimal' : ''
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  var r = await fetch(url, opts);
+  if (!r.ok) {
+    var t = await r.text().catch(function() { return ''; });
+    throw new Error('Supabase ' + method + ' ' + table + ' ' + r.status + ': ' + t);
+  }
+  if (method === 'GET') return r.json();
   return null;
 }
 
-async function tavilySearch(query,maxResults){
-  try{
-    var r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TAVILY_KEY},body:JSON.stringify({query:query,search_depth:'basic',max_results:maxResults||5,include_answer:false,include_raw_content:false})});
-    if(!r.ok){console.warn('[YNOT] Tavily '+r.status+' for: '+query);return [];}
-    var data=await r.json();
-    return (data.results||[]).map(function(item){return {title:item.title||'',url:item.url||'',content:String(item.content||item.snippet||'').substring(0,400)};});
-  }catch(e){console.warn('[YNOT] Tavily error: '+e.message);return [];}
+async function tavilySearch(query, maxResults) {
+  try {
+    var r = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TAVILY_KEY },
+      body: JSON.stringify({
+        query: query,
+        search_depth: 'basic',
+        max_results: maxResults || 5,
+        include_answer: false,
+        include_raw_content: false
+      })
+    });
+    if (!r.ok) { console.warn('[YNOT] Tavily ' + r.status + ' for: ' + query); return []; }
+    var data = await r.json();
+    return (data.results || []).map(function(item) {
+      return {
+        title: item.title || '',
+        url: item.url || '',
+        content: String(item.content || item.snippet || '').substring(0, 400),
+        published_date: item.published_date || null
+      };
+    });
+  } catch(e) { console.warn('[YNOT] Tavily error: ' + e.message); return []; }
 }
 
-async function claudeCall(system,user,maxTokens){
-  var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:CLAUDE_MODEL,max_tokens:maxTokens||1200,system:system,messages:[{role:'user',content:user}]})});
-  if(!r.ok){var t=await r.text().catch(function(){return '';});throw new Error('Claude '+r.status+': '+t);}
-  var data=await r.json();
+async function claudeCall(system, user, maxTokens) {
+  var r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: maxTokens || 1200,
+      system: system,
+      messages: [{ role: 'user', content: user }]
+    })
+  });
+  if (!r.ok) {
+    var t = await r.text().catch(function() { return ''; });
+    throw new Error('Claude ' + r.status + ': ' + t);
+  }
+  var data = await r.json();
   return data.content[0].text.trim();
 }
 
-async function generateQueries(mind){
-  var system='You are '+mind.name+', an autonomous AI research agent. '+mind.brief+' Generate exactly 4 specific, targeted web search queries to find the most relevant and recent developments in your domain this week. Return ONLY a JSON array of 4 strings, no other text.';
-  var user='Generate your 4 search queries for this week. Focus on what is most likely to have changed or emerged in the last 7 days. Seed topics (make them more specific): '+mind.querySeeds.join(', ');
-  try{
-    var raw=await claudeCall(system,user,300);
-    var match=raw.match(/\[[\s\S]*?\]/);
-    if(!match)throw new Error('no JSON array');
-    var queries=JSON.parse(match[0]);
-    if(!Array.isArray(queries)||queries.length===0)throw new Error('empty');
-    return queries.slice(0,4).map(function(q){return String(q);});
-  }catch(e){
-    console.warn('[YNOT] '+mind.name+' query gen failed: '+e.message+' - using seeds');
-    return mind.querySeeds.slice(0,4);
+// ── AGENT MEMORY: fetch last 4 weeks of findings for this agent ────────────
+async function fetchAgentMemory(mindId) {
+  try {
+    var fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    var data = await supabaseCall('GET', 'findings', null,
+      '?mind_id=eq.' + mindId +
+      '&run_date=gte.' + fourWeeksAgo +
+      '&order=run_date.desc' +
+      '&select=title,verdict,confidence,run_date,trl' +
+      '&limit=20'
+    );
+    if (!data || data.length === 0) return null;
+    var byWeek = {};
+    data.forEach(function(f) {
+      if (!byWeek[f.run_date]) byWeek[f.run_date] = [];
+      byWeek[f.run_date].push(f.title + ' [' + f.verdict + ', confidence ' + f.confidence + ', TRL ' + f.trl + ']');
+    });
+    return Object.keys(byWeek).sort().reverse().map(function(date) {
+      return 'Week of ' + date + ':\n' + byWeek[date].join('\n');
+    }).join('\n\n');
+  } catch(e) {
+    console.warn('[YNOT] Memory fetch failed for ' + mindId + ': ' + e.message);
+    return null;
   }
 }
 
-async function fetchAgentResults(queries){
-  var allResults=await Promise.all(queries.map(function(q){return tavilySearch(q,4);}));
-  var seen={};var deduped=[];
-  allResults.forEach(function(results){results.forEach(function(item){if(item.url&&!seen[item.url]){seen[item.url]=true;deduped.push(item);}});});
+// ── URL VERIFICATION: HEAD-check refs, remove dead links ──────────────────
+async function verifyRefs(refs) {
+  if (!refs || refs.length === 0) return refs;
+  var verified = await Promise.all(refs.map(async function(ref) {
+    if (!ref.url || !ref.url.startsWith('http')) return null;
+    try {
+      var controller = new AbortController();
+      var tid = setTimeout(function() { controller.abort(); }, 4000);
+      var r = await fetch(ref.url, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
+      clearTimeout(tid);
+      if (r.ok) return ref;
+      // Try GET as fallback (some servers reject HEAD)
+      var c2 = new AbortController();
+      var tid2 = setTimeout(function() { c2.abort(); }, 4000);
+      var r2 = await fetch(ref.url, { method: 'GET', signal: c2.signal, redirect: 'follow' });
+      clearTimeout(tid2);
+      return r2.ok ? ref : null;
+    } catch(e) { return null; }
+  }));
+  var live = verified.filter(Boolean);
+  return live.length > 0 ? live : refs; // keep originals if all dead (better than empty)
+}
+
+// ── SOURCE REPUTATION: record which domains produced quality findings ──────
+async function recordSourceReputation(findings) {
+  try {
+    var highQuality = findings.filter(function(f) {
+      return (f.verdict === 'SIGNAL' || f.verdict === 'WATCH') && f.confidence >= 4;
+    });
+    if (highQuality.length === 0) return;
+    var domains = {};
+    highQuality.forEach(function(f) {
+      (f.refs || []).forEach(function(ref) {
+        if (!ref.url) return;
+        try {
+          var d = new URL(ref.url).hostname.replace('www.', '');
+          domains[d] = (domains[d] || 0) + 1;
+        } catch(e) {}
+      });
+    });
+    var rows = Object.keys(domains).map(function(d) {
+      return { domain: d, quality_hits: domains[d], last_seen: new Date().toISOString().split('T')[0], agent_id: findings[0] && findings[0].mind_id };
+    });
+    if (rows.length > 0) {
+      await supabaseCall('POST', 'source_reputation', rows).catch(function(e) {
+        console.warn('[YNOT] source_reputation table not ready yet: ' + e.message);
+      });
+    }
+  } catch(e) {
+    console.warn('[YNOT] Source reputation recording failed: ' + e.message);
+  }
+}
+
+// ── QUERY GENERATION (with memory context) ────────────────────────────────
+async function generateQueries(mind, memory) {
+  var memorySection = memory
+    ? '\n\nYour findings from the last 4 weeks (do not repeat these — find what is NEW this week):\n' + memory
+    : '\n\nThis is your first run — no prior memory.';
+  var system = 'You are ' + mind.name + ', an autonomous AI research agent. ' + mind.brief +
+    ' Generate exactly 4 specific, targeted web search queries to find the most relevant and RECENT developments in your domain this week. Return ONLY a JSON array of 4 strings, no other text.';
+  var user = 'Generate your 4 search queries for this week. Focus on what is most likely to have changed or emerged in the last 7 days. Seed topics (make them more specific and current): ' +
+    mind.querySeeds.join(', ') + memorySection;
+  try {
+    var raw = await claudeCall(system, user, 300);
+    var match = raw.match(/\[[\s\S]*?\]/);
+    if (!match) throw new Error('no JSON array');
+    var queries = JSON.parse(match[0]);
+    if (!Array.isArray(queries) || queries.length === 0) throw new Error('empty');
+    return queries.slice(0, 4).map(function(q) { return String(q); });
+  } catch(e) {
+    console.warn('[YNOT] ' + mind.name + ' query gen failed: ' + e.message + ' - using seeds');
+    return mind.querySeeds.slice(0, 4);
+  }
+}
+
+async function fetchAgentResults(queries) {
+  var allResults = await Promise.all(queries.map(function(q) { return tavilySearch(q, 4); }));
+  var seen = {}; var deduped = [];
+  allResults.forEach(function(results) {
+    results.forEach(function(item) {
+      if (item.url && !seen[item.url]) { seen[item.url] = true; deduped.push(item); }
+    });
+  });
   return deduped;
 }
 
-async function analyseResults(mind,queries,results){
-  var resultsText=results.slice(0,12).map(function(r,i){return '['+(i+1)+'] '+r.title+'\nURL: '+r.url+'\n'+r.content;}).join('\n\n');
-  var system='You are '+mind.name+', an autonomous AI research agent. '+mind.brief+' You have searched the web using your own queries and received real live results. Analyse what you actually found and extract the most significant findings. Be honest: if evidence is weak, reflect that in verdict and confidence. Use real URLs from the search results as your refs - copy them exactly. Return ONLY a valid JSON array of 3-5 findings. Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"NOISE"), body (2-3 sentences: what it is + why it matters for insurance), confidence (1-5 integer), domain (string), subdomain (string), trl (1-9 integer), regulatoryRisk ("low"|"medium"|"high"), experiment (one actionable sentence for an insurance CTO), refs (array of {label, url} using real URLs from results). NEVER invent URLs.';
-  var user='Your search queries this week:\n'+queries.map(function(q,i){return (i+1)+'. '+q;}).join('\n')+'\n\nLive web results:\n\n'+resultsText+'\n\nProduce your findings. Return only the JSON array.';
-  try{
-    var raw=await claudeCall(system,user,1500);
-    var match=raw.match(/\[[\s\S]*\]/);
-    if(!match)throw new Error('no JSON array');
-    var findings=JSON.parse(match[0]);
-    if(!Array.isArray(findings))throw new Error('not array');
-    return findings.map(function(f){return Object.assign({},f,{mind_id:mind.id,mind_name:mind.name,mind_icon:mind.icon});});
-  }catch(e){console.error('[YNOT] '+mind.name+' analysis failed: '+e.message);return [];}
+// ── ANALYSIS (with memory context, freshness metadata, signal_status) ─────
+async function analyseResults(mind, queries, results, memory) {
+  var resultsText = results.slice(0, 12).map(function(r, i) {
+    var pub = r.published_date ? ' [published: ' + r.published_date + ']' : '';
+    return '[' + (i + 1) + '] ' + r.title + pub + '\nURL: ' + r.url + '\n' + r.content;
+  }).join('\n\n');
+  var memorySection = memory
+    ? '\n\nYour findings from the last 4 weeks (for context — do not repeat these, find what is NEW):\n' + memory
+    : '';
+  var system = 'You are ' + mind.name + ', an autonomous AI research agent. ' + mind.brief +
+    ' You have searched the web using your own queries and received real live results. ' +
+    'Analyse what you actually found and extract the most significant findings. ' +
+    'Be honest: if evidence is weak, reflect that in verdict and confidence. ' +
+    'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
+    'Return ONLY a valid JSON array of 3-5 findings. ' +
+    'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"NOISE"), ' +
+    'body (2-3 sentences: what it is + why it matters for insurance), ' +
+    'confidence (1-5 integer), domain (string), subdomain (string), ' +
+    'trl (1-9 integer), regulatoryRisk ("low"|"medium"|"high"), ' +
+    'experiment (one actionable sentence for an insurance CTO), ' +
+    'refs (array of {label, url} using real URLs from results), ' +
+    'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING") — NEW if first time seeing this topic, ' +
+    'EMERGING if seen once before, CONFIRMED if seen 2+ times, RECURRING if it has appeared every week.';
+  var user = 'Your search queries this week:\n' + queries.map(function(q, i) { return (i + 1) + '. ' + q; }).join('\n') +
+    '\n\nLive web results:\n\n' + resultsText + memorySection +
+    '\n\nProduce your findings. Return only the JSON array.';
+  try {
+    var raw = await claudeCall(system, user, 1800);
+    var match = raw.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('no JSON array');
+    var findings = JSON.parse(match[0]);
+    if (!Array.isArray(findings)) throw new Error('not array');
+    // Verify refs and attach metadata
+    var enriched = await Promise.all(findings.map(async function(f) {
+      var verifiedRefs = await verifyRefs(f.refs || []);
+      return Object.assign({}, f, {
+        mind_id: mind.id,
+        mind_name: mind.name,
+        mind_icon: mind.icon,
+        refs: verifiedRefs,
+        search_queries: queries,
+        signal_status: f.signal_status || 'NEW'
+      });
+    }));
+    return enriched;
+  } catch(e) {
+    console.error('[YNOT] ' + mind.name + ' analysis failed: ' + e.message);
+    return [];
+  }
 }
 
-async function runAgent(mind){
-  console.log('[YNOT] '+mind.name+': generating queries...');
-  var queries=await generateQueries(mind);
-  console.log('[YNOT] '+mind.name+': '+queries.join(' | '));
-  var results=await fetchAgentResults(queries);
-  console.log('[YNOT] '+mind.name+': '+results.length+' unique results from Tavily');
-  if(results.length===0){console.warn('[YNOT] '+mind.name+': no results, skipping');return [];}
-  var findings=await analyseResults(mind,queries,results);
-  console.log('[YNOT] '+mind.name+': '+findings.length+' findings');
+async function runAgent(mind) {
+  console.log('[YNOT] ' + mind.name + ': loading memory...');
+  var memory = await fetchAgentMemory(mind.id);
+  console.log('[YNOT] ' + mind.name + ': ' + (memory ? 'memory loaded' : 'no prior memory'));
+  console.log('[YNOT] ' + mind.name + ': generating queries...');
+  var queries = await generateQueries(mind, memory);
+  console.log('[YNOT] ' + mind.name + ': queries: ' + queries.join(' | '));
+  var results = await fetchAgentResults(queries);
+  console.log('[YNOT] ' + mind.name + ': ' + results.length + ' unique results from Tavily');
+  if (results.length === 0) { console.warn('[YNOT] ' + mind.name + ': no results, skipping'); return []; }
+  var findings = await analyseResults(mind, queries, results, memory);
+  console.log('[YNOT] ' + mind.name + ': ' + findings.length + ' findings (refs verified)');
+  await recordSourceReputation(findings);
   return findings;
 }
 
-async function generateWeeklyDigest(findings,runDate){
-  var signals=findings.filter(function(f){return f.verdict==='SIGNAL';});
-  var watches=findings.filter(function(f){return f.verdict==='WATCH';});
-  var noises=findings.filter(function(f){return f.verdict==='NOISE';});
-  var top=signals.slice(0,5).concat(watches.slice(0,3));
-  var findingsText=top.map(function(f){return f.title+' ['+f.verdict+', TRL '+(f.trl||'?')+', '+f.domain+']: '+String(f.body||'').substring(0,200);}).join('\n');
-  var prompt='Week of '+runDate+'. Five autonomous agents independently searched the web this week using self-generated queries. Total findings: '+findings.length+' ('+signals.length+' Signals, '+watches.length+' Watch, '+noises.length+' Noise).\n\nTop findings:\n'+findingsText+'\n\nWrite a LinkedIn-ready post for insurance and emerging tech executives. Format EXACTLY:\n\n[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n[CONTEXT] 1-2 sentences on what the agents found and why it matters. Mention agent count and finding counts naturally.\n\n-> [Finding title] - [One sharp sentence: what + why it matters for insurance leaders]\n-> [Finding title] - [One sharp sentence]\n-> [Finding title] - [One sharp sentence]\n\n[CLOSE] One forward-looking sentence. No "In conclusion". No "The future is...".\n\nAll findings this week -> ynot.now\n\n#InsurTech #AIinInsurance #Insurance #Innovation\n\nBanned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. Vary sentence length. Take a position.';
-  return claudeCall('You write sharp, opinionated intelligence posts for insurance executives. Sound like a practitioner who has read everything. Use specific numbers and named technologies. Never use corporate filler.',prompt,600);
+// ── WEEKLY DIGEST ─────────────────────────────────────────────────────────
+async function generateWeeklyDigest(findings, runDate) {
+  var signals = findings.filter(function(f) { return f.verdict === 'SIGNAL'; });
+  var watches  = findings.filter(function(f) { return f.verdict === 'WATCH'; });
+  var noises   = findings.filter(function(f) { return f.verdict === 'NOISE'; });
+  var top = signals.slice(0, 5).concat(watches.slice(0, 3));
+  var findingsText = top.map(function(f) {
+    return f.title + ' [' + f.verdict + ', TRL ' + (f.trl || '?') + ', ' + f.domain + ', ' + (f.signal_status || 'NEW') + ']: ' + String(f.body || '').substring(0, 200);
+  }).join('\n');
+  var prompt = 'Week of ' + runDate + '. Five autonomous agents independently searched the web this week using self-generated queries. ' +
+    'Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
+    'Top findings:\n' + findingsText + '\n\n' +
+    'Write a LinkedIn-ready post for insurance and emerging tech executives. Format EXACTLY:\n\n' +
+    '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
+    '[CONTEXT] 1-2 sentences on what the agents found and why it matters. Mention agent count and finding counts naturally.\n\n' +
+    '-> [Finding title] - [One sharp sentence: what + why it matters for insurance leaders]\n' +
+    '-> [Finding title] - [One sharp sentence]\n' +
+    '-> [Finding title] - [One sharp sentence]\n\n' +
+    '[CLOSE] One forward-looking sentence. No "In conclusion". No "The future is...".\n\n' +
+    'All findings this week -> ynot.now\n\n' +
+    '#InsurTech #AIinInsurance #Insurance #Innovation\n\n' +
+    'Banned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. Vary sentence length. Take a position.';
+  return claudeCall(
+    'You write sharp, opinionated intelligence posts for insurance executives. Sound like a practitioner who has read everything. Use specific numbers and named technologies. Never use corporate filler.',
+    prompt, 600
+  );
 }
 
-async function saveWeeklyDigest(allFindings,runId,runDate){
+async function saveWeeklyDigest(allFindings, runId, runDate) {
   console.log('[YNOT] Generating weekly digest...');
-  var postText=await generateWeeklyDigest(allFindings,runDate);
-  await supabaseCall('DELETE','weekly_posts',null,'?run_date=eq.'+runDate).catch(function(){});
-  await supabaseCall('POST','weekly_posts',[{run_id:runId,run_date:runDate,post_text:postText,status:'ready'}]);
+  var postText = await generateWeeklyDigest(allFindings, runDate);
+  await supabaseCall('DELETE', 'weekly_posts', null, '?run_date=eq.' + runDate).catch(function() {});
+  await supabaseCall('POST', 'weekly_posts', [{ run_id: runId, run_date: runDate, post_text: postText, status: 'ready' }]);
   console.log('[YNOT] Weekly digest saved.');
   return postText;
 }
 
-module.exports=async function handler(req,res){
-  var auth=req.headers['authorization']||'';
-  var isExternalCall=auth.length>0;
-  if(isExternalCall&&auth!=='Bearer '+CRON_SECRET){return res.status(401).json({error:'Unauthorized'});}
-  if(!TAVILY_KEY){return res.status(500).json({error:'TAVILY_API_KEY not configured'});}
-  try{await supabaseCall('GET','findings',null,'?limit=1');}catch(err){return res.status(500).json({error:'Supabase connection failed',details:err.message});}
+// ── HANDLER ───────────────────────────────────────────────────────────────
+module.exports = async function handler(req, res) {
+  var auth = req.headers['authorization'] || '';
+  var isExternalCall = auth.length > 0;
+  if (isExternalCall && auth !== 'Bearer ' + CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!TAVILY_KEY) { return res.status(500).json({ error: 'TAVILY_API_KEY not configured' }); }
+  try { await supabaseCall('GET', 'findings', null, '?limit=1'); }
+  catch(err) { return res.status(500).json({ error: 'Supabase connection failed', details: err.message }); }
 
-  var runDate=new Date().toISOString().split('T')[0];
-  var runId='run_'+Date.now();
-  var allFindings=[];var errors=[];
+  var runDate = new Date().toISOString().split('T')[0];
+  var runId = 'run_' + Date.now();
+  var allFindings = []; var errors = [];
 
-  console.log('[YNOT] Phase 1: 5 primary agents running autonomously with Tavily...');
-  var outcomes=await Promise.allSettled(MINDS.map(function(m){return runAgent(m);}));
-  outcomes.forEach(function(o,i){
-    if(o.status==='fulfilled')allFindings=allFindings.concat(o.value);
-    else errors.push({mind:MINDS[i].id,error:o.reason&&o.reason.message});
+  console.log('[YNOT] Phase 1: 5 primary agents running with memory + Tavily + URL verification...');
+  var outcomes = await Promise.allSettled(MINDS.map(function(m) { return runAgent(m); }));
+  outcomes.forEach(function(o, i) {
+    if (o.status === 'fulfilled') allFindings = allFindings.concat(o.value);
+    else errors.push({ mind: MINDS[i].id, error: o.reason && o.reason.message });
   });
 
-  if(allFindings.length===0){return res.status(500).json({error:'All agents failed',errors:errors});}
+  if (allFindings.length === 0) {
+    return res.status(500).json({ error: 'All agents failed', errors: errors });
+  }
 
-  var rows=allFindings.map(function(f){
-    return {run_id:runId,run_date:runDate,mind_id:f.mind_id,mind_name:f.mind_name,mind_icon:f.mind_icon,title:f.title,verdict:normalizeVerdict(f.verdict),body:f.body||f.description||'No body provided',domain:f.domain,subdomain:f.subdomain||null,confidence:Math.min(5,Math.max(1,parseInt(f.confidence)||3)),trl:f.trl||5,regulatory_risk:normalizeRisk(f.regulatoryRisk||f.regulatory_risk),experiment:f.experiment||null,refs:f.refs||[]};
+  var rows = allFindings.map(function(f) {
+    return {
+      run_id: runId,
+      run_date: runDate,
+      mind_id: f.mind_id,
+      mind_name: f.mind_name,
+      mind_icon: f.mind_icon,
+      title: f.title,
+      verdict: normalizeVerdict(f.verdict),
+      body: f.body || f.description || 'No body provided',
+      domain: f.domain,
+      subdomain: f.subdomain || null,
+      confidence: Math.min(5, Math.max(1, parseInt(f.confidence) || 3)),
+      trl: f.trl || 5,
+      regulatory_risk: normalizeRisk(f.regulatoryRisk || f.regulatory_risk),
+      experiment: f.experiment || null,
+      refs: f.refs || [],
+      search_queries: f.search_queries || [],
+      signal_status: f.signal_status || 'NEW'
+    };
   });
 
-  try{
-    await supabaseCall('POST','findings',rows);
-    console.log('[YNOT] Phase 1 complete: '+allFindings.length+' findings stored. run_id='+runId);
-  }catch(err){return res.status(500).json({error:'Storage failed',details:err.message});}
+  try {
+    await supabaseCall('POST', 'findings', rows);
+    console.log('[YNOT] Phase 1 complete: ' + allFindings.length + ' findings stored. run_id=' + runId);
+  } catch(err) {
+    return res.status(500).json({ error: 'Storage failed', details: err.message });
+  }
 
-  var digestStatus='skipped';
-  try{await saveWeeklyDigest(allFindings,runId,runDate);digestStatus='ready';}
-  catch(dErr){console.error('[YNOT] Digest failed:',dErr.message);digestStatus='error: '+dErr.message;}
+  var digestStatus = 'skipped';
+  try { await saveWeeklyDigest(allFindings, runId, runDate); digestStatus = 'ready'; }
+  catch(dErr) { console.error('[YNOT] Digest failed:', dErr.message); digestStatus = 'error: ' + dErr.message; }
 
-  return res.status(200).json({success:true,phase:1,run_id:runId,run_date:runDate,findings_count:allFindings.length,digest:digestStatus,errors:errors,note:'Phase 2 synthesis (Null, Weave, Faro) runs at 06:02 UTC via cron-synthesise.js'});
+  return res.status(200).json({
+    success: true, phase: 1, run_id: runId, run_date: runDate,
+    findings_count: allFindings.length, digest: digestStatus, errors: errors,
+    note: 'Phase 2 synthesis (Null, Weave, Faro) runs at 06:02 UTC via cron-synthesise.js'
+  });
 };

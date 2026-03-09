@@ -238,6 +238,36 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .chips{display:flex;flex-wrap:wrap;gap:8px;}
 .chip{font-family:var(--ff-mono);font-size:12px;padding:6px 14px;border:1.5px solid var(--rule);border-radius:100px;color:var(--mid);background:var(--off);transition:all .15s;text-decoration:none;display:inline-block;}
 .chip:hover{border-color:var(--ink);color:var(--ink);background:var(--white);}
+/* ── HOW IT WORKS — EXPANDED ── */
+.how-phases{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px;}
+@media(max-width:700px){.how-phases{grid-template-columns:1fr;}}
+.how-phase{background:var(--white);border:2px solid var(--rule);border-radius:var(--radius);padding:28px;}
+.hp-eyebrow{font-family:var(--ff-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;}
+.hp-title{font-family:var(--ff-serif);font-size:20px;letter-spacing:-.01em;color:var(--ink);margin-bottom:12px;}
+.hp-body{font-size:14px;line-height:1.8;color:#555550;}
+.hp-agents{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+.hp-agent{font-family:var(--ff-mono);font-size:11px;padding:4px 10px;border:1.5px solid var(--rule);border-radius:100px;color:var(--mid);background:var(--off);}
+.hp-agent.thinking{border-color:#c8a96e;color:#8a6a2a;background:#fdf8ef;}
+.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;}
+@media(max-width:700px){.trust-grid{grid-template-columns:1fr;}}
+.trust-card{background:var(--white);border:2px solid var(--rule);border-radius:var(--radius);padding:24px 22px;}
+.tc-icon{font-size:22px;margin-bottom:12px;line-height:1;}
+.tc-title{font-family:var(--ff-serif);font-size:17px;letter-spacing:-.01em;color:var(--ink);margin-bottom:8px;}
+.tc-body{font-size:13px;line-height:1.75;color:#666661;}
+.tc-tag{display:inline-block;font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;margin-top:10px;}
+.tc-tag.live{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;}
+.tc-tag.built{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;}
+.tc-tag.active{background:#fce4ec;color:#880e4f;border:1px solid #f48fb1;}
+.signal-status-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px;}
+.ss-badge{display:flex;flex-direction:column;background:var(--white);border:2px solid var(--rule);border-radius:var(--radius);padding:16px 18px;flex:1;min-width:130px;}
+.ss-dot-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.ss-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.ss-dot.new{background:#90caf9;}
+.ss-dot.emerging{background:#c8a96e;}
+.ss-dot.confirmed{background:#66bb6a;}
+.ss-dot.recurring{background:#ab47bc;}
+.ss-label{font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);font-weight:600;}
+.ss-desc{font-size:12px;color:var(--mid);line-height:1.5;}
 .verdict-defs{display:flex;flex-direction:column;gap:14px;}
 .vd-row{display:flex;align-items:flex-start;gap:12px;}
 .vd-badge{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:100px;flex-shrink:0;margin-top:2px;font-weight:500;}
@@ -777,24 +807,93 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <section id="how">
   <div class="inner">
     <div class="eyebrow">How it works</div>
-    <h2 class="section-h2">Simple process.<br><em>Rigorous output.</em></h2>
-    <p class="section-intro">Three steps. Every week. Every finding verified, scored, and stored — so the intelligence compounds over time.</p>
+    <h2 class="section-h2">Not a newsletter.<br><em>A multi-agent system.</em></h2>
+    <p class="section-intro">Every Monday, eight specialist AI agents run a two-phase intelligence operation — autonomously searching the live web, challenging each other's findings, and producing a verified digest. Here is exactly what happens.</p>
 
-    <div class="how-steps">
-      <div class="how-step">
-        <div class="hs-num">01</div>
-        <div class="hs-title">The AI agents explore</div>
-        <div class="hs-body">Each week, all eight AI agents scan their domain — published research, regulatory filings, carrier announcements, and deployment reports. They work in parallel, across P&C, Life & Annuities, Reinsurance, and Horizontal Tech.</div>
+    <!-- PHASE CARDS -->
+    <div class="how-phases">
+      <div class="how-phase">
+        <div class="hp-eyebrow">Phase 1 &mdash; 06:00 UTC Monday</div>
+        <div class="hp-title">Five primary agents search independently</div>
+        <div class="hp-body">Scout, Vita, Lex, Terra, and Horizon each receive a brief describing their domain and last week&rsquo;s top signals. Each agent autonomously generates its own search queries — deciding what is worth investigating this week — then calls the Tavily search API to retrieve live web results. Each agent reads its results and produces 3&ndash;6 structured findings: a title, a 2&ndash;3 sentence analysis, a verdict, a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9), a regulatory risk assessment, a suggested experiment, and real source URLs.</div>
+        <div class="hp-agents">
+          <span class="hp-agent">Scout &mdash; P&amp;C</span>
+          <span class="hp-agent">Vita &mdash; Life &amp; Annuities</span>
+          <span class="hp-agent">Lex &mdash; Regulatory</span>
+          <span class="hp-agent">Terra &mdash; Reinsurance</span>
+          <span class="hp-agent">Horizon &mdash; Horizontal Tech</span>
+        </div>
       </div>
-      <div class="how-step">
-        <div class="hs-num">02</div>
-        <div class="hs-title">Every claim is tested</div>
-        <div class="hs-body">Null challenges every finding — if the evidence doesn't hold up, it's Noise. Weave looks for systemic effects. Deploy asks: does it actually work in production? Only findings that survive scrutiny get scored.</div>
+      <div class="how-phase">
+        <div class="hp-eyebrow">Phase 2 &mdash; 06:02 UTC Monday</div>
+        <div class="hp-title">Three synthesis agents read everything, then search further</div>
+        <div class="hp-body">Two minutes after Phase 1 completes, Null, Weave, and Faro receive the full set of Phase 1 findings as context. Each then generates its own targeted search queries — informed by what the primary agents found — and fetches additional live results. Null and Weave use Claude&rsquo;s extended thinking mode: a private reasoning scratchpad that enables multi-step analysis before producing output. This is what separates a sceptical challenge from a surface-level dismissal, and a second-order effect from an obvious observation.</div>
+        <div class="hp-agents">
+          <span class="hp-agent thinking">Null &mdash; Sceptic (extended thinking)</span>
+          <span class="hp-agent thinking">Weave &mdash; Second-order effects (extended thinking)</span>
+          <span class="hp-agent">Faro &mdash; Horizon scanner</span>
+        </div>
       </div>
-      <div class="how-step">
-        <div class="hs-num">03</div>
-        <div class="hs-title">Intelligence compounds</div>
-        <div class="hs-body">Every run adds to a permanent record. Technologies are tracked through five readiness stages over time. The longer the platform runs, the richer the signal — and the clearer the trends become.</div>
+    </div>
+
+    <!-- TRUST CARDS -->
+    <div class="trust-grid">
+      <div class="trust-card">
+        <div class="tc-icon">&#128279;</div>
+        <div class="tc-title">Every source URL is verified</div>
+        <div class="tc-body">Before any finding is stored, all reference URLs are HTTP-checked. Dead links are removed. If no live sources remain, the finding is flagged. You will never see a finding whose sources have disappeared.</div>
+        <span class="tc-tag live">Live URL check on every run</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#128269;</div>
+        <div class="tc-title">Agents decide what to search</div>
+        <div class="tc-body">There are no pre-written queries. Each agent reads its brief and last week&rsquo;s signals, then generates its own search terms. This means the system adapts to what is actually happening in the market — not what was anticipated when it was built.</div>
+        <span class="tc-tag built">Autonomous query generation</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#129504;</div>
+        <div class="tc-title">Null is always looking for the lie</div>
+        <div class="tc-body">Null reads every Phase 1 finding with explicit instructions to find vendor marketing dressed as innovation, thin evidence presented as proof, and AI-washing. It uses extended reasoning to do this properly — not a surface-level scan. Noise verdicts are Null&rsquo;s primary output.</div>
+        <span class="tc-tag active">Active hallucination guard</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#128200;</div>
+        <div class="tc-title">Signal status tracks week over week</div>
+        <div class="tc-body">Every finding is assigned a signal status: New, Emerging, Confirmed, or Recurring. Agents compare this week&rsquo;s findings against prior weeks to detect whether a signal is strengthening, plateauing, or fading. A finding that appears once is interesting. One that appears three weeks running is a trend.</div>
+        <span class="tc-tag live">Memory across runs</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#128336;</div>
+        <div class="tc-title">Live web results, not cached data</div>
+        <div class="tc-body">Every search call goes to the live web at the moment the agent runs. There is no pre-fetched dataset, no static corpus, no knowledge cutoff. If something was published this morning and is relevant to insurance AI, an agent can find it by Monday.</div>
+        <span class="tc-tag built">Real-time Tavily search</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#127919;</div>
+        <div class="tc-title">Five scoring dimensions per finding</div>
+        <div class="tc-body">Every finding carries: a verdict (Signal / Watch / Noise), a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9 per NASA/ESA standard), a regulatory risk rating (Low / Medium / High), and a suggested experiment for practitioners. Scoring is not binary.</div>
+        <span class="tc-tag active">Structured evidence scoring</span>
+      </div>
+    </div>
+
+    <!-- SIGNAL STATUS -->
+    <div class="hb-label" style="margin-bottom:16px;">Signal status — how findings are tracked over time</div>
+    <div class="signal-status-row">
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot new"></div><div class="ss-label">New</div></div>
+        <div class="ss-desc">First time this signal has appeared. Treat as early intelligence.</div>
+      </div>
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot emerging"></div><div class="ss-label">Emerging</div></div>
+        <div class="ss-desc">Appeared in 2&ndash;3 consecutive weeks. Evidence is building.</div>
+      </div>
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot confirmed"></div><div class="ss-label">Confirmed</div></div>
+        <div class="ss-desc">Consistent signal across 4+ weeks. Multiple independent sources agree.</div>
+      </div>
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot recurring"></div><div class="ss-label">Recurring</div></div>
+        <div class="ss-desc">A long-running theme. Still active but no longer novel.</div>
       </div>
     </div>
 

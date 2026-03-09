@@ -3,7 +3,8 @@
 // Runs at 06:02 UTC every Monday, 2 minutes after Phase 1 (cron.js).
 // Null, Weave, and Faro read ALL Phase 1 findings, then each produces its own
 // synthesis findings using Tavily search + cross-agent context.
-// This is what makes YNOT.NOW a true multi-agent system: agents communicating.
+// Null and Weave use Claude extended thinking for deeper reasoning.
+// URL verification, signal_status tracking, and search_queries storage included.
 // ─────────────────────────────────────────────────────────────────────────────
 
 var ANTHROPIC_KEY = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY || '';
@@ -20,6 +21,7 @@ var SYNTHESIS_MINDS = [
     domain: 'All',
     brief: 'You are Null, the sceptic and noise detector. You have read all findings from the other agents this week. Your job: challenge the most overhyped claims, identify where evidence is thin, find vendor marketing dressed as innovation, and call out AI washing in insurance.',
     role: 'sceptic',
+    extendedThinking: true,
     querySeeds: ['AI insurance hype overpromised 2026', 'insurtech AI failure abandoned pilot', 'AI insurance vendor marketing claims reality', 'AI insurance ROI disappointing results']
   },
   {
@@ -27,6 +29,7 @@ var SYNTHESIS_MINDS = [
     domain: 'All',
     brief: 'You are Weave, the second-order effects analyst. You have read all findings from the other agents this week. Your job: identify unexpected cross-domain consequences — workforce displacement, new liability classes, competitive dynamics shifts, regulatory arbitrage, and supply chain effects that the primary agents missed.',
     role: 'synthesiser',
+    extendedThinking: true,
     querySeeds: ['AI insurance workforce displacement jobs 2026', 'new liability class AI autonomous insurance', 'insurtech competitive disruption incumbent carrier', 'AI insurance distribution channel disruption embedded']
   },
   {
@@ -34,6 +37,7 @@ var SYNTHESIS_MINDS = [
     domain: 'All',
     brief: 'You are Faro, the horizon scanner. You have read all findings from the other agents this week. Your job: identify the early-stage signals buried in the noise — emerging research, early pilots, regulatory consultations, startup activity, and technology readiness milestones that will become significant for insurance in 18-36 months.',
     role: 'horizon',
+    extendedThinking: false,
     querySeeds: ['insurance AI research emerging 2026 early stage', 'insurtech startup funding seed AI 2026', 'insurance AI pilot proof of concept early', 'actuarial AI research paper preprint 2026']
   }
 ];
@@ -103,7 +107,7 @@ async function tavilySearch(query, maxResults) {
     if (!r.ok) { console.warn('[YNOT-S] Tavily ' + r.status + ' for: ' + query); return []; }
     var data = await r.json();
     return (data.results || []).map(function(item) {
-      return { title: item.title || '', url: item.url || '', content: String(item.content || item.snippet || '').substring(0, 400) };
+      return { title: item.title || '', url: item.url || '', content: String(item.content || item.snippet || '').substring(0, 400), published_date: item.published_date || null };
     });
   } catch(e) {
     console.warn('[YNOT-S] Tavily error: ' + e.message);
@@ -111,7 +115,7 @@ async function tavilySearch(query, maxResults) {
   }
 }
 
-// ─── CLAUDE CALL ─────────────────────────────────────────────────────────────
+// ─── CLAUDE CALL (standard) ─────────────────────────────────────────────────
 async function claudeCall(system, user, maxTokens) {
   var r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -121,6 +125,64 @@ async function claudeCall(system, user, maxTokens) {
   if (!r.ok) { var t = await r.text().catch(function() { return ''; }); throw new Error('Claude ' + r.status + ': ' + t); }
   var data = await r.json();
   return data.content[0].text.trim();
+}
+
+// ─── CLAUDE CALL WITH EXTENDED THINKING (Null and Weave) ───────────────────────
+async function claudeCallWithThinking(system, user, maxTokens, thinkingBudget) {
+  var budget = thinkingBudget || 4000;
+  var totalTokens = budget + (maxTokens || 1200);
+  try {
+    var r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'interleaved-thinking-2025-05-14'
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: totalTokens,
+        thinking: { type: 'enabled', budget_tokens: budget },
+        system: system,
+        messages: [{ role: 'user', content: user }]
+      })
+    });
+    if (!r.ok) {
+      var t = await r.text().catch(function() { return ''; });
+      console.warn('[YNOT-S] Extended thinking failed (' + r.status + '), falling back: ' + t.substring(0, 200));
+      return claudeCall(system, user, maxTokens);
+    }
+    var data = await r.json();
+    var textBlock = (data.content || []).find(function(b) { return b.type === 'text'; });
+    if (!textBlock) throw new Error('no text block in extended thinking response');
+    return textBlock.text.trim();
+  } catch(e) {
+    console.warn('[YNOT-S] Extended thinking error: ' + e.message + ' — falling back');
+    return claudeCall(system, user, maxTokens);
+  }
+}
+
+// ─── URL VERIFICATION ─────────────────────────────────────────────────────────
+async function verifyRefs(refs) {
+  if (!refs || refs.length === 0) return refs;
+  var verified = await Promise.all(refs.map(async function(ref) {
+    if (!ref.url || !ref.url.startsWith('http')) return null;
+    try {
+      var controller = new AbortController();
+      var tid = setTimeout(function() { controller.abort(); }, 4000);
+      var r = await fetch(ref.url, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
+      clearTimeout(tid);
+      if (r.ok) return ref;
+      var c2 = new AbortController();
+      var tid2 = setTimeout(function() { c2.abort(); }, 4000);
+      var r2 = await fetch(ref.url, { method: 'GET', signal: c2.signal, redirect: 'follow' });
+      clearTimeout(tid2);
+      return r2.ok ? ref : null;
+    } catch(e) { return null; }
+  }));
+  var live = verified.filter(Boolean);
+  return live.length > 0 ? live : refs;
 }
 
 // ─── SYNTHESIS AGENT RUN ──────────────────────────────────────────────────────
@@ -162,7 +224,8 @@ async function runSynthesisAgent(mind, phase1Findings) {
   console.log('[YNOT-S] ' + mind.name + ': ' + deduped.length + ' Tavily results');
 
   var resultsText = deduped.slice(0, 10).map(function(r, i) {
-    return '[' + (i+1) + '] ' + r.title + '\nURL: ' + r.url + '\n' + r.content;
+    var pub = r.published_date ? ' [published: ' + r.published_date + ']' : '';
+    return '[' + (i+1) + '] ' + r.title + pub + '\nURL: ' + r.url + '\n' + r.content;
   }).join('\n\n');
 
   // Synthesis analysis with full Phase 1 context
@@ -176,6 +239,7 @@ async function runSynthesisAgent(mind, phase1Findings) {
     'Return ONLY a valid JSON array of 2-4 findings. Each must have: ' +
     'title, verdict ("SIGNAL"|"WATCH"|"NOISE"), body (2-3 sentences), confidence (1-5), ' +
     'domain, subdomain, trl (1-9), regulatoryRisk ("low"|"medium"|"high"), experiment, ' +
+    'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING"), ' +
     'refs (array of {label, url} from real search results).';
 
   var analysisUser = 'Phase 1 findings from other agents:\n' + findingsSummary +
@@ -183,14 +247,23 @@ async function runSynthesisAgent(mind, phase1Findings) {
     '\n\nProduce your synthesis findings. Return only the JSON array.';
 
   try {
-    var raw2 = await claudeCall(analysisSystem, analysisUser, 1200);
+    var callFn = mind.extendedThinking ? claudeCallWithThinking : claudeCall;
+    var raw2 = await callFn(analysisSystem, analysisUser, 1400, 4000);
     var match2 = raw2.match(/\[[\s\S]*\]/);
     if (!match2) throw new Error('no JSON array');
     var findings = JSON.parse(match2[0]);
     if (!Array.isArray(findings)) throw new Error('not array');
-    return findings.map(function(f) {
-      return Object.assign({}, f, { mind_id: mind.id, mind_name: mind.name, mind_icon: mind.icon });
-    });
+    var enriched = await Promise.all(findings.map(async function(f) {
+      var verifiedRefs = await verifyRefs(f.refs || []);
+      return Object.assign({}, f, {
+        mind_id: mind.id, mind_name: mind.name, mind_icon: mind.icon,
+        refs: verifiedRefs,
+        search_queries: queries,
+        signal_status: f.signal_status || 'NEW'
+      });
+    }));
+    console.log('[YNOT-S] ' + mind.name + ': ' + enriched.length + ' synthesis findings' + (mind.extendedThinking ? ' (extended thinking)' : ''));
+    return enriched;
   } catch(e) {
     console.error('[YNOT-S] ' + mind.name + ' analysis failed: ' + e.message);
     return [];
@@ -260,7 +333,9 @@ module.exports = async function handler(req, res) {
       trl: f.trl || 5,
       regulatory_risk: normalizeRisk(f.regulatoryRisk || f.regulatory_risk),
       experiment: f.experiment || null,
-      refs: f.refs || []
+      refs: f.refs || [],
+      search_queries: f.search_queries || [],
+      signal_status: f.signal_status || 'NEW'
     };
   });
 
