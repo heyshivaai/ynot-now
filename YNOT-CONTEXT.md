@@ -49,14 +49,32 @@ The system runs in two phases every Monday. Phase 1 agents run first and autonom
 
 **Total findings per weekly run: ~27–42 (varies by Tavily results quality)**
 
-### How Agents Work (True Multi-Agent)
+### How Agents Work (True Multi-Agent — Full Trust Layer)
 
-1. Each Phase 1 agent **generates its own 3-4 Tavily search queries** based on its domain brief
-2. Tavily fetches live web results for each query
-3. Each agent analyses its own results and produces structured findings
-4. Phase 2 agents read ALL Phase 1 findings as context, then generate synthesis queries
-5. Phase 2 agents search Tavily for additional evidence, then produce cross-agent insights
-6. Phase 2 regenerates the full weekly digest incorporating all 8 agents' work
+1. Each Phase 1 agent reads its **domain brief + last 4 weeks of its own findings** (agent memory)
+2. Each agent **generates its own 3-4 Tavily search queries** based on its brief and memory
+3. Tavily fetches live web results for each query (real-time, no cached corpus)
+4. Each agent analyses its own results and produces 3-6 structured findings
+5. All `refs` URLs are **HTTP HEAD-checked** — dead links removed, findings with 0 live refs flagged
+6. Each finding is assigned a **signal_status**: `NEW`, `EMERGING` (2-3 weeks), `CONFIRMED` (4+), `RECURRING`
+7. Phase 2 agents read ALL Phase 1 findings as context, then generate synthesis queries
+8. Null and Weave use **Claude extended thinking** (`budget_tokens: 8000`) for deeper reasoning
+9. Phase 2 agents search Tavily for additional evidence, then produce cross-agent insights
+10. URL verification runs again on Phase 2 findings
+11. Phase 2 regenerates the full weekly digest incorporating all 8 agents' work
+
+### Supabase Columns Required for Full Trust Layer
+```sql
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS signal_status text DEFAULT 'NEW';
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS search_queries text[];
+CREATE TABLE IF NOT EXISTS source_reputation (
+  id bigserial PRIMARY KEY,
+  domain text UNIQUE,
+  mention_count int DEFAULT 1,
+  last_seen date,
+  agent_names text[]
+);
+```
 
 ---
 
@@ -232,11 +250,17 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 
 ### What's working well
 - **True multi-agent system** — agents autonomously generate queries, search Tavily, and Phase 2 agents read Phase 1 findings before producing synthesis
+- **Agent memory** — each agent receives its last 4 weeks of findings in its brief; signals tracked as NEW/EMERGING/CONFIRMED/RECURRING
+- **URL verification** — all refs HTTP HEAD-checked before storing; dead links removed; findings with 0 live refs flagged
+- **Extended thinking** — Null and Weave use Claude's extended thinking mode (`budget_tokens: 8000`) for deeper sceptical analysis
+- **Signal status tracking** — `signal_status` field on every finding; keyword overlap comparison against prior weeks
+- **Source reputation** — high-quality domains tracked in `source_reputation` table for future query seeding
 - Atlas/Prism/Deploy replaced by Lex/Terra/Horizon — DO NOT revert
 - Tavily API integrated for live autonomous web search (`TAVILY_API_KEY` in Vercel env vars)
 - Two-phase cron architecture to stay within Vercel free tier 60s timeout
 - 0 fake/placeholder URLs — all refs are real, publicly accessible sources
 - **Weekly Pulse** — fully redesigned as of 2026-03-09 (see Weekly Pulse section below)
+- **How It Works section** — completely rewritten with two-phase architecture, 6 trust cards, signal status legend, extended thinking badges
 - About section updated for boards + exec leadership audience
 - GitHub auth: repo owner is `heyshivaai` (heyshiva.ai@gmail.com); Manus uses PAT stored per-session
 
