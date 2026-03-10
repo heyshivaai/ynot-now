@@ -639,9 +639,9 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <a class="nav-a" href="#what">What is this</a>
       <a class="nav-a" href="#lab">Signal Lab</a>
       <a class="nav-a" href="#pulse">Weekly Pulse</a>
+      <a class="nav-a" href="#minds">AI Agents</a>
       <a class="nav-a" href="#pathways">Pathways</a>
       <a class="nav-a" href="#who">Who it's for</a>
-      <a class="nav-a" href="#minds">AI Agents</a>
       <a class="nav-a" href="#about">About</a>
     </div>
     <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Open menu" aria-expanded="false">☰</button>
@@ -658,9 +658,9 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
   <a class="mm-sub" href="#regional" onclick="closeMobileMenu()">↳ Regional Intelligence</a>
   <a class="mm-a" href="#pulse" onclick="closeMobileMenu()">Weekly Pulse</a>
   <div class="mm-section">More</div>
+  <a class="mm-a" href="#minds" onclick="closeMobileMenu()">AI Agents</a>
   <a class="mm-a" href="#pathways" onclick="closeMobileMenu()">Pathways</a>
   <a class="mm-a" href="#who" onclick="closeMobileMenu()">Who it's for</a>
-  <a class="mm-a" href="#minds" onclick="closeMobileMenu()">AI Agents</a>
   <a class="mm-a" href="#about" onclick="closeMobileMenu()">About</a>
 </div>
 
@@ -714,287 +714,6 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         </div>
       </div>
     </div>
-  </div>
-</section>
-
-<hr class="rule">
-
-<!-- PATHWAYS -->
-<section id="pathways">
-  <div class="inner">
-    <div class="eyebrow">Pathways</div>
-    <h2 class="section-h2">Where does a finding<br><em>sit on its journey?</em></h2>
-    <p class="section-intro">Every emerging technology in insurance travels a path from idea to standard practice. These five stages are how we track that journey — and where you'll find findings grouped in the Signal Lab.</p>
-    <div class="pathways-grid">
-      <div class="pathway-card" onclick="filterByPathway('Idea',this)">
-        <div class="pc-step">Stage 01</div>
-        <span class="pc-icon">💡</span>
-        <div class="pc-title">Idea</div>
-        <div class="pc-body">Early research, academic papers, and theoretical frameworks. Interesting but no real-world validation yet.</div>
-        <div class="pc-count" id="pc-count-idea">— findings</div>
-      </div>
-      <div class="pathway-card" onclick="filterByPathway('Experiment',this)">
-        <div class="pc-step">Stage 02</div>
-        <span class="pc-icon">🔬</span>
-        <div class="pc-title">Experiment</div>
-        <div class="pc-body">Lab tests, small pilots, and proof-of-concept work. Evidence exists but scale and commercial viability are unproven.</div>
-        <div class="pc-count" id="pc-count-experiment">— findings</div>
-      </div>
-      <div class="pathway-card" onclick="filterByPathway('Pilot',this)">
-        <div class="pc-step">Stage 03</div>
-        <span class="pc-icon">🧭</span>
-        <div class="pc-title">Pilot</div>
-        <div class="pc-body">Real carrier deployments at limited scale. Results are promising but broader adoption is still emerging.</div>
-        <div class="pc-count" id="pc-count-pilot">— findings</div>
-      </div>
-      <div class="pathway-card" onclick="filterByPathway('Proven',this)">
-        <div class="pc-step">Stage 04</div>
-        <span class="pc-icon">✅</span>
-        <div class="pc-title">Proven</div>
-        <div class="pc-body">Multiple carrier deployments with measurable ROI. Commercial viability established. Time to act.</div>
-        <div class="pc-count" id="pc-count-proven">— findings</div>
-      </div>
-      <div class="pathway-card" onclick="filterByPathway('Standard',this)">
-        <div class="pc-step">Stage 05</div>
-        <span class="pc-icon">🏆</span>
-        <div class="pc-title">Standard</div>
-        <div class="pc-body">Industry-wide adoption. The question is no longer if — it's how to implement well and differentiate through execution.</div>
-        <div class="pc-count" id="pc-count-standard">— findings</div>
-      </div>
-    </div>
-    <p style="margin-top:20px;font-size:14px;color:var(--mid);font-family:var(--ff-mono);letter-spacing:.04em;">Click any pathway to filter the Signal Lab below ↓</p>
-  </div>
-</section>
-
-<hr class="rule">
-
-<!-- WHO IT'S FOR -->
-<section id="who">
-  <div class="inner">
-    <div class="eyebrow">Who it's for</div>
-    <h2 class="section-h2">If you need clarity<br><em>without the noise.</em></h2>
-    <p class="section-intro">Not a trade publication, vendor pitch, or conference agenda. For anyone who needs to understand what technology is genuinely doing in insurance — and make decisions on that basis.</p>
-    <div class="who-grid">
-      <div class="who-card">
-        <div class="wc-num">01</div>
-        <span class="wc-icon">🔬</span>
-        <div class="wc-title">The Curious Learner</div>
-        <div class="wc-role">Students · Researchers · Early career</div>
-        <div class="wc-body">You're building your understanding of technology in insurance. Every finding here is <strong>grounded in evidence, linked to its source,</strong> and open to challenge.</div>
-      </div>
-      <div class="who-card">
-        <div class="wc-num">02</div>
-        <span class="wc-icon">🧭</span>
-        <div class="wc-title">The Practitioner</div>
-        <div class="wc-role">Professionals · Technologists · Builders</div>
-        <div class="wc-body">You need clarity on what's in production versus what's still being explored. <strong>Verified evidence and readiness stages</strong> — so your judgements are well-founded.</div>
-      </div>
-      <div class="who-card">
-        <div class="wc-num">03</div>
-        <span class="wc-icon">🎯</span>
-        <div class="wc-title">The Strategic Mind</div>
-        <div class="wc-role">Leaders · Decision-makers · Investors</div>
-        <div class="wc-body">You're thinking about where to invest attention and resources. <strong>A clear, scored, independent view</strong> of what merits action now, what to watch, and what can safely wait.</div>
-      </div>
-      <div class="who-card">
-        <div class="wc-num">04</div>
-        <span class="wc-icon">🏛️</span>
-        <div class="wc-title">The Board Voice</div>
-        <div class="wc-role">Boards · CEOs · C-suite executives</div>
-        <div class="wc-body">You need independent signal, free from vendor influence. <strong>Scored intelligence with clear sourcing</strong> to support confident technology governance and strategic decision-making.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="rule">
-
-<!-- MEET THE AI AGENTS -->
-<section id="minds">
-  <div class="inner">
-    <div class="eyebrow">Meet the AI Agents</div>
-    <h2 class="section-h2">Eight AI agents.<br><em>Always at work.</em></h2>
-    <p class="section-intro">Each AI agent has a distinct focus and genuine expertise. They explore continuously — not when prompted. Their findings appear in the Signal Lab as they work through their domains each week.</p>
-    <div class="minds-grid" id="mindsGrid"></div>
-  </div>
-</section>
-
-<hr class="rule">
-
-<!-- HOW IT WORKS -->
-<section id="how">
-  <div class="inner">
-    <div class="eyebrow">How it works</div>
-    <h2 class="section-h2">Not a newsletter.<br><em>A multi-agent system.</em></h2>
-    <p class="section-intro">Every Monday, eight specialist AI agents run a two-phase intelligence operation — autonomously searching the live web, challenging each other's findings, and producing a verified digest. Here is exactly what happens.</p>
-
-    <!-- PHASE CARDS -->
-    <div class="how-phases">
-      <div class="how-phase">
-        <div class="hp-eyebrow">Phase 1 &mdash; 06:00 UTC Monday</div>
-        <div class="hp-title">Five primary agents search independently</div>
-        <div class="hp-body">Scout, Vita, Lex, Terra, and Horizon each receive a brief describing their domain and last week&rsquo;s top signals.</div>
-        <div class="hp-body-detail" id="hp1-detail">Each agent autonomously generates its own search queries — deciding what is worth investigating this week — then retrieves live web results in real time. Each agent reads its results and produces 3&ndash;6 structured findings: a title, a 2&ndash;3 sentence analysis, a verdict, a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9), a regulatory risk assessment, a suggested experiment, and real source URLs.</div>
-        <button class="hp-expand-btn" data-expand="hp1-detail" onclick="toggleHowDetail('hp1-detail',this)" aria-expanded="false">Read more ↓</button>
-        <div class="hp-agents">
-          <span class="hp-agent">Scout &mdash; P&amp;C</span>
-          <span class="hp-agent">Vita &mdash; Life &amp; Annuities</span>
-          <span class="hp-agent">Lex &mdash; Regulatory</span>
-          <span class="hp-agent">Terra &mdash; Reinsurance</span>
-          <span class="hp-agent">Horizon &mdash; Horizontal Tech</span>
-        </div>
-      </div>
-      <div class="how-phase">
-        <div class="hp-eyebrow">Phase 2 &mdash; 06:02 UTC Monday</div>
-        <div class="hp-title">Three synthesis agents read everything, then search further</div>
-        <div class="hp-body">Two minutes after Phase 1 completes, Null, Weave, and Faro receive the full set of Phase 1 findings as context.</div>
-        <div class="hp-body-detail" id="hp2-detail">Each then generates its own targeted search queries — informed by what the primary agents found — and fetches additional live results. Null and Weave run in a deeper reasoning mode: a multi-step analytical process that runs before producing output. This is what separates a sceptical challenge from a surface-level dismissal, and a second-order effect from an obvious observation.</div>
-        <button class="hp-expand-btn" data-expand="hp2-detail" onclick="toggleHowDetail('hp2-detail',this)" aria-expanded="false">Read more ↓</button>
-        <div class="hp-agents">
-          <span class="hp-agent thinking">Null &mdash; Sceptic (deep reasoning)</span>
-          <span class="hp-agent thinking">Weave &mdash; Second-order effects (deep reasoning)</span>
-          <span class="hp-agent">Faro &mdash; Horizon scanner</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- TRUST CARDS -->
-    <div class="trust-grid">
-      <div class="trust-card">
-        <div class="tc-icon">&#128279;</div>
-        <div class="tc-title">Every source URL is verified</div>
-        <div class="tc-body">Before any finding is stored, all reference URLs are HTTP-checked. Dead links are removed. If no live sources remain, the finding is flagged. You will never see a finding whose sources have disappeared.</div>
-        <span class="tc-tag live">Live URL check on every run</span>
-      </div>
-      <div class="trust-card">
-        <div class="tc-icon">&#128269;</div>
-        <div class="tc-title">Agents decide what to search</div>
-        <div class="tc-body">There are no pre-written queries. Each agent reads its brief and last week&rsquo;s signals, then generates its own search terms. This means the system adapts to what is actually happening in the market — not what was anticipated when it was built.</div>
-        <span class="tc-tag built">Autonomous query generation</span>
-      </div>
-      <div class="trust-card">
-        <div class="tc-icon">&#129504;</div>
-        <div class="tc-title">Null is always looking for the lie</div>
-        <div class="tc-body">Null reads every Phase 1 finding with explicit instructions to find vendor marketing dressed as innovation, thin evidence presented as proof, and AI-washing. It uses extended reasoning to do this properly — not a surface-level scan. Noise verdicts are Null&rsquo;s primary output.</div>
-        <span class="tc-tag active">Active hallucination guard</span>
-      </div>
-      <div class="trust-card">
-        <div class="tc-icon">&#128200;</div>
-        <div class="tc-title">Signal status tracks week over week</div>
-        <div class="tc-body">Every finding is assigned a signal status: New, Emerging, Confirmed, or Recurring. Agents compare this week&rsquo;s findings against prior weeks to detect whether a signal is strengthening, plateauing, or fading. A finding that appears once is interesting. One that appears three weeks running is a trend.</div>
-        <span class="tc-tag live">Memory across runs</span>
-      </div>
-      <div class="trust-card">
-        <div class="tc-icon">&#128336;</div>
-        <div class="tc-title">Live web results, not cached data</div>
-        <div class="tc-body">Every search call goes to the live web at the moment the agent runs. There is no pre-fetched dataset, no static corpus, no knowledge cutoff. If something was published this morning and is relevant to insurance AI, an agent can find it by Monday.</div>
-        <span class="tc-tag built">Real-time web search</span>
-      </div>
-      <div class="trust-card">
-        <div class="tc-icon">&#127919;</div>
-        <div class="tc-title">Five scoring dimensions per finding</div>
-        <div class="tc-body">Every finding carries: a verdict (Signal / Watch / Noise), a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9 per NASA/ESA standard), a regulatory risk rating (Low / Medium / High), and a suggested experiment for practitioners. Scoring is not binary.</div>
-        <span class="tc-tag active">Structured evidence scoring</span>
-      </div>
-    </div>
-
-    <!-- METHODOLOGY ACCORDION -->
-    <div class="methodology-wrap">
-      <button class="methodology-toggle" onclick="toggleMethodology(this)" aria-expanded="false">
-        <span>Scoring methodology, signal status &amp; sources</span>
-        <span class="mt-arrow">↓</span>
-      </button>
-      <div class="methodology-body" id="methodologyBody">
-
-    <!-- SIGNAL STATUS -->
-    <div class="hb-label" style="margin-bottom:16px;">Signal status — how findings are tracked over time</div>
-    <div class="signal-status-row">
-      <div class="ss-badge">
-        <div class="ss-dot-row"><div class="ss-dot new"></div><div class="ss-label">New</div></div>
-        <div class="ss-desc">First time this signal has appeared. Treat as early intelligence.</div>
-      </div>
-      <div class="ss-badge">
-        <div class="ss-dot-row"><div class="ss-dot emerging"></div><div class="ss-label">Emerging</div></div>
-        <div class="ss-desc">Appeared in 2&ndash;3 consecutive weeks. Evidence is building.</div>
-      </div>
-      <div class="ss-badge">
-        <div class="ss-dot-row"><div class="ss-dot confirmed"></div><div class="ss-label">Confirmed</div></div>
-        <div class="ss-desc">Consistent signal across 4+ weeks. Multiple independent sources agree.</div>
-      </div>
-      <div class="ss-badge">
-        <div class="ss-dot-row"><div class="ss-dot recurring"></div><div class="ss-label">Recurring</div></div>
-        <div class="ss-desc">A long-running theme. Still active but no longer novel.</div>
-      </div>
-    </div>
-
-    <div class="readiness-row">
-      <div class="rs-stage">
-        <div class="rs-num">1</div>
-        <div class="rs-label">Idea</div>
-        <div class="rs-desc">Research stage, no deployment</div>
-      </div>
-      <div class="rs-stage">
-        <div class="rs-num">2</div>
-        <div class="rs-label">Experiment</div>
-        <div class="rs-desc">Lab testing, proof of concept</div>
-      </div>
-      <div class="rs-stage">
-        <div class="rs-num">3</div>
-        <div class="rs-label">Pilot</div>
-        <div class="rs-desc">Limited real deployment</div>
-      </div>
-      <div class="rs-stage">
-        <div class="rs-num">4</div>
-        <div class="rs-label">Proven</div>
-        <div class="rs-desc">Multiple carriers, measurable ROI</div>
-      </div>
-      <div class="rs-stage">
-        <div class="rs-num">5</div>
-        <div class="rs-label">Standard</div>
-        <div class="rs-desc">Industry-wide adoption</div>
-      </div>
-    </div>
-
-    <div class="how-bottom">
-      <div class="how-box">
-        <div class="hb-label">Open-access sources only</div>
-        <div class="chips">
-          <!-- Academic & Research -->
-          <a class="chip" href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a>
-          <a class="chip" href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a>
-          <!-- Regulatory -->
-          <a class="chip" href="https://content.naic.org" target="_blank" rel="noopener">NAIC</a>
-          <a class="chip" href="https://www.fca.org.uk" target="_blank" rel="noopener">FCA</a>
-          <a class="chip" href="https://www.eiopa.europa.eu" target="_blank" rel="noopener">EIOPA</a>
-          <a class="chip" href="https://www.iaisweb.org" target="_blank" rel="noopener">IAIS</a>
-          <a class="chip" href="https://www.federalregister.gov" target="_blank" rel="noopener">Federal Register</a>
-          <!-- Standards & Policy -->
-          <a class="chip" href="https://www.nist.gov" target="_blank" rel="noopener">NIST</a>
-          <a class="chip" href="https://www.bis.org" target="_blank" rel="noopener">BIS</a>
-          <!-- Insurance Research -->
-          <a class="chip" href="https://www.genevaassociation.org" target="_blank" rel="noopener">Geneva Association</a>
-          <a class="chip" href="https://www.lloyds.com" target="_blank" rel="noopener">Lloyd's</a>
-          <a class="chip" href="https://www.soa.org" target="_blank" rel="noopener">SOA</a>
-          <a class="chip" href="https://www.casact.org" target="_blank" rel="noopener">CAS</a>
-          <!-- Community & Developer -->
-          <a class="chip" href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a>
-          <a class="chip" href="https://github.com/trending" target="_blank" rel="noopener">GitHub</a>
-          <a class="chip" href="https://dev.to" target="_blank" rel="noopener">dev.to</a>
-          <a class="chip" href="https://www.reddit.com/r/insurtech" target="_blank" rel="noopener">r/insurtech</a>
-        </div>
-      </div>
-      <div class="how-box">
-        <div class="hb-label">How verdicts are assigned</div>
-        <div class="verdict-defs">
-          <div class="vd-row"><span class="vd-badge vdb-s">Signal</span><div class="vd-text"><strong>Evidenced and meaningful.</strong> Real deployments, measurable outcomes, verifiable sources. Act on this.</div></div>
-          <div class="vd-row"><span class="vd-badge vdb-w">Watch</span><div class="vd-text"><strong>Early but credible.</strong> Promising signals — evidence exists, deployment is limited. Monitor closely.</div></div>
-          <div class="vd-row"><span class="vd-badge vdb-n">Noise</span><div class="vd-text"><strong>More narrative than substance.</strong> Claims that don't hold up under scrutiny. Don't act yet.</div></div>
-        </div>
-      </div>
-    </div>
-
-      </div><!-- /methodology-body -->
-    </div><!-- /methodology-wrap -->
   </div>
 </section>
 
@@ -1238,6 +957,287 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
           <div class="rc-signal">US P&C claims automation: 40-60% straight-through processing at leading carriers</div>
           <div class="rc-signal">Bermuda: AI-driven retrocession pricing becoming standard practice</div>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- MEET THE AI AGENTS -->
+<section id="minds">
+  <div class="inner">
+    <div class="eyebrow">Meet the AI Agents</div>
+    <h2 class="section-h2">Eight AI agents.<br><em>Always at work.</em></h2>
+    <p class="section-intro">Each AI agent has a distinct focus and genuine expertise. They explore continuously — not when prompted. Their findings appear in the Signal Lab as they work through their domains each week.</p>
+    <div class="minds-grid" id="mindsGrid"></div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="inner">
+    <div class="eyebrow">How it works</div>
+    <h2 class="section-h2">Not a newsletter.<br><em>A multi-agent system.</em></h2>
+    <p class="section-intro">Every Monday, eight specialist AI agents run a two-phase intelligence operation — autonomously searching the live web, challenging each other's findings, and producing a verified digest. Here is exactly what happens.</p>
+
+    <!-- PHASE CARDS -->
+    <div class="how-phases">
+      <div class="how-phase">
+        <div class="hp-eyebrow">Phase 1 &mdash; 06:00 UTC Monday</div>
+        <div class="hp-title">Five primary agents search independently</div>
+        <div class="hp-body">Scout, Vita, Lex, Terra, and Horizon each receive a brief describing their domain and last week&rsquo;s top signals.</div>
+        <div class="hp-body-detail" id="hp1-detail">Each agent autonomously generates its own search queries — deciding what is worth investigating this week — then retrieves live web results in real time. Each agent reads its results and produces 3&ndash;6 structured findings: a title, a 2&ndash;3 sentence analysis, a verdict, a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9), a regulatory risk assessment, a suggested experiment, and real source URLs.</div>
+        <button class="hp-expand-btn" data-expand="hp1-detail" onclick="toggleHowDetail('hp1-detail',this)" aria-expanded="false">Read more ↓</button>
+        <div class="hp-agents">
+          <span class="hp-agent">Scout &mdash; P&amp;C</span>
+          <span class="hp-agent">Vita &mdash; Life &amp; Annuities</span>
+          <span class="hp-agent">Lex &mdash; Regulatory</span>
+          <span class="hp-agent">Terra &mdash; Reinsurance</span>
+          <span class="hp-agent">Horizon &mdash; Horizontal Tech</span>
+        </div>
+      </div>
+      <div class="how-phase">
+        <div class="hp-eyebrow">Phase 2 &mdash; 06:02 UTC Monday</div>
+        <div class="hp-title">Three synthesis agents read everything, then search further</div>
+        <div class="hp-body">Two minutes after Phase 1 completes, Null, Weave, and Faro receive the full set of Phase 1 findings as context.</div>
+        <div class="hp-body-detail" id="hp2-detail">Each then generates its own targeted search queries — informed by what the primary agents found — and fetches additional live results. Null and Weave run in a deeper reasoning mode: a multi-step analytical process that runs before producing output. This is what separates a sceptical challenge from a surface-level dismissal, and a second-order effect from an obvious observation.</div>
+        <button class="hp-expand-btn" data-expand="hp2-detail" onclick="toggleHowDetail('hp2-detail',this)" aria-expanded="false">Read more ↓</button>
+        <div class="hp-agents">
+          <span class="hp-agent thinking">Null &mdash; Sceptic (deep reasoning)</span>
+          <span class="hp-agent thinking">Weave &mdash; Second-order effects (deep reasoning)</span>
+          <span class="hp-agent">Faro &mdash; Horizon scanner</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRUST CARDS -->
+    <div class="trust-grid">
+      <div class="trust-card">
+        <div class="tc-icon">&#128279;</div>
+        <div class="tc-title">Every source URL is verified</div>
+        <div class="tc-body">Before any finding is stored, all reference URLs are HTTP-checked. Dead links are removed. If no live sources remain, the finding is flagged. You will never see a finding whose sources have disappeared.</div>
+        <span class="tc-tag live">Live URL check on every run</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#128269;</div>
+        <div class="tc-title">Agents decide what to search</div>
+        <div class="tc-body">There are no pre-written queries. Each agent reads its brief and last week&rsquo;s signals, then generates its own search terms. This means the system adapts to what is actually happening in the market — not what was anticipated when it was built.</div>
+        <span class="tc-tag built">Autonomous query generation</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#129504;</div>
+        <div class="tc-title">Null is always looking for the lie</div>
+        <div class="tc-body">Null reads every Phase 1 finding with explicit instructions to find vendor marketing dressed as innovation, thin evidence presented as proof, and AI-washing. It uses extended reasoning to do this properly — not a surface-level scan. Noise verdicts are Null&rsquo;s primary output.</div>
+        <span class="tc-tag active">Active hallucination guard</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#128200;</div>
+        <div class="tc-title">Signal status tracks week over week</div>
+        <div class="tc-body">Every finding is assigned a signal status: New, Emerging, Confirmed, or Recurring. Agents compare this week&rsquo;s findings against prior weeks to detect whether a signal is strengthening, plateauing, or fading. A finding that appears once is interesting. One that appears three weeks running is a trend.</div>
+        <span class="tc-tag live">Memory across runs</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#128336;</div>
+        <div class="tc-title">Live web results, not cached data</div>
+        <div class="tc-body">Every search call goes to the live web at the moment the agent runs. There is no pre-fetched dataset, no static corpus, no knowledge cutoff. If something was published this morning and is relevant to insurance AI, an agent can find it by Monday.</div>
+        <span class="tc-tag built">Real-time web search</span>
+      </div>
+      <div class="trust-card">
+        <div class="tc-icon">&#127919;</div>
+        <div class="tc-title">Five scoring dimensions per finding</div>
+        <div class="tc-body">Every finding carries: a verdict (Signal / Watch / Noise), a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9 per NASA/ESA standard), a regulatory risk rating (Low / Medium / High), and a suggested experiment for practitioners. Scoring is not binary.</div>
+        <span class="tc-tag active">Structured evidence scoring</span>
+      </div>
+    </div>
+
+    <!-- METHODOLOGY ACCORDION -->
+    <div class="methodology-wrap">
+      <button class="methodology-toggle" onclick="toggleMethodology(this)" aria-expanded="false">
+        <span>Scoring methodology, signal status &amp; sources</span>
+        <span class="mt-arrow">↓</span>
+      </button>
+      <div class="methodology-body" id="methodologyBody">
+
+    <!-- SIGNAL STATUS -->
+    <div class="hb-label" style="margin-bottom:16px;">Signal status — how findings are tracked over time</div>
+    <div class="signal-status-row">
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot new"></div><div class="ss-label">New</div></div>
+        <div class="ss-desc">First time this signal has appeared. Treat as early intelligence.</div>
+      </div>
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot emerging"></div><div class="ss-label">Emerging</div></div>
+        <div class="ss-desc">Appeared in 2&ndash;3 consecutive weeks. Evidence is building.</div>
+      </div>
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot confirmed"></div><div class="ss-label">Confirmed</div></div>
+        <div class="ss-desc">Consistent signal across 4+ weeks. Multiple independent sources agree.</div>
+      </div>
+      <div class="ss-badge">
+        <div class="ss-dot-row"><div class="ss-dot recurring"></div><div class="ss-label">Recurring</div></div>
+        <div class="ss-desc">A long-running theme. Still active but no longer novel.</div>
+      </div>
+    </div>
+
+    <div class="readiness-row">
+      <div class="rs-stage">
+        <div class="rs-num">1</div>
+        <div class="rs-label">Idea</div>
+        <div class="rs-desc">Research stage, no deployment</div>
+      </div>
+      <div class="rs-stage">
+        <div class="rs-num">2</div>
+        <div class="rs-label">Experiment</div>
+        <div class="rs-desc">Lab testing, proof of concept</div>
+      </div>
+      <div class="rs-stage">
+        <div class="rs-num">3</div>
+        <div class="rs-label">Pilot</div>
+        <div class="rs-desc">Limited real deployment</div>
+      </div>
+      <div class="rs-stage">
+        <div class="rs-num">4</div>
+        <div class="rs-label">Proven</div>
+        <div class="rs-desc">Multiple carriers, measurable ROI</div>
+      </div>
+      <div class="rs-stage">
+        <div class="rs-num">5</div>
+        <div class="rs-label">Standard</div>
+        <div class="rs-desc">Industry-wide adoption</div>
+      </div>
+    </div>
+
+    <div class="how-bottom">
+      <div class="how-box">
+        <div class="hb-label">Open-access sources only</div>
+        <div class="chips">
+          <!-- Academic & Research -->
+          <a class="chip" href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a>
+          <a class="chip" href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a>
+          <!-- Regulatory -->
+          <a class="chip" href="https://content.naic.org" target="_blank" rel="noopener">NAIC</a>
+          <a class="chip" href="https://www.fca.org.uk" target="_blank" rel="noopener">FCA</a>
+          <a class="chip" href="https://www.eiopa.europa.eu" target="_blank" rel="noopener">EIOPA</a>
+          <a class="chip" href="https://www.iaisweb.org" target="_blank" rel="noopener">IAIS</a>
+          <a class="chip" href="https://www.federalregister.gov" target="_blank" rel="noopener">Federal Register</a>
+          <!-- Standards & Policy -->
+          <a class="chip" href="https://www.nist.gov" target="_blank" rel="noopener">NIST</a>
+          <a class="chip" href="https://www.bis.org" target="_blank" rel="noopener">BIS</a>
+          <!-- Insurance Research -->
+          <a class="chip" href="https://www.genevaassociation.org" target="_blank" rel="noopener">Geneva Association</a>
+          <a class="chip" href="https://www.lloyds.com" target="_blank" rel="noopener">Lloyd's</a>
+          <a class="chip" href="https://www.soa.org" target="_blank" rel="noopener">SOA</a>
+          <a class="chip" href="https://www.casact.org" target="_blank" rel="noopener">CAS</a>
+          <!-- Community & Developer -->
+          <a class="chip" href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a>
+          <a class="chip" href="https://github.com/trending" target="_blank" rel="noopener">GitHub</a>
+          <a class="chip" href="https://dev.to" target="_blank" rel="noopener">dev.to</a>
+          <a class="chip" href="https://www.reddit.com/r/insurtech" target="_blank" rel="noopener">r/insurtech</a>
+        </div>
+      </div>
+      <div class="how-box">
+        <div class="hb-label">How verdicts are assigned</div>
+        <div class="verdict-defs">
+          <div class="vd-row"><span class="vd-badge vdb-s">Signal</span><div class="vd-text"><strong>Evidenced and meaningful.</strong> Real deployments, measurable outcomes, verifiable sources. Act on this.</div></div>
+          <div class="vd-row"><span class="vd-badge vdb-w">Watch</span><div class="vd-text"><strong>Early but credible.</strong> Promising signals — evidence exists, deployment is limited. Monitor closely.</div></div>
+          <div class="vd-row"><span class="vd-badge vdb-n">Noise</span><div class="vd-text"><strong>More narrative than substance.</strong> Claims that don't hold up under scrutiny. Don't act yet.</div></div>
+        </div>
+      </div>
+    </div>
+
+      </div><!-- /methodology-body -->
+    </div><!-- /methodology-wrap -->
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- PATHWAYS -->
+<section id="pathways">
+  <div class="inner">
+    <div class="eyebrow">Pathways</div>
+    <h2 class="section-h2">Where does a finding<br><em>sit on its journey?</em></h2>
+    <p class="section-intro">Every emerging technology in insurance travels a path from idea to standard practice. These five stages are how we track that journey — and where you'll find findings grouped in the Signal Lab.</p>
+    <div class="pathways-grid">
+      <div class="pathway-card" onclick="filterByPathway('Idea',this)">
+        <div class="pc-step">Stage 01</div>
+        <span class="pc-icon">💡</span>
+        <div class="pc-title">Idea</div>
+        <div class="pc-body">Early research, academic papers, and theoretical frameworks. Interesting but no real-world validation yet.</div>
+        <div class="pc-count" id="pc-count-idea">— findings</div>
+      </div>
+      <div class="pathway-card" onclick="filterByPathway('Experiment',this)">
+        <div class="pc-step">Stage 02</div>
+        <span class="pc-icon">🔬</span>
+        <div class="pc-title">Experiment</div>
+        <div class="pc-body">Lab tests, small pilots, and proof-of-concept work. Evidence exists but scale and commercial viability are unproven.</div>
+        <div class="pc-count" id="pc-count-experiment">— findings</div>
+      </div>
+      <div class="pathway-card" onclick="filterByPathway('Pilot',this)">
+        <div class="pc-step">Stage 03</div>
+        <span class="pc-icon">🧭</span>
+        <div class="pc-title">Pilot</div>
+        <div class="pc-body">Real carrier deployments at limited scale. Results are promising but broader adoption is still emerging.</div>
+        <div class="pc-count" id="pc-count-pilot">— findings</div>
+      </div>
+      <div class="pathway-card" onclick="filterByPathway('Proven',this)">
+        <div class="pc-step">Stage 04</div>
+        <span class="pc-icon">✅</span>
+        <div class="pc-title">Proven</div>
+        <div class="pc-body">Multiple carrier deployments with measurable ROI. Commercial viability established. Time to act.</div>
+        <div class="pc-count" id="pc-count-proven">— findings</div>
+      </div>
+      <div class="pathway-card" onclick="filterByPathway('Standard',this)">
+        <div class="pc-step">Stage 05</div>
+        <span class="pc-icon">🏆</span>
+        <div class="pc-title">Standard</div>
+        <div class="pc-body">Industry-wide adoption. The question is no longer if — it's how to implement well and differentiate through execution.</div>
+        <div class="pc-count" id="pc-count-standard">— findings</div>
+      </div>
+    </div>
+    <p style="margin-top:20px;font-size:14px;color:var(--mid);font-family:var(--ff-mono);letter-spacing:.04em;">Click any pathway to filter the Signal Lab below ↓</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- WHO IT'S FOR -->
+<section id="who">
+  <div class="inner">
+    <div class="eyebrow">Who it's for</div>
+    <h2 class="section-h2">If you need clarity<br><em>without the noise.</em></h2>
+    <p class="section-intro">Not a trade publication, vendor pitch, or conference agenda. For anyone who needs to understand what technology is genuinely doing in insurance — and make decisions on that basis.</p>
+    <div class="who-grid">
+      <div class="who-card">
+        <div class="wc-num">01</div>
+        <span class="wc-icon">🔬</span>
+        <div class="wc-title">The Curious Learner</div>
+        <div class="wc-role">Students · Researchers · Early career</div>
+        <div class="wc-body">You're building your understanding of technology in insurance. Every finding here is <strong>grounded in evidence, linked to its source,</strong> and open to challenge.</div>
+      </div>
+      <div class="who-card">
+        <div class="wc-num">02</div>
+        <span class="wc-icon">🧭</span>
+        <div class="wc-title">The Practitioner</div>
+        <div class="wc-role">Professionals · Technologists · Builders</div>
+        <div class="wc-body">You need clarity on what's in production versus what's still being explored. <strong>Verified evidence and readiness stages</strong> — so your judgements are well-founded.</div>
+      </div>
+      <div class="who-card">
+        <div class="wc-num">03</div>
+        <span class="wc-icon">🎯</span>
+        <div class="wc-title">The Strategic Mind</div>
+        <div class="wc-role">Leaders · Decision-makers · Investors</div>
+        <div class="wc-body">You're thinking about where to invest attention and resources. <strong>A clear, scored, independent view</strong> of what merits action now, what to watch, and what can safely wait.</div>
+      </div>
+      <div class="who-card">
+        <div class="wc-num">04</div>
+        <span class="wc-icon">🏛️</span>
+        <div class="wc-title">The Board Voice</div>
+        <div class="wc-role">Boards · CEOs · C-suite executives</div>
+        <div class="wc-body">You need independent signal, free from vendor influence. <strong>Scored intelligence with clear sourcing</strong> to support confident technology governance and strategic decision-making.</div>
       </div>
     </div>
   </div>
