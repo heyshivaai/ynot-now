@@ -559,11 +559,9 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .mm span{font-family:var(--ff-serif);font-size:20px;letter-spacing:-.01em;color:var(--ink);}
 
   /* ── Tag tooltip ─────────────────────────────────────── */
-  .tag-tooltip{position:relative;cursor:help;}
-  .tag-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--white);font-family:var(--ff-sans);font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;line-height:1.55;padding:9px 13px;border-radius:8px;width:240px;z-index:200;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.15);}
-  .tag-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink);}
-  .tag-tooltip:hover .tag-tip,.tag-tooltip:focus .tag-tip{display:block;}
-  .tag-info{font-size:9px;opacity:0.55;margin-left:2px;vertical-align:super;}
+  .tag-info{font-size:10px;opacity:0.6;margin-left:3px;vertical-align:super;cursor:pointer;text-decoration:none;border:none;background:none;padding:0;font-family:inherit;color:inherit;}
+  #tagTooltipBox{display:none;position:fixed;background:#1a1a17;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:400;letter-spacing:0;text-transform:none;line-height:1.55;padding:10px 14px;border-radius:9px;width:260px;z-index:9999;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.22);}
+  #tagTooltipBox::after{content:'';position:absolute;top:100%;left:var(--arrow-left,50%);transform:translateX(-50%);border:6px solid transparent;border-top-color:#1a1a17;}
   /* ── How It Works — expand/collapse ──────────────────── */
   .hp-body{font-size:14px;line-height:1.8;color:#555550;margin-bottom:2px;}
   .hp-body-detail{display:none;font-size:14px;line-height:1.8;color:#555550;}
@@ -716,7 +714,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
           <span class="tag">Reinsurance · Cat · Parametric</span>
           <span class="tag">Horizontal Tech</span>
           <span class="tag">APAC · Europe · Americas</span>
-          <span class="tag tag-tooltip">Signal history from 2004<span class="tag-info">ℹ</span><span class="tag-tip">Historical signal context covering two decades of AI in insurance. Live agent findings began at YNOT.NOW launch.</span></span>
+          <span class="tag">Signal history from 2004<button class="tag-info" onclick="showTagTooltip(event,'Historical signal context covering two decades of AI in insurance. Live agent findings began at YNOT.NOW launch.')" aria-label="More info">ℹ</button></span>
         </div>
       </div>
     </div>
@@ -2313,5 +2311,38 @@ document.addEventListener('click',function(e){
 
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
 <script defer src="/_vercel/insights/script.js"></script>
+
+<!-- TAG TOOLTIP -->
+<div id="tagTooltipBox"></div>
+<script>
+(function(){
+  var box=document.getElementById('tagTooltipBox');
+  var activeBtn=null;
+  function hide(){if(box)box.style.display='none';activeBtn=null;}
+  window.showTagTooltip=function(e,text){
+    e.stopPropagation();
+    var btn=e.currentTarget;
+    if(activeBtn===btn){hide();return;}
+    activeBtn=btn;
+    box.textContent=text;
+    box.style.display='block';
+    var r=btn.getBoundingClientRect();
+    var bw=260;
+    var left=r.left+r.width/2-bw/2;
+    var top=r.top-box.offsetHeight-10+window.scrollY;
+    // clamp to viewport
+    left=Math.max(8,Math.min(left,window.innerWidth-bw-8));
+    box.style.left=left+'px';
+    box.style.top=top+'px';
+    // reposition arrow to point at button
+    var arrowLeft=r.left+r.width/2-left;
+    box.style.setProperty('--arrow-left',arrowLeft+'px');
+  };
+  document.addEventListener('click',function(e){
+    if(activeBtn&&!activeBtn.contains(e.target))hide();
+  });
+  document.addEventListener('scroll',hide,{passive:true});
+})();
+</script>
 </body>
 </html>
