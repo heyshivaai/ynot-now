@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /api/
+Allow: /
+
+# YNOT.NOW — AI intelligence for the insurance industry
+# Content is freely accessible for personal, educational, and research use.
+# Automated reproduction, commercial scraping, or redistribution without
+# attribution to YNOT.NOW is prohibited under our Terms of Use (/terms).
