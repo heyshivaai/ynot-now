@@ -558,6 +558,12 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .mm label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px;}
 .mm span{font-family:var(--ff-serif);font-size:20px;letter-spacing:-.01em;color:var(--ink);}
 
+  /* ── Tag tooltip ─────────────────────────────────────── */
+  .tag-tooltip{position:relative;cursor:help;}
+  .tag-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--white);font-family:var(--ff-sans);font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;line-height:1.55;padding:9px 13px;border-radius:8px;width:240px;z-index:200;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.15);}
+  .tag-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink);}
+  .tag-tooltip:hover .tag-tip,.tag-tooltip:focus .tag-tip{display:block;}
+  .tag-info{font-size:9px;opacity:0.55;margin-left:2px;vertical-align:super;}
   /* ── How It Works — expand/collapse ──────────────────── */
   .hp-body{font-size:14px;line-height:1.8;color:#555550;margin-bottom:2px;}
   .hp-body-detail{display:none;font-size:14px;line-height:1.8;color:#555550;}
@@ -710,7 +716,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
           <span class="tag">Reinsurance · Cat · Parametric</span>
           <span class="tag">Horizontal Tech</span>
           <span class="tag">APAC · Europe · Americas</span>
-          <span class="tag">Signal history since 2004</span>
+          <span class="tag tag-tooltip">Signal history from 2004<span class="tag-info">ℹ</span><span class="tag-tip">Historical signal context covering two decades of AI in insurance. Live agent findings began at YNOT.NOW launch.</span></span>
         </div>
       </div>
     </div>
@@ -1504,6 +1510,18 @@ function updatePathwayCounts(){
   });
 }
 
+// ── OPINION FRAMING — display-layer only, never mutates stored data ──
+var OPINION_QUALIFIERS=['in our assessment','in our view','we consider','our analysis suggests','we believe','in our opinion','our assessment'];
+function displayBody(f){
+  var body=f.body||'';
+  if((f.verdict||'').toUpperCase()==='NOISE'){
+    var lower=body.toLowerCase();
+    var hasQualifier=OPINION_QUALIFIERS.some(function(q){return lower.indexOf(q)===0;});
+    if(!hasQualifier) body='In our assessment, '+body;
+  }
+  return body;
+}
+
 // ── RENDER CARDS ──
 function makeCard(f,idx){
   const v=f.verdict||'WATCH';
@@ -1516,6 +1534,7 @@ function makeCard(f,idx){
   div.className=`icard ${cs}`;
   div.style.animationDelay=(idx*0.035)+'s';
   div.onclick=()=>openModal(f);
+  const displayedBody=displayBody(f);
   div.innerHTML=`
     <div class="ic-top"><span class="vc ${vc}">${v}</span><span class="ic-mind">${f.mindIcon||''} ${f.mindName||''}</span></div>
     <div class="ic-tags">
@@ -1525,7 +1544,7 @@ function makeCard(f,idx){
       <span class="ic-tag">${rl}</span>
     </div>
     <div class="ic-title">${f.title||''}</div>
-    <div class="ic-body">${(f.body||'').substring(0,180)}${(f.body||'').length>180?'…':''}</div>
+    <div class="ic-body">${displayedBody.substring(0,180)}${displayedBody.length>180?'…':''}</div>
     <div class="ic-footer">
       <span class="ic-readiness">${rl} · ${f.domain||''}</span>
       <div class="ic-conf">${[1,2,3,4,5].map(n=>`<div class="ic-dot${n<=conf?' on':''}"></div>`).join('')}</div>
@@ -1586,7 +1605,7 @@ function openModal(f){
   document.getElementById('modalTags').innerHTML=
     `<span class="modal-tag">${f.domain||''}</span>${f.subdomain?`<span class="modal-tag">${f.subdomain}</span>`:''}<span class="modal-tag region">${region}</span><span class="vc ${vc}" style="font-size:10px;padding:4px 12px;">${v}</span>`;
   document.getElementById('modalTitle').textContent=f.title||'';
-  document.getElementById('modalBody').textContent=f.body||'';
+  document.getElementById('modalBody').textContent=displayBody(f);
   const exp=document.getElementById('modalExp');
   if(f.experiment){exp.style.display='block';document.getElementById('modalExpText').textContent=f.experiment;}
   else exp.style.display='none';
