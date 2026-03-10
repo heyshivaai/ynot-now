@@ -558,6 +558,23 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .mm label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px;}
 .mm span{font-family:var(--ff-serif);font-size:20px;letter-spacing:-.01em;color:var(--ink);}
 
+  /* ── How It Works — expand/collapse ──────────────────── */
+  .hp-body{font-size:14px;line-height:1.8;color:#555550;margin-bottom:2px;}
+  .hp-body-detail{display:none;font-size:14px;line-height:1.8;color:#555550;}
+  .hp-expand-btn{background:none;border:none;cursor:pointer;font-family:var(--ff-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);padding:6px 0 0;display:inline-flex;align-items:center;gap:4px;transition:color .15s;}
+  .hp-expand-btn:hover{color:var(--ink);}
+  .methodology-wrap{border:2px solid var(--rule);border-radius:var(--radius);margin-top:8px;overflow:hidden;}
+  .methodology-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--white);border:none;padding:16px 20px;cursor:pointer;font-family:var(--ff-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);transition:background .15s;}
+  .methodology-toggle:hover{background:var(--off);}
+  .mt-arrow{transition:transform .25s;font-size:12px;}
+  .methodology-toggle.open .mt-arrow{transform:rotate(180deg);}
+  .methodology-body{display:none;padding:24px 20px;border-top:1px solid var(--rule);}
+  /* ── Footer legal links ───────────────────────────────── */
+  .footer-legal{width:100%;display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05);margin-top:4px;flex-wrap:wrap;}
+  .footer-legal-a{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);text-decoration:none;transition:color .15s;}
+  .footer-legal-a:hover{color:rgba(255,255,255,.7);}
+  .footer-legal-sep{color:rgba(255,255,255,.12);font-size:10px;}
+  .footer-legal-copy{font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;color:rgba(255,255,255,.18);}
   /* ── Y Mark Logo overrides ─────────────────────────── */
   .nav-logo img, a.logo img, .logo img {
     height: 48px !important;
@@ -620,11 +637,11 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
     <a class="nav-logo" href="#hero" aria-label="YNOT.NOW"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" height="48" style="display:block;max-width:220px;" role="img" aria-label="YNOT.NOW"><title>YNOT.NOW</title><path d="M 4 4 L 22 30 L 22 60 L 34 60 L 34 30 L 52 4 L 39 4 L 28 22 L 17 4 Z" fill="#0a0a08"/><rect x="64" y="10" width="1.5" height="44" fill="#d0ceca"/><text x="76" y="28" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="#0a0a08">YNOT</text><circle cx="76" cy="43" r="4.5" fill="#4ade80"/><text x="85" y="48" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="#0a0a08">NOW</text></svg></a>
     <div class="nav-links">
       <a class="nav-a" href="#what">What is this</a>
+      <a class="nav-a" href="#lab">Signal Lab</a>
+      <a class="nav-a" href="#pulse">Weekly Pulse</a>
       <a class="nav-a" href="#pathways">Pathways</a>
       <a class="nav-a" href="#who">Who it's for</a>
       <a class="nav-a" href="#minds">AI Agents</a>
-      <a class="nav-a" href="#lab">Signal Lab</a>
-      <a class="nav-a" href="#pulse">Weekly Pulse</a>
       <a class="nav-a" href="#about">About</a>
     </div>
     <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Open menu" aria-expanded="false">☰</button>
@@ -635,15 +652,15 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
   <div class="mm-section">Explore</div>
   <a class="mm-a" href="#what" onclick="closeMobileMenu()">What is this</a>
-  <a class="mm-a" href="#pathways" onclick="closeMobileMenu()">Pathways</a>
-  <a class="mm-a" href="#who" onclick="closeMobileMenu()">Who it's for</a>
-  <a class="mm-a" href="#minds" onclick="closeMobileMenu()">AI Agents</a>
   <div class="mm-section">Signal Lab</div>
   <a class="mm-a" href="#lab" onclick="closeMobileMenu()">Findings</a>
   <a class="mm-sub" href="#history" onclick="closeMobileMenu()">↳ Signal History</a>
   <a class="mm-sub" href="#regional" onclick="closeMobileMenu()">↳ Regional Intelligence</a>
   <a class="mm-a" href="#pulse" onclick="closeMobileMenu()">Weekly Pulse</a>
   <div class="mm-section">More</div>
+  <a class="mm-a" href="#pathways" onclick="closeMobileMenu()">Pathways</a>
+  <a class="mm-a" href="#who" onclick="closeMobileMenu()">Who it's for</a>
+  <a class="mm-a" href="#minds" onclick="closeMobileMenu()">AI Agents</a>
   <a class="mm-a" href="#about" onclick="closeMobileMenu()">About</a>
 </div>
 
@@ -816,7 +833,9 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="how-phase">
         <div class="hp-eyebrow">Phase 1 &mdash; 06:00 UTC Monday</div>
         <div class="hp-title">Five primary agents search independently</div>
-        <div class="hp-body">Scout, Vita, Lex, Terra, and Horizon each receive a brief describing their domain and last week&rsquo;s top signals. Each agent autonomously generates its own search queries — deciding what is worth investigating this week — then calls the Tavily search API to retrieve live web results. Each agent reads its results and produces 3&ndash;6 structured findings: a title, a 2&ndash;3 sentence analysis, a verdict, a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9), a regulatory risk assessment, a suggested experiment, and real source URLs.</div>
+        <div class="hp-body">Scout, Vita, Lex, Terra, and Horizon each receive a brief describing their domain and last week&rsquo;s top signals.</div>
+        <div class="hp-body-detail" id="hp1-detail">Each agent autonomously generates its own search queries — deciding what is worth investigating this week — then retrieves live web results in real time. Each agent reads its results and produces 3&ndash;6 structured findings: a title, a 2&ndash;3 sentence analysis, a verdict, a confidence score (1&ndash;5), a Technology Readiness Level (1&ndash;9), a regulatory risk assessment, a suggested experiment, and real source URLs.</div>
+        <button class="hp-expand-btn" data-expand="hp1-detail" onclick="toggleHowDetail('hp1-detail',this)" aria-expanded="false">Read more ↓</button>
         <div class="hp-agents">
           <span class="hp-agent">Scout &mdash; P&amp;C</span>
           <span class="hp-agent">Vita &mdash; Life &amp; Annuities</span>
@@ -828,10 +847,12 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="how-phase">
         <div class="hp-eyebrow">Phase 2 &mdash; 06:02 UTC Monday</div>
         <div class="hp-title">Three synthesis agents read everything, then search further</div>
-        <div class="hp-body">Two minutes after Phase 1 completes, Null, Weave, and Faro receive the full set of Phase 1 findings as context. Each then generates its own targeted search queries — informed by what the primary agents found — and fetches additional live results. Null and Weave use Claude&rsquo;s extended thinking mode: a private reasoning scratchpad that enables multi-step analysis before producing output. This is what separates a sceptical challenge from a surface-level dismissal, and a second-order effect from an obvious observation.</div>
+        <div class="hp-body">Two minutes after Phase 1 completes, Null, Weave, and Faro receive the full set of Phase 1 findings as context.</div>
+        <div class="hp-body-detail" id="hp2-detail">Each then generates its own targeted search queries — informed by what the primary agents found — and fetches additional live results. Null and Weave run in a deeper reasoning mode: a multi-step analytical process that runs before producing output. This is what separates a sceptical challenge from a surface-level dismissal, and a second-order effect from an obvious observation.</div>
+        <button class="hp-expand-btn" data-expand="hp2-detail" onclick="toggleHowDetail('hp2-detail',this)" aria-expanded="false">Read more ↓</button>
         <div class="hp-agents">
-          <span class="hp-agent thinking">Null &mdash; Sceptic (extended thinking)</span>
-          <span class="hp-agent thinking">Weave &mdash; Second-order effects (extended thinking)</span>
+          <span class="hp-agent thinking">Null &mdash; Sceptic (deep reasoning)</span>
+          <span class="hp-agent thinking">Weave &mdash; Second-order effects (deep reasoning)</span>
           <span class="hp-agent">Faro &mdash; Horizon scanner</span>
         </div>
       </div>
@@ -867,7 +888,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <div class="tc-icon">&#128336;</div>
         <div class="tc-title">Live web results, not cached data</div>
         <div class="tc-body">Every search call goes to the live web at the moment the agent runs. There is no pre-fetched dataset, no static corpus, no knowledge cutoff. If something was published this morning and is relevant to insurance AI, an agent can find it by Monday.</div>
-        <span class="tc-tag built">Real-time Tavily search</span>
+        <span class="tc-tag built">Real-time web search</span>
       </div>
       <div class="trust-card">
         <div class="tc-icon">&#127919;</div>
@@ -876,6 +897,14 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <span class="tc-tag active">Structured evidence scoring</span>
       </div>
     </div>
+
+    <!-- METHODOLOGY ACCORDION -->
+    <div class="methodology-wrap">
+      <button class="methodology-toggle" onclick="toggleMethodology(this)" aria-expanded="false">
+        <span>Scoring methodology, signal status &amp; sources</span>
+        <span class="mt-arrow">↓</span>
+      </button>
+      <div class="methodology-body" id="methodologyBody">
 
     <!-- SIGNAL STATUS -->
     <div class="hb-label" style="margin-bottom:16px;">Signal status — how findings are tracked over time</div>
@@ -963,6 +992,9 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         </div>
       </div>
     </div>
+
+      </div><!-- /methodology-body -->
+    </div><!-- /methodology-wrap -->
   </div>
 </section>
 
@@ -1272,7 +1304,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <!-- DISCLAIMER -->
 <div class="disclaimer">
   <div class="disclaimer-inner">
-    <strong>Disclaimer:</strong> YNOT.NOW provides general intelligence and commentary on emerging technology developments in the insurance industry for informational and educational purposes only. Nothing on this site constitutes financial, legal, actuarial, or professional advice. All findings are based on publicly available open-access sources cited within each finding. Verdicts represent the analytical opinion of the YNOT.NOW research framework and should not be relied upon as the sole basis for any business, investment, or regulatory decision. Readers are encouraged to verify all references independently. YNOT.NOW has no commercial relationships with any technology vendors, insurers, or investment entities. All views are independent.
+    <strong>Disclaimer:</strong> YNOT.NOW provides general intelligence and commentary on emerging technology developments in the insurance industry for <strong>informational and educational purposes only</strong>. Nothing on this site constitutes financial, legal, actuarial, regulatory, or professional advice of any kind, and no use of this site creates any professional–client relationship. All findings are generated by automated AI research agents based on publicly available open-access sources cited within each finding. <strong>AI-generated content may contain errors, inaccuracies, or omissions.</strong> Verdicts (Signal, Watch, Noise) and scores represent analytical output of an automated system and <strong>must not be relied upon as the sole basis for any business, investment, regulatory, or strategic decision.</strong> Readers are strongly encouraged to verify all references independently and seek qualified professional advice before acting on any information found here. YNOT.NOW has no commercial relationships with any technology vendors, insurers, or investment entities. Third-party links are for reference only — we do not endorse or take responsibility for external content. All views are independent. &nbsp;<a href="/terms" style="color:#aaa;">Terms of Use</a> &nbsp;·&nbsp; <a href="/privacy" style="color:#aaa;">Privacy Policy</a>
   </div>
 </div>
 
@@ -1294,6 +1326,13 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <span class="vc-label">Total visits</span>
         <span class="vc-value loading" id="vcTotal">—</span>
       </div>
+    </div>
+    <div class="footer-legal">
+      <a class="footer-legal-a" href="/terms">Terms of Use</a>
+      <span class="footer-legal-sep">·</span>
+      <a class="footer-legal-a" href="/privacy">Privacy Policy</a>
+      <span class="footer-legal-sep">·</span>
+      <span class="footer-legal-copy">© 2026 YNOT.NOW · All rights reserved</span>
     </div>
   </div>
 </footer>
@@ -2193,6 +2232,24 @@ renderWeeklyPulse();
 
   go(0);
 })();
+
+// ── HOW IT WORKS — EXPAND/COLLAPSE ──
+function toggleHowDetail(id, btn) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var open = el.style.display === 'block';
+  el.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? 'Read more \u2193' : 'Show less \u2191';
+  btn.setAttribute('aria-expanded', !open);
+}
+function toggleMethodology(btn) {
+  var body = document.getElementById('methodologyBody');
+  if (!body) return;
+  var open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  btn.classList.toggle('open', !open);
+  btn.setAttribute('aria-expanded', !open);
+}
 
 // ── MOBILE NAV ──
 function toggleMobileMenu(){
