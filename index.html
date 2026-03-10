@@ -1508,16 +1508,8 @@ function updatePathwayCounts(){
   });
 }
 
-// ── OPINION FRAMING — display-layer only, never mutates stored data ──
-var OPINION_QUALIFIERS=['in our assessment','in our view','we consider','our analysis suggests','we believe','in our opinion','our assessment'];
 function displayBody(f){
-  var body=f.body||'';
-  if((f.verdict||'').toUpperCase()==='NOISE'){
-    var lower=body.toLowerCase();
-    var hasQualifier=OPINION_QUALIFIERS.some(function(q){return lower.indexOf(q)===0;});
-    if(!hasQualifier) body='In our assessment, '+body;
-  }
-  return body;
+  return f.body||'';
 }
 
 // ── RENDER CARDS ──
