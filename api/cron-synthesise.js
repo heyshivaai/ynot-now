@@ -237,8 +237,8 @@ async function runSynthesisAgent(mind, phase1Findings) {
      'identifying early-stage signals others missed') + '. ' +
     'Use real URLs from the search results as refs — never invent URLs. ' +
     'Return ONLY a valid JSON array of 2-4 findings. Each must have: ' +
-    'title, verdict ("SIGNAL"|"WATCH"|"NOISE"), body (2-3 sentences), confidence (1-5), ' +
-    'domain, subdomain, trl (1-9), regulatoryRisk ("low"|"medium"|"high"), experiment, ' +
+    'title, verdict ("SIGNAL"|"WATCH"|"NOISE"), body (2-3 sentences: describe what is found and what is understood — factual and observational, not prescriptive), confidence (1-5), ' +
+    'domain, subdomain, trl (1-9), regulatoryRisk ("low"|"medium"|"high"), experiment (a research question or learning hypothesis worth exploring — frame as curiosity, not a recommendation), ' +
     'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING"), ' +
     'refs (array of {label, url} from real search results).';
 
@@ -362,20 +362,20 @@ module.exports = async function handler(req, res) {
       'Three synthesis agents (Null, Weave, Faro) then read all primary findings and produced cross-agent insights. ' +
       'Total findings: ' + allFindings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
       'Top findings:\n' + findingsText + '\n\n' +
-      'Write a LinkedIn-ready post for insurance and emerging tech executives. Format EXACTLY:\n\n' +
+      'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike. Format EXACTLY:\n\n' +
       '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
-      '[CONTEXT] 1-2 sentences on what the agents found and why it matters. Mention 8 agents and finding counts naturally.\n\n' +
-      '-> [Finding title] - [One sharp sentence: what + why it matters for insurance leaders]\n' +
+      '[CONTEXT] 1-2 sentences on what the agents found and what it reveals about how AI in insurance is evolving. Mention 8 agents and finding counts naturally.\n\n' +
+      '-> [Finding title] - [One sharp sentence: what was found and what it reveals about the state of AI in insurance]\n' +
       '-> [Finding title] - [One sharp sentence]\n' +
       '-> [Finding title] - [One sharp sentence]\n\n' +
-      '[CLOSE] One forward-looking sentence. No "In conclusion". No "The future is...".\n\n' +
+      '[CLOSE] One observational sentence on what is worth following or learning more about. No "In conclusion". No "The future is...".\n\n' +
       'All findings this week -> ynot.now\n\n' +
       '#InsurTech #AIinInsurance #Insurance #Innovation\n\n' +
       'Banned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. ' +
-      'Vary sentence length. Take a position. Do not just summarise.';
+      'Vary sentence length. Inform, do not advise.';
 
     var postText = await claudeCall(
-      'You write sharp, opinionated intelligence posts for insurance executives. Sound like a practitioner who has read everything. Use specific numbers and named technologies. Never use corporate filler.',
+      'You write evidence-grounded intelligence briefings for anyone curious about AI in insurance — practitioners, students, and researchers. Your job is to inform and spark curiosity, not to advise or recommend. Sound like a well-read, curious observer. Use specific numbers and named technologies. Never use corporate filler.',
       prompt, 600
     );
 

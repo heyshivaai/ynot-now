@@ -274,6 +274,40 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 
 ---
 
+## Agent Output Tone Rules (Global — applies to all 8 agents + pulse + digest)
+
+These rules apply to every agent prompt in `api/cron.js`, `api/cron-synthesise.js`, and `api/pulse.js`. Do not change agent prompts in a way that violates these rules.
+
+### Core principle
+YNOT.NOW is an **educational and informational resource**, not an advisory service. All agent output must inform and spark curiosity — not prescribe, recommend, or direct action.
+
+### Field-level rules
+
+| Field | Framing required |
+|-------|-----------------|
+| `body` | Factual and observational — describe what is found and what is currently understood. No prescriptive or advisory language. |
+| `experiment` | A research question or learning hypothesis worth exploring further — frame as curiosity, not a recommendation or action item. |
+| Digest hook | Grounded in a real finding; reads as an observation, not a call to action. |
+| Digest bullets | "What was found and what it reveals about the state of AI in insurance." Not "what leaders should do." |
+| Digest close | Observational — "What is worth watching or learning more about." Not "What leaders should be doing." |
+| Pulse post | Same as digest — all copy is educational, grounded, non-advisory. |
+
+### Banned framing in agent output
+- "Leaders should..." / "CTOs must..." / "You should..."
+- "Act on this" / "Time to act" / "Merits action now"
+- "Decision-makers" (when framed as directing decisions)
+- "Strategic recommendation" / "We recommend"
+- Any language implying the platform is a substitute for professional advice
+
+### Allowed framing
+- "Research suggests..." / "Evidence shows..."
+- "Worth following as evidence develops"
+- "A research question worth exploring..."
+- "What is currently understood about..."
+- "Reveals how AI in insurance is evolving"
+
+---
+
 ## Product Decisions & Principles
 
 - **Open access only** — no paywalled sources, no vendor sponsorship
@@ -306,7 +340,7 @@ The briefing must follow this exact structure, with each section on its own line
 → [Finding Title] — [one sharp sentence]
 → [Finding Title] — [one sharp sentence]
 
-[Close — one forward-looking sentence. No clichés. No "game-changer", "landscape", "transformative", "leverage".]
+[Close — one observational sentence. What is worth watching or learning more about. No clichés. No "game-changer", "landscape", "transformative", "leverage".]
 
 All findings this week → ynot.now
 

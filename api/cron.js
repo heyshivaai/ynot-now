@@ -247,10 +247,10 @@ async function analyseResults(mind, queries, results, memory) {
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
     'Return ONLY a valid JSON array of 3-5 findings. ' +
     'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"NOISE"), ' +
-    'body (2-3 sentences: what it is + why it matters for insurance), ' +
+    'body (2-3 sentences: what it is and what is currently understood about it in the insurance context — describe factually, do not prescribe or recommend), ' +
     'confidence (1-5 integer), domain (string), subdomain (string), ' +
     'trl (1-9 integer), regulatoryRisk ("low"|"medium"|"high"), ' +
-    'experiment (one actionable sentence for an insurance CTO), ' +
+    'experiment (a research question or learning hypothesis worth exploring further — frame as curiosity, not a recommendation or action item), ' +
     'refs (array of {label, url} using real URLs from results), ' +
     'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING") — NEW if first time seeing this topic, ' +
     'EMERGING if seen once before, CONFIRMED if seen 2+ times, RECURRING if it has appeared every week.';
@@ -310,18 +310,18 @@ async function generateWeeklyDigest(findings, runDate) {
   var prompt = 'Week of ' + runDate + '. Five autonomous agents independently searched the web this week using self-generated queries. ' +
     'Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
     'Top findings:\n' + findingsText + '\n\n' +
-    'Write a LinkedIn-ready post for insurance and emerging tech executives. Format EXACTLY:\n\n' +
+    'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike. Format EXACTLY:\n\n' +
     '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
-    '[CONTEXT] 1-2 sentences on what the agents found and why it matters. Mention agent count and finding counts naturally.\n\n' +
-    '-> [Finding title] - [One sharp sentence: what + why it matters for insurance leaders]\n' +
+    '[CONTEXT] 1-2 sentences on what the agents found and what it reveals about how AI in insurance is evolving. Mention agent count and finding counts naturally.\n\n' +
+    '-> [Finding title] - [One sharp sentence: what was found and what it reveals about the state of AI in insurance]\n' +
     '-> [Finding title] - [One sharp sentence]\n' +
     '-> [Finding title] - [One sharp sentence]\n\n' +
-    '[CLOSE] One forward-looking sentence. No "In conclusion". No "The future is...".\n\n' +
+    '[CLOSE] One observational sentence on what is worth following or learning more about. No "In conclusion". No "The future is...".\n\n' +
     'All findings this week -> ynot.now\n\n' +
     '#InsurTech #AIinInsurance #Insurance #Innovation\n\n' +
-    'Banned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. Vary sentence length. Take a position.';
+    'Banned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. Vary sentence length. Inform, do not advise.';
   return claudeCall(
-    'You write sharp, opinionated intelligence posts for insurance executives. Sound like a practitioner who has read everything. Use specific numbers and named technologies. Never use corporate filler.',
+    'You write evidence-grounded intelligence briefings for anyone curious about AI in insurance — practitioners, students, and researchers. Your job is to inform and spark curiosity, not to advise or recommend. Sound like a well-read, curious observer. Use specific numbers and named technologies. Never use corporate filler.',
     prompt, 600
   );
 }

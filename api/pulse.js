@@ -99,22 +99,22 @@ async function generateExecutiveBriefing(findings, runDate, prevFindings) {
   }
 
   const prompt =
-    `You are writing the weekly post for YNOT.NOW — a technology signal tracker for the insurance industry, read by CTOs, Chief Innovation Officers, and senior strategy leaders.\n\n` +
+    `You are writing the weekly post for YNOT.NOW — a free, independent AI signal tracker for the insurance industry, read by insurance professionals, students, researchers, and anyone curious about how AI is developing in insurance.\n\n` +
     `SCOPE: Life insurance, annuities, retirement products, P&C insurance (personal lines, commercial lines, specialty), and horizontal/deep tech with insurance implications. DO NOT include health insurance, pharmacy benefits, or healthcare IT findings (e.g. Optum, Epic, hospital systems).\n\n` +
     `Week of ${runDate}. Eight specialist agents scanned the market and produced ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${noises.length} Noise.\n\n` +
     `TOP FINDINGS FOR BULLETS:\n${bulletData}\n\n` +
     `ALL FINDINGS (for context only):\n${allLines}\n` +
     changedContext + `\n` +
     `Write a single post. Use EXACTLY this structure — no deviations:\n\n` +
-    `LINE 1 (Hook): One sentence. Specific. Slightly provocative or surprising. Must reference a real finding from the scope above. No generic openers. No health insurance examples. Make it feel like something a sharp P&C or Life insurance CTO would say.\n\n` +
+    `LINE 1 (Hook): One sentence. Specific. Slightly surprising or thought-provoking. Must reference a real finding from the scope above. No generic openers. No health insurance examples. Make it feel like something a well-read, curious observer of AI in insurance would say.\n\n` +
     `BLANK LINE\n\n` +
     `BULLETS (exactly 3, each on its own line starting with →):\n` +
-    `→ [Finding title, 6 words max] — [one sharp sentence: what it is + why it matters. Max 22 words.]\n` +
+    `→ [Finding title, 6 words max] — [one sharp sentence: what was found and what it reveals about the state of AI in insurance. Max 22 words.]\n` +
     `→ [Finding title, 6 words max] — [one sharp sentence. Max 22 words.]\n` +
     `→ [Finding title, 6 words max] — [one sharp sentence. Max 22 words.]\n\n` +
     `BLANK LINE\n\n` +
     (changedContext ? `WHAT CHANGED: One sentence only. What is new or different compared to last week? Reference a specific signal that is emerging or confirmed. Start with "From last week:"\n\nBLANK LINE\n\n` : '') +
-    `CLOSE: One sentence. What should insurance leaders be doing or watching before next Monday? Direct. No clichés.\n\n` +
+    `CLOSE: One sentence. What is worth watching or learning more about before next Monday? Direct. No clichés.\n\n` +
     `BLANK LINE\n\n` +
     `ATTRIBUTION LINE: Exactly this text: All findings this week \u2192 ynot.now\n\n` +
     `BLANK LINE\n\n` +
@@ -137,7 +137,7 @@ async function generateExecutiveBriefing(findings, runDate, prevFindings) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
-      system: 'You write the weekly post for YNOT.NOW, a technology signal tracker for the insurance industry (Life, Annuities, P&C, Horizontal Tech — NOT health insurance). Sharp, specific, opinionated. Plain text only — no markdown, no bold, no asterisks. Use → for bullets exactly as instructed. Follow the structure precisely.',
+      system: 'You write the weekly post for YNOT.NOW, a free independent intelligence resource for anyone curious about AI in insurance (Life, Annuities, P&C, Horizontal Tech — NOT health insurance). Grounded, specific, educational. The goal is to inform and spark curiosity, not to advise or recommend. Plain text only — no markdown, no bold, no asterisks. Use → for bullets exactly as instructed. Follow the structure precisely.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
