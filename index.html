@@ -1344,20 +1344,22 @@ const MINDS=[
 
 // ── RENDER MIND CARDS ──
 const grid=document.getElementById('mindsGrid');
-MINDS.forEach(m=>{
-  const div=document.createElement('div');
-  div.className='mc';
-  div.id='mc-'+m.id;
-  div.innerHTML=`
-    <span class="mc-icon">${m.icon}</span>
-    <div class="mc-name">${m.name}</div>
-    <div class="mc-role">${m.role}</div>
-    <div class="mc-persona">${m.persona}</div>
-    <div class="mc-desc">${m.desc}</div>
-    <div class="mc-domain">${m.domain}</div>
-    <div class="mc-status"><div class="mcdot" id="mcdot-${m.id}"></div><span id="mcs-${m.id}">Always exploring</span></div>`;
-  grid.appendChild(div);
-});
+if(grid){
+  MINDS.forEach(m=>{
+    const div=document.createElement('div');
+    div.className='mc';
+    div.id='mc-'+m.id;
+    div.innerHTML=`
+      <span class="mc-icon">${m.icon}</span>
+      <div class="mc-name">${m.name}</div>
+      <div class="mc-role">${m.role}</div>
+      <div class="mc-persona">${m.persona}</div>
+      <div class="mc-desc">${m.desc}</div>
+      <div class="mc-domain">${m.domain}</div>
+      <div class="mc-status"><div class="mcdot" id="mcdot-${m.id}"></div><span id="mcs-${m.id}">Always exploring</span></div>`;
+    grid.appendChild(div);
+  });
+}
 
 function setMind(id,state,msg){
   const c=document.getElementById('mc-'+id);
