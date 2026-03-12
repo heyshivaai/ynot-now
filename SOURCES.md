@@ -13,16 +13,20 @@ Last updated: 2026-03-12
 |--------|-----|-------------|
 | arXiv | https://arxiv.org | Pre-print research papers |
 | OpenAlex | https://openalex.org | Open catalog of scholarly works |
+| SSRN | https://www.ssrn.com | Social Science Research Network |
 
 ## Regulatory Bodies
 
 | Source | URL | Region | Description |
 |--------|-----|--------|-------------|
 | NAIC | https://content.naic.org | US | National Association of Insurance Commissioners |
-| FCA | https://www.fca.org.uk | UK | Financial Conduct Authority |
-| EIOPA | https://www.eiopa.europa.eu | EU | European Insurance and Occupational Pensions Authority |
-| IAIS | https://www.iaisweb.org | Global | International Association of Insurance Supervisors |
 | Federal Register | https://www.federalregister.gov | US | US government regulations |
+| FCA | https://www.fca.org.uk | UK | Financial Conduct Authority |
+| PRA | https://www.bankofengland.co.uk/prudential-regulation | UK | Prudential Regulation Authority |
+| EIOPA | https://www.eiopa.europa.eu | EU | European Insurance and Occupational Pensions Authority |
+| APRA | https://www.apra.gov.au | Australia | Australian Prudential Regulation Authority |
+| MAS | https://www.mas.gov.sg | Singapore | Monetary Authority of Singapore |
+| IAIS | https://www.iaisweb.org | Global | International Association of Insurance Supervisors |
 
 ## Standards & Policy
 
@@ -30,6 +34,7 @@ Last updated: 2026-03-12
 |--------|-----|-------------|
 | NIST | https://www.nist.gov | National Institute of Standards and Technology |
 | BIS | https://www.bis.org | Bank for International Settlements |
+| ACORD | https://www.acord.org | Insurance data standards organization |
 
 ## Insurance Industry Research
 
@@ -39,6 +44,7 @@ Last updated: 2026-03-12
 | Lloyd's of London | https://www.lloyds.com | Lloyd's market insights |
 | SOA | https://www.soa.org | Society of Actuaries |
 | CAS | https://www.casact.org | Casualty Actuarial Society |
+| AM Best | https://www.ambest.com | Insurance ratings and research |
 
 ## Community & Developer
 
