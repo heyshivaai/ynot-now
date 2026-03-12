@@ -1728,7 +1728,8 @@ function updateRegionalLive(){
         findingsEl.innerHTML=topFindings.map((f,idx)=>{
           const verdict=(f.verdict||'watch').toLowerCase();
           const summary=(f.body||'').substring(0,100)+(f.body&&f.body.length>100?'...':'');
-          return `<div class="rl-finding" onclick="openModal(insights.indexOf(insights.find(x=>x.title==='${(f.title||'').replace(/'/g,"\\'")}')))" title="Click to view full finding">
+          const realIndex=insights.indexOf(f);
+          return `<div class="rl-finding" onclick="openModal(${realIndex})" title="Click to view full finding">
             <span class="rl-finding-verdict ${verdict}">${f.verdict||'Watch'}</span>
             <span class="rl-finding-title">${f.title||'Untitled'}</span>
             <div class="rl-finding-summary">${summary}</div>
