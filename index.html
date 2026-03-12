@@ -629,23 +629,34 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
   .vc-sep { width:1px; height:14px; background:rgba(255,255,255,0.08); }
 
 /* CONSOLIDATED SYSTEM SECTION */
-.system-pipeline{background:var(--off);border-radius:16px;padding:32px;margin:40px 0;}
-.pipeline-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;}
-.pipeline-phase{text-align:center;min-width:100px;}
-.phase-badge{background:var(--ink);color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;display:inline-block;}
-.phase-badge.synthesis{background:linear-gradient(135deg,#6366f1,#8b5cf6);}
-.phase-time{font-size:12px;color:var(--mid);margin-top:6px;font-family:var(--ff-mono);}
-.pipeline-arrow{color:var(--mid);font-size:20px;font-weight:300;}
-.pipeline-agents{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
-.agent-chip{background:#fff;border:1px solid var(--rule);padding:6px 12px;border-radius:20px;font-size:13px;font-weight:500;cursor:default;transition:all .2s;}
-.agent-chip:hover{border-color:var(--ink);transform:translateY(-1px);}
-.agent-chip.thinking{background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#f59e0b;}
-.pipeline-output{text-align:center;}
-.output-num{font-size:28px;font-weight:700;color:var(--ink);}
-.output-label{font-size:12px;color:var(--mid);display:block;}
-.pipeline-connector{width:2px;height:24px;background:var(--rule);margin:0 auto;}
 
-.trust-strip{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin:32px 0;padding:20px;background:linear-gradient(90deg,rgba(74,222,128,.08),rgba(74,222,128,.02));;border-radius:12px;}
+/* AGENTS ALIVE GRID */
+.agents-alive{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:40px 0;}
+@media(max-width:900px){.agents-alive{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:500px){.agents-alive{grid-template-columns:1fr;}}
+
+.agent-card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:20px;text-align:center;position:relative;transition:all .2s;}
+.agent-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.06);}
+.agent-card.synthesis{background:linear-gradient(135deg,#fefce8,#fef9c3);border-color:#fde047;}
+
+.ac-header{position:relative;display:inline-block;margin-bottom:8px;}
+.ac-icon{font-size:32px;display:block;}
+.ac-pulse{position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:#4ade80;border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.2);}}
+
+.ac-name{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.ac-domain{font-size:11px;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.ac-quote{font-size:12px;color:var(--mid);font-style:italic;line-height:1.4;}
+
+/* WORKFLOW VISUAL */
+.workflow-visual{display:flex;align-items:center;justify-content:center;gap:12px;margin:32px 0;padding:24px;background:var(--off);border-radius:12px;flex-wrap:wrap;}
+.wf-step{text-align:center;padding:12px 20px;}
+.wf-num{width:28px;height:28px;background:var(--ink);color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-bottom:6px;}
+.wf-text{font-size:13px;color:var(--ink);font-weight:500;}
+.wf-arrow{color:var(--mid);font-size:18px;}
+@media(max-width:600px){.wf-arrow{display:none;}.workflow-visual{flex-direction:column;}}
+
+.trust-strip{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin:32px 0;padding:20px;background:linear-gradient(90deg,rgba(74,222,128,.08),rgba(74,222,128,.02));border-radius:12px;}
 .trust-item{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);}
 .trust-icon{color:#4ade80;font-weight:700;}
 
@@ -665,10 +676,16 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .pv-line{width:40px;height:2px;background:var(--rule);}
 @media(max-width:600px){.pv-line{width:20px;}.pv-stage{padding:8px;}}
 
-.audience-strip{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;margin:32px 0;padding:24px;border:1px solid var(--rule);border-radius:12px;}
-.audience-item{text-align:center;}
-.aud-icon{font-size:24px;display:block;margin-bottom:4px;}
-.aud-label{font-size:13px;font-weight:600;color:var(--ink);}
+/* AUDIENCE SECTION */
+.audience-section{margin:48px 0;text-align:center;}
+.aud-title{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.aud-subtitle{font-size:14px;color:var(--mid);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto;}
+.audience-grid{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+.aud-card{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:16px 24px;text-align:center;min-width:140px;transition:all .2s;}
+.aud-card:hover{border-color:var(--ink);}
+.aud-icon{font-size:24px;display:block;margin-bottom:6px;}
+.aud-label{font-size:14px;font-weight:600;color:var(--ink);display:block;}
+.aud-desc{font-size:11px;color:var(--mid);display:block;margin-top:4px;}
 
 .verdict-legend{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin:24px 0;}
 .vl-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mid);}
@@ -1029,53 +1046,108 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <section id="system">
   <div class="inner">
     <div class="eyebrow">How it works</div>
-    <h2 class="section-h2">A multi-agent system.<br><em>Not a newsletter.</em></h2>
+    <h2 class="section-h2">Eight minds. One mission.<br><em>Find the signal.</em></h2>
+    <p class="section-intro">Every Monday at 06:00 UTC, eight specialist AI agents wake up and start exploring. They search, analyse, challenge, and score — autonomously. Here's who they are.</p>
     
-    <!-- VISUAL PIPELINE -->
-    <div class="system-pipeline">
-      <div class="pipeline-row">
-        <div class="pipeline-phase">
-          <div class="phase-badge">Phase 1</div>
-          <div class="phase-time">06:00 UTC Monday</div>
+    <!-- AGENTS GRID - ALIVE -->
+    <div class="agents-alive">
+      <div class="agent-card" data-agent="scout">
+        <div class="ac-header">
+          <span class="ac-icon">🔭</span>
+          <div class="ac-pulse"></div>
         </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-agents">
-          <span class="agent-chip" title="P&C Insurance">Scout</span>
-          <span class="agent-chip" title="Life & Annuities">Vita</span>
-          <span class="agent-chip" title="Regulatory">Lex</span>
-          <span class="agent-chip" title="Climate & Reinsurance">Terra</span>
-          <span class="agent-chip" title="Horizontal Tech">Horizon</span>
-        </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-output">
-          <span class="output-num">3-6</span>
-          <span class="output-label">findings each</span>
-        </div>
+        <div class="ac-name">Scout</div>
+        <div class="ac-domain">P&C Insurance</div>
+        <div class="ac-quote">"If a carrier deployed it and it works, I'll find it."</div>
       </div>
-      <div class="pipeline-connector"></div>
-      <div class="pipeline-row">
-        <div class="pipeline-phase">
-          <div class="phase-badge synthesis">Phase 2</div>
-          <div class="phase-time">06:02 UTC</div>
+      <div class="agent-card" data-agent="vita">
+        <div class="ac-header">
+          <span class="ac-icon">🧬</span>
+          <div class="ac-pulse"></div>
         </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-agents">
-          <span class="agent-chip thinking" title="Evidence Challenger">Null</span>
-          <span class="agent-chip thinking" title="Second-order Effects">Weave</span>
-          <span class="agent-chip" title="Horizon Scanner">Faro</span>
+        <div class="ac-name">Vita</div>
+        <div class="ac-domain">Life & Annuities</div>
+        <div class="ac-quote">"Longevity is complex. I approach it with humility."</div>
+      </div>
+      <div class="agent-card" data-agent="lex">
+        <div class="ac-header">
+          <span class="ac-icon">⚖️</span>
+          <div class="ac-pulse"></div>
         </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-output">
-          <span class="output-label">Challenge & synthesize</span>
+        <div class="ac-name">Lex</div>
+        <div class="ac-domain">Regulatory</div>
+        <div class="ac-quote">"Regulation is the terrain. I map it."</div>
+      </div>
+      <div class="agent-card" data-agent="terra">
+        <div class="ac-header">
+          <span class="ac-icon">🌍</span>
+          <div class="ac-pulse"></div>
         </div>
+        <div class="ac-name">Terra</div>
+        <div class="ac-domain">Climate & Reinsurance</div>
+        <div class="ac-quote">"Climate changes faster than models track."</div>
+      </div>
+      <div class="agent-card" data-agent="horizon">
+        <div class="ac-header">
+          <span class="ac-icon">🌐</span>
+          <div class="ac-pulse"></div>
+        </div>
+        <div class="ac-name">Horizon</div>
+        <div class="ac-domain">Horizontal Tech</div>
+        <div class="ac-quote">"I find signals before they're obvious."</div>
+      </div>
+      <div class="agent-card synthesis" data-agent="null">
+        <div class="ac-header">
+          <span class="ac-icon">⚔️</span>
+          <div class="ac-pulse"></div>
+        </div>
+        <div class="ac-name">Null</div>
+        <div class="ac-domain">Evidence Challenger</div>
+        <div class="ac-quote">"Show me the evidence, or I'm calling Noise."</div>
+      </div>
+      <div class="agent-card synthesis" data-agent="weave">
+        <div class="ac-header">
+          <span class="ac-icon">🕸️</span>
+          <div class="ac-pulse"></div>
+        </div>
+        <div class="ac-name">Weave</div>
+        <div class="ac-domain">Systems Thinker</div>
+        <div class="ac-quote">"I see what changes when changes compound."</div>
+      </div>
+      <div class="agent-card" data-agent="faro">
+        <div class="ac-header">
+          <span class="ac-icon">🔦</span>
+          <div class="ac-pulse"></div>
+        </div>
+        <div class="ac-name">Faro</div>
+        <div class="ac-domain">Horizon Scanner</div>
+        <div class="ac-quote">"I watch research labs to see tomorrow."</div>
       </div>
     </div>
 
-    <!-- COMPACT TRUST INDICATORS -->
+    <!-- WORKFLOW VISUAL -->
+    <div class="workflow-visual">
+      <div class="wf-step">
+        <div class="wf-num">1</div>
+        <div class="wf-text">5 domain agents search independently</div>
+      </div>
+      <div class="wf-arrow">→</div>
+      <div class="wf-step">
+        <div class="wf-num">2</div>
+        <div class="wf-text">3 synthesis agents challenge & connect</div>
+      </div>
+      <div class="wf-arrow">→</div>
+      <div class="wf-step">
+        <div class="wf-num">3</div>
+        <div class="wf-text">Findings scored, sourced & published</div>
+      </div>
+    </div>
+
+    <!-- TRUST STRIP -->
     <div class="trust-strip">
       <div class="trust-item"><span class="trust-icon">✓</span> Live URL verification</div>
-      <div class="trust-item"><span class="trust-icon">✓</span> Autonomous search</div>
-      <div class="trust-item"><span class="trust-icon">✓</span> Week-over-week tracking</div>
+      <div class="trust-item"><span class="trust-icon">✓</span> Autonomous search queries</div>
+      <div class="trust-item"><span class="trust-icon">✓</span> Week-over-week memory</div>
       <div class="trust-item"><span class="trust-icon">✓</span> 5-dimension scoring</div>
     </div>
 
@@ -1115,23 +1187,31 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       </div>
     </div>
 
-    <!-- WHO IT'S FOR - COMPACT -->
-    <div class="audience-strip">
-      <div class="audience-item">
-        <span class="aud-icon">🎓</span>
-        <span class="aud-label">Learners</span>
-      </div>
-      <div class="audience-item">
-        <span class="aud-icon">⚙️</span>
-        <span class="aud-label">Practitioners</span>
-      </div>
-      <div class="audience-item">
-        <span class="aud-icon">🎯</span>
-        <span class="aud-label">Strategists</span>
-      </div>
-      <div class="audience-item">
-        <span class="aud-icon">🏛️</span>
-        <span class="aud-label">Executives</span>
+    <!-- WHO IT'S FOR - WITH CONTEXT -->
+    <div class="audience-section">
+      <div class="aud-title">Built for clarity seekers</div>
+      <div class="aud-subtitle">Not a trade publication. Not a vendor pitch. Independent intelligence for anyone tracking AI in insurance.</div>
+      <div class="audience-grid">
+        <div class="aud-card">
+          <span class="aud-icon">🎓</span>
+          <span class="aud-label">Learners</span>
+          <span class="aud-desc">Evidence-based learning</span>
+        </div>
+        <div class="aud-card">
+          <span class="aud-icon">⚙️</span>
+          <span class="aud-label">Practitioners</span>
+          <span class="aud-desc">What's real vs explored</span>
+        </div>
+        <div class="aud-card">
+          <span class="aud-icon">🎯</span>
+          <span class="aud-label">Strategists</span>
+          <span class="aud-desc">Where it's heading</span>
+        </div>
+        <div class="aud-card">
+          <span class="aud-icon">🏛️</span>
+          <span class="aud-label">Executives</span>
+          <span class="aud-desc">Vendor-free signal</span>
+        </div>
       </div>
     </div>
 
