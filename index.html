@@ -710,14 +710,32 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .rl-header{margin-bottom:20px;text-align:center;}
 .rl-title{display:block;font-size:16px;font-weight:700;color:var(--ink);}
 .rl-subtitle{display:block;font-size:12px;color:var(--mid);margin-top:4px;}
-.rl-regions{display:flex;flex-direction:column;gap:16px;}
-.rl-region{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:14px 16px;transition:all .2s;cursor:pointer;}
-.rl-region:hover{border-color:var(--ink);background:var(--white);transform:translateX(4px);}
-.rl-flag{font-size:20px;float:left;margin-right:12px;}
-.rl-info{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;}
+.rl-regions{display:flex;flex-direction:column;gap:12px;}
+.rl-region-wrap{background:#fff;border:1px solid var(--rule);border-radius:10px;overflow:hidden;transition:all .2s;}
+.rl-region-wrap:hover{border-color:var(--ink);}
+.rl-region-wrap.expanded{border-color:var(--ink);}
+.rl-region-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;gap:12px;}
+.rl-flag{font-size:20px;flex-shrink:0;}
+.rl-info{flex:1;display:flex;align-items:baseline;gap:8px;}
 .rl-name{font-size:14px;font-weight:600;color:var(--ink);}
 .rl-count{font-size:11px;color:var(--mid);font-family:var(--ff-mono);background:var(--off);padding:2px 6px;border-radius:4px;}
-.rl-latest{font-size:12px;color:var(--mid);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.rl-expand-icon{font-size:16px;color:var(--mid);font-weight:300;transition:transform .2s;}
+.rl-region-wrap.expanded .rl-expand-icon{transform:rotate(45deg);}
+.rl-region-body{display:none;padding:0 16px 16px;border-top:1px solid var(--rule);}
+.rl-region-wrap.expanded .rl-region-body{display:block;}
+.rl-findings{padding-top:12px;}
+.rl-finding{padding:10px 0;border-bottom:1px dashed var(--rule);cursor:pointer;transition:all .15s;}
+.rl-finding:last-child{border-bottom:none;}
+.rl-finding:hover{padding-left:8px;}
+.rl-finding-verdict{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:3px;margin-right:8px;}
+.rl-finding-verdict.signal{background:#dcfce7;color:#166534;}
+.rl-finding-verdict.watch{background:#fef3c7;color:#92400e;}
+.rl-finding-verdict.noise{background:#fee2e2;color:#991b1b;}
+.rl-finding-title{font-size:12px;color:var(--ink);line-height:1.4;}
+.rl-finding-summary{font-size:11px;color:var(--mid);margin-top:4px;line-height:1.4;}
+.rl-viewall{display:block;text-align:center;font-size:11px;color:var(--mid);padding:12px 0 4px;cursor:pointer;transition:color .15s;}
+.rl-viewall:hover{color:var(--ink);}
+.rl-no-signals{font-size:12px;color:var(--mid);font-style:italic;padding:8px 0;}
 .rl-caveat{margin-top:16px;padding-top:12px;border-top:1px solid var(--rule);font-size:10px;color:var(--mid);line-height:1.5;text-align:center;font-style:italic;}
 </style>
   <!-- Y Mark Favicon — shows in browser tab -->
@@ -1008,40 +1026,68 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="regional-live">
         <div class="rl-header">
           <span class="rl-title">Around the Globe</span>
-          <span class="rl-subtitle">This week's signals by region</span>
+          <span class="rl-subtitle">Byte-sized regional intelligence</span>
         </div>
         <div class="rl-regions" id="regionalLive">
-          <div class="rl-region" onclick="filterByRegion('APAC')" style="cursor:pointer;">
-            <span class="rl-flag">🌏</span>
-            <div class="rl-info">
-              <span class="rl-name">APAC</span>
-              <span class="rl-count" id="rl-apac-count">—</span>
+          <!-- APAC -->
+          <div class="rl-region-wrap">
+            <div class="rl-region-header" onclick="toggleRegionExpand('apac')">
+              <span class="rl-flag">🌏</span>
+              <div class="rl-info">
+                <span class="rl-name">APAC</span>
+                <span class="rl-count" id="rl-apac-count">—</span>
+              </div>
+              <span class="rl-expand-icon" id="rl-apac-icon">+</span>
             </div>
-            <div class="rl-latest" id="rl-apac-latest">Loading...</div>
+            <div class="rl-region-body" id="rl-apac-body">
+              <div class="rl-findings" id="rl-apac-findings">Loading...</div>
+              <a class="rl-viewall" onclick="filterByRegion('APAC')">View all APAC signals →</a>
+            </div>
           </div>
-          <div class="rl-region" onclick="filterByRegion('Europe')" style="cursor:pointer;">
-            <span class="rl-flag">🌍</span>
-            <div class="rl-info">
-              <span class="rl-name">Europe</span>
-              <span class="rl-count" id="rl-europe-count">—</span>
+          <!-- Europe -->
+          <div class="rl-region-wrap">
+            <div class="rl-region-header" onclick="toggleRegionExpand('europe')">
+              <span class="rl-flag">🌍</span>
+              <div class="rl-info">
+                <span class="rl-name">Europe</span>
+                <span class="rl-count" id="rl-europe-count">—</span>
+              </div>
+              <span class="rl-expand-icon" id="rl-europe-icon">+</span>
             </div>
-            <div class="rl-latest" id="rl-europe-latest">Loading...</div>
+            <div class="rl-region-body" id="rl-europe-body">
+              <div class="rl-findings" id="rl-europe-findings">Loading...</div>
+              <a class="rl-viewall" onclick="filterByRegion('Europe')">View all Europe signals →</a>
+            </div>
           </div>
-          <div class="rl-region" onclick="filterByRegion('Americas')" style="cursor:pointer;">
-            <span class="rl-flag">🌎</span>
-            <div class="rl-info">
-              <span class="rl-name">Americas</span>
-              <span class="rl-count" id="rl-americas-count">—</span>
+          <!-- Americas -->
+          <div class="rl-region-wrap">
+            <div class="rl-region-header" onclick="toggleRegionExpand('americas')">
+              <span class="rl-flag">🌎</span>
+              <div class="rl-info">
+                <span class="rl-name">Americas</span>
+                <span class="rl-count" id="rl-americas-count">—</span>
+              </div>
+              <span class="rl-expand-icon" id="rl-americas-icon">+</span>
             </div>
-            <div class="rl-latest" id="rl-americas-latest">Loading...</div>
+            <div class="rl-region-body" id="rl-americas-body">
+              <div class="rl-findings" id="rl-americas-findings">Loading...</div>
+              <a class="rl-viewall" onclick="filterByRegion('Americas')">View all Americas signals →</a>
+            </div>
           </div>
-          <div class="rl-region" onclick="filterByRegion('Global')" style="cursor:pointer;">
-            <span class="rl-flag">🌐</span>
-            <div class="rl-info">
-              <span class="rl-name">Global</span>
-              <span class="rl-count" id="rl-global-count">—</span>
+          <!-- Global -->
+          <div class="rl-region-wrap">
+            <div class="rl-region-header" onclick="toggleRegionExpand('global')">
+              <span class="rl-flag">🌐</span>
+              <div class="rl-info">
+                <span class="rl-name">Global</span>
+                <span class="rl-count" id="rl-global-count">—</span>
+              </div>
+              <span class="rl-expand-icon" id="rl-global-icon">+</span>
             </div>
-            <div class="rl-latest" id="rl-global-latest">Loading...</div>
+            <div class="rl-region-body" id="rl-global-body">
+              <div class="rl-findings" id="rl-global-findings">Loading...</div>
+              <a class="rl-viewall" onclick="filterByRegion('Global')">View all Global signals →</a>
+            </div>
           </div>
         </div>
         <div class="rl-caveat">Signals from open-access sources only. No signals shown doesn't mean none exist — we're constantly expanding coverage.</div>
@@ -1658,6 +1704,12 @@ function updateStats(){
   updateRegionalLive();
 }
 
+// ── TOGGLE REGION EXPAND ──
+function toggleRegionExpand(region){
+  const wrap=document.querySelector(`#rl-${region}-body`).parentElement;
+  wrap.classList.toggle('expanded');
+}
+
 // ── UPDATE REGIONAL LIVE PANEL ──
 function updateRegionalLive(){
   const regions=['APAC','Europe','Americas','Global'];
@@ -1665,13 +1717,25 @@ function updateRegionalLive(){
     const rKey=r.toLowerCase();
     const filtered=insights.filter(f=>inferRegion(f)===r);
     const countEl=document.getElementById('rl-'+rKey+'-count');
-    const latestEl=document.getElementById('rl-'+rKey+'-latest');
+    const findingsEl=document.getElementById('rl-'+rKey+'-findings');
+    
     if(countEl)countEl.textContent=filtered.length+' signal'+(filtered.length!==1?'s':'');
-    if(latestEl){
+    
+    if(findingsEl){
       if(filtered.length>0){
-        latestEl.textContent=filtered[0].title||'Latest finding';
+        // Show top 3 findings with verdict, title, and short summary
+        const topFindings=filtered.slice(0,3);
+        findingsEl.innerHTML=topFindings.map((f,idx)=>{
+          const verdict=(f.verdict||'watch').toLowerCase();
+          const summary=(f.body||'').substring(0,100)+(f.body&&f.body.length>100?'...':'');
+          return `<div class="rl-finding" onclick="openModal(insights.indexOf(insights.find(x=>x.title==='${(f.title||'').replace(/'/g,"\\'")}')))" title="Click to view full finding">
+            <span class="rl-finding-verdict ${verdict}">${f.verdict||'Watch'}</span>
+            <span class="rl-finding-title">${f.title||'Untitled'}</span>
+            <div class="rl-finding-summary">${summary}</div>
+          </div>`;
+        }).join('');
       }else{
-        latestEl.textContent='No signals this week';
+        findingsEl.innerHTML='<div class="rl-no-signals">No signals detected this week. Check back soon.</div>';
       }
     }
   });
