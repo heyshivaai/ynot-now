@@ -700,6 +700,24 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .sources-grid{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:16px;padding:20px;background:var(--off);border-radius:12px;}
 .sources-grid a{font-size:13px;color:var(--ink);text-decoration:none;padding:6px 12px;background:#fff;border:1px solid var(--rule);border-radius:6px;transition:all .15s;}
 .sources-grid a:hover{border-color:var(--ink);}
+
+/* PULSE + REGIONAL SIDE BY SIDE */
+.pulse-regional-grid{display:grid;grid-template-columns:1fr 340px;gap:32px;margin-top:32px;}
+@media(max-width:900px){.pulse-regional-grid{grid-template-columns:1fr;}}
+.pulse-digest{min-width:0;}
+
+.regional-live{background:var(--off);border-radius:16px;padding:24px;height:fit-content;position:sticky;top:100px;}
+.rl-header{margin-bottom:20px;text-align:center;}
+.rl-title{display:block;font-size:16px;font-weight:700;color:var(--ink);}
+.rl-subtitle{display:block;font-size:12px;color:var(--mid);margin-top:4px;}
+.rl-regions{display:flex;flex-direction:column;gap:16px;}
+.rl-region{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:14px 16px;transition:all .2s;}
+.rl-region:hover{border-color:var(--ink);}
+.rl-flag{font-size:20px;float:left;margin-right:12px;}
+.rl-info{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;}
+.rl-name{font-size:14px;font-weight:600;color:var(--ink);}
+.rl-count{font-size:11px;color:var(--mid);font-family:var(--ff-mono);background:var(--off);padding:2px 6px;border-radius:4px;}
+.rl-latest{font-size:12px;color:var(--mid);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 </style>
   <!-- Y Mark Favicon — shows in browser tab -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -730,7 +748,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
   <div class="mm-section">Signal Lab</div>
   <a class="mm-a" href="#lab" onclick="closeMobileMenu()">Findings</a>
   <a class="mm-sub" href="#history" onclick="closeMobileMenu()">↳ Signal History</a>
-  <a class="mm-sub" href="#regional" onclick="closeMobileMenu()">↳ Regional Intelligence</a>
+  <a class="mm-sub" href="#pulse" onclick="closeMobileMenu()">↳ Around the Globe</a>
   <a class="mm-a" href="#pulse" onclick="closeMobileMenu()">Weekly Pulse</a>
   <div class="mm-section">More</div>
   <a class="mm-a" href="#system" onclick="closeMobileMenu()">How it works</a>
@@ -807,7 +825,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
     <div class="lab-nav">
       <a class="lab-nav-a on" href="#lab">Findings</a>
       <a class="lab-nav-a" href="#history">Signal History</a>
-      <a class="lab-nav-a" href="#regional">Regional Intelligence</a>
+      <a class="lab-nav-a" href="#pulse">Around the Globe</a>
     </div>
 
     <div class="lab-stats">
@@ -975,8 +993,57 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
   <div class="inner">
     <div class="eyebrow">Weekly Pulse</div>
     <h2 class="section-h2">This week in<br><em>emerging tech × insurance.</em></h2>
-    <div id="pulseContent" class="pulse-stack">
-      <div class="pulse-loading">Loading weekly pulse…</div>
+    
+    <!-- PULSE + REGIONAL SIDE BY SIDE -->
+    <div class="pulse-regional-grid">
+      <!-- LEFT: Weekly Digest -->
+      <div class="pulse-digest">
+        <div id="pulseContent" class="pulse-stack">
+          <div class="pulse-loading">Loading weekly pulse…</div>
+        </div>
+      </div>
+      
+      <!-- RIGHT: Regional Live -->
+      <div class="regional-live">
+        <div class="rl-header">
+          <span class="rl-title">Around the Globe</span>
+          <span class="rl-subtitle">This week's signals by region</span>
+        </div>
+        <div class="rl-regions" id="regionalLive">
+          <div class="rl-region">
+            <span class="rl-flag">🌏</span>
+            <div class="rl-info">
+              <span class="rl-name">APAC</span>
+              <span class="rl-count" id="rl-apac-count">—</span>
+            </div>
+            <div class="rl-latest" id="rl-apac-latest">Loading...</div>
+          </div>
+          <div class="rl-region">
+            <span class="rl-flag">🌍</span>
+            <div class="rl-info">
+              <span class="rl-name">Europe</span>
+              <span class="rl-count" id="rl-europe-count">—</span>
+            </div>
+            <div class="rl-latest" id="rl-europe-latest">Loading...</div>
+          </div>
+          <div class="rl-region">
+            <span class="rl-flag">🌎</span>
+            <div class="rl-info">
+              <span class="rl-name">Americas</span>
+              <span class="rl-count" id="rl-americas-count">—</span>
+            </div>
+            <div class="rl-latest" id="rl-americas-latest">Loading...</div>
+          </div>
+          <div class="rl-region">
+            <span class="rl-flag">🌐</span>
+            <div class="rl-info">
+              <span class="rl-name">Global</span>
+              <span class="rl-count" id="rl-global-count">—</span>
+            </div>
+            <div class="rl-latest" id="rl-global-latest">Loading...</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -990,53 +1057,6 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
     <p class="history-intro">Understanding where AI in insurance stands today requires knowing where it came from. Two decades of evolution — from early statistical models to agentic systems — shows a field that has moved in waves, not straight lines.</p>
 
     <div id="ts-wrap"></div>
-  </div>
-</section>
-
-<hr class="rule">
-
-<!-- REGIONAL INTELLIGENCE -->
-<section id="regional">
-  <div class="inner">
-    <div class="eyebrow">Regional Intelligence</div>
-    <h2 class="section-h2">AI in insurance<br><em>around the world.</em></h2>
-    <p class="section-intro">AI adoption in insurance is not uniform. Regulatory environments, market structures, and carrier sophistication vary significantly across regions — shaping what's Signal in one market and Noise in another.</p>
-
-    <div class="region-grid">
-      <div class="region-card">
-        <span class="rc-flag">🌏</span>
-        <div class="rc-name">APAC</div>
-        <div class="rc-sub">Asia · Pacific · ANZ · South-East Asia</div>
-        <div class="rc-body">APAC leads in mobile-first insurance, parametric microinsurance, and AI-driven distribution. China's insurance technology ecosystem is the most advanced globally. Japan and South Korea are accelerating AI underwriting adoption. Australia and Singapore lead on regulatory sandboxes.</div>
-        <div class="rc-signals">
-          <div class="rc-signal">China: Ping An's AI underwriting processed 80M+ applications in 2024</div>
-          <div class="rc-signal">Singapore MAS sandbox enabling AI-first insurer models</div>
-          <div class="rc-signal">Parametric microinsurance growing 35%+ YoY across South-East Asia</div>
-        </div>
-      </div>
-      <div class="region-card">
-        <span class="rc-flag">🌍</span>
-        <div class="rc-name">Europe</div>
-        <div class="rc-sub">UK · EU27 · EEA · Lloyd's Market</div>
-        <div class="rc-body">Europe leads on regulation (EU AI Act, EIOPA guidelines, FCA principles) and explainability requirements. Lloyd's of London is a major AI innovation hub for specialty lines. Continental carriers are investing heavily in climate AI for cat modelling. GDPR shapes data strategy throughout.</div>
-        <div class="rc-signals">
-          <div class="rc-signal">EU AI Act creates compliance requirements for high-risk AI use in insurance</div>
-          <div class="rc-signal">Lloyd's Future Lab backing AI-native specialty coverage models</div>
-          <div class="rc-signal">Aviva, Allianz deploying LLMs across customer service at scale</div>
-        </div>
-      </div>
-      <div class="region-card">
-        <span class="rc-flag">🌎</span>
-        <div class="rc-name">Americas</div>
-        <div class="rc-sub">US · Canada · Latin America · Bermuda</div>
-        <div class="rc-body">The US is the largest market with the deepest AI adoption — particularly in P&C claims automation, life underwriting, and group benefits. NAIC is developing AI model law guidance. Bermuda leads in cat model innovation and ILS. Latin America is an emerging market for embedded insurance and parametric products.</div>
-        <div class="rc-signals">
-          <div class="rc-signal">NAIC model AI bulletin adopted by 15+ states through 2024</div>
-          <div class="rc-signal">US P&C claims automation: 40-60% straight-through processing at leading carriers</div>
-          <div class="rc-signal">Bermuda: AI-driven retrocession pricing becoming standard practice</div>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -1626,6 +1646,26 @@ function updateStats(){
   document.getElementById('cbSignals').textContent=signals||'—';
   document.getElementById('cbNoise').textContent=noise||'—';
   updatePathwayCounts();
+  updateRegionalLive();
+}
+
+// ── UPDATE REGIONAL LIVE PANEL ──
+function updateRegionalLive(){
+  const regions=['APAC','Europe','Americas','Global'];
+  regions.forEach(r=>{
+    const rKey=r.toLowerCase();
+    const filtered=insights.filter(f=>inferRegion(f)===r);
+    const countEl=document.getElementById('rl-'+rKey+'-count');
+    const latestEl=document.getElementById('rl-'+rKey+'-latest');
+    if(countEl)countEl.textContent=filtered.length+' signal'+(filtered.length!==1?'s':'');
+    if(latestEl){
+      if(filtered.length>0){
+        latestEl.textContent=filtered[0].title||'Latest finding';
+      }else{
+        latestEl.textContent='No signals this week';
+      }
+    }
+  });
 }
 
 // ── LIVE RUN (FALLBACK — no DB yet) ──
