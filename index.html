@@ -711,13 +711,14 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .rl-title{display:block;font-size:16px;font-weight:700;color:var(--ink);}
 .rl-subtitle{display:block;font-size:12px;color:var(--mid);margin-top:4px;}
 .rl-regions{display:flex;flex-direction:column;gap:16px;}
-.rl-region{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:14px 16px;transition:all .2s;}
-.rl-region:hover{border-color:var(--ink);}
+.rl-region{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:14px 16px;transition:all .2s;cursor:pointer;}
+.rl-region:hover{border-color:var(--ink);background:var(--white);transform:translateX(4px);}
 .rl-flag{font-size:20px;float:left;margin-right:12px;}
 .rl-info{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;}
 .rl-name{font-size:14px;font-weight:600;color:var(--ink);}
 .rl-count{font-size:11px;color:var(--mid);font-family:var(--ff-mono);background:var(--off);padding:2px 6px;border-radius:4px;}
 .rl-latest{font-size:12px;color:var(--mid);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.rl-caveat{margin-top:16px;padding-top:12px;border-top:1px solid var(--rule);font-size:10px;color:var(--mid);line-height:1.5;text-align:center;font-style:italic;}
 </style>
   <!-- Y Mark Favicon — shows in browser tab -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -1010,7 +1011,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
           <span class="rl-subtitle">This week's signals by region</span>
         </div>
         <div class="rl-regions" id="regionalLive">
-          <div class="rl-region">
+          <div class="rl-region" onclick="filterByRegion('APAC')" style="cursor:pointer;">
             <span class="rl-flag">🌏</span>
             <div class="rl-info">
               <span class="rl-name">APAC</span>
@@ -1018,7 +1019,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
             </div>
             <div class="rl-latest" id="rl-apac-latest">Loading...</div>
           </div>
-          <div class="rl-region">
+          <div class="rl-region" onclick="filterByRegion('Europe')" style="cursor:pointer;">
             <span class="rl-flag">🌍</span>
             <div class="rl-info">
               <span class="rl-name">Europe</span>
@@ -1026,7 +1027,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
             </div>
             <div class="rl-latest" id="rl-europe-latest">Loading...</div>
           </div>
-          <div class="rl-region">
+          <div class="rl-region" onclick="filterByRegion('Americas')" style="cursor:pointer;">
             <span class="rl-flag">🌎</span>
             <div class="rl-info">
               <span class="rl-name">Americas</span>
@@ -1034,7 +1035,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
             </div>
             <div class="rl-latest" id="rl-americas-latest">Loading...</div>
           </div>
-          <div class="rl-region">
+          <div class="rl-region" onclick="filterByRegion('Global')" style="cursor:pointer;">
             <span class="rl-flag">🌐</span>
             <div class="rl-info">
               <span class="rl-name">Global</span>
@@ -1043,6 +1044,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
             <div class="rl-latest" id="rl-global-latest">Loading...</div>
           </div>
         </div>
+        <div class="rl-caveat">Signals from open-access sources only. No signals shown doesn't mean none exist — we're constantly expanding coverage.</div>
       </div>
     </div>
   </div>
@@ -1482,6 +1484,13 @@ function setVerd(v,btn){verdFilter=v;currentPage=1;setPill('#verdPills',btn);ref
 function setRegion(v,btn){regionFilter=v;currentPage=1;setPill('#regionPills',btn);refresh();}
 function setReadiness(v,btn){readinessFilter=v;currentPage=1;setPill('#readinessPills',btn);refresh();}
 function setPill(sel,btn){document.querySelectorAll(sel+' .pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+
+function filterByRegion(region){
+  regionFilter=region;currentPage=1;
+  document.querySelectorAll('#regionPills .pill').forEach(b=>{b.classList.remove('on');if(b.textContent===region)b.classList.add('on');});
+  document.getElementById('lab').scrollIntoView({behavior:'smooth'});
+  setTimeout(()=>refresh(),400);
+}
 
 function filterByPathway(stage,card){
   readinessFilter=stage;currentPage=1;
