@@ -14,6 +14,21 @@ var CRON_SECRET   = process.env.CRON_SECRET   || 'ynot-secret-2025';
 var TAVILY_KEY    = process.env.TAVILY_API_KEY || '';
 var CLAUDE_MODEL  = 'claude-sonnet-4-20250514';
 
+// ── SOURCE GOVERNANCE ─────────────────────────────────────────────────────────
+var SOURCES = (function() {
+  try { return require('../data/sources.json'); }
+  catch(e) { return { exclude_always: [], authority_tlds: ['.gov','.edu','.ac.uk','.org','.int'], trusted_seeds: {} }; }
+})();
+
+function isSuspectDomain(url) {
+  try {
+    var host = new URL(url).hostname.replace('www.', '');
+    return (SOURCES.exclude_always || []).some(function(d) {
+      return host === d || host.endsWith('.' + d);
+    });
+  } catch(e) { return false; }
+}
+
 // ─── SYNTHESIS AGENT DEFINITIONS ─────────────────────────────────────────────
 var SYNTHESIS_MINDS = [
   {
@@ -30,7 +45,15 @@ var SYNTHESIS_MINDS = [
     brief: 'You are Weave, the second-order effects analyst. You have read all findings from the other agents this week. Your job: identify unexpected cross-domain consequences — workforce displacement, new liability classes, competitive dynamics shifts, regulatory arbitrage, and supply chain effects that the primary agents missed.',
     role: 'synthesiser',
     extendedThinking: true,
-    querySeeds: ['AI insurance workforce displacement jobs 2026', 'new liability class AI autonomous insurance', 'insurtech competitive disruption incumbent carrier', 'AI insurance distribution channel disruption embedded']
+    querySeeds: [
+      'AI insurance workforce displacement jobs 2026',
+      'new liability class AI autonomous insurance',
+      'insurtech competitive disruption incumbent carrier',
+      'AI insurance distribution channel disruption embedded',
+      'Basel IV AI model risk banking insurance parallel 2026',
+      'FDA AI regulation healthcare insurance liability parallel 2026',
+      'autonomous vehicle AI liability insurance framework 2026'
+    ]
   },
   {
     id: 'faro', name: 'Faro', icon: 'Faro',
@@ -38,7 +61,15 @@ var SYNTHESIS_MINDS = [
     brief: 'You are Faro, the horizon scanner. You have read all findings from the other agents this week. Your job: identify the early-stage signals buried in the noise — emerging research, early pilots, regulatory consultations, startup activity, and technology readiness milestones that will become significant for insurance in 18-36 months.',
     role: 'horizon',
     extendedThinking: false,
-    querySeeds: ['insurance AI research emerging 2026 early stage', 'insurtech startup funding seed AI 2026', 'insurance AI pilot proof of concept early', 'actuarial AI research paper preprint 2026']
+    querySeeds: [
+      'insurance AI research emerging 2026 early stage',
+      'insurtech startup funding seed AI 2026',
+      'insurance AI pilot proof of concept early',
+      'actuarial AI research paper preprint 2026',
+      'insurtech Series B C funding AI 2026',
+      'AI insurance patent application emerging technology 2026',
+      'ISO IEC actuarial AI standards consultation 2026'
+    ]
   }
 ];
 
@@ -98,10 +129,11 @@ async function tavilySearch(query, maxResults) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TAVILY_KEY },
       body: JSON.stringify({
         query: query,
-        search_depth: 'basic',
+        search_depth: 'advanced',
         max_results: maxResults || 4,
         include_answer: false,
-        include_raw_content: false
+        include_raw_content: false,
+        exclude_domains: SOURCES.exclude_always || []
       })
     });
     if (!r.ok) { console.warn('[YNOT-S] Tavily ' + r.status + ' for: ' + query); return []; }
@@ -168,6 +200,7 @@ async function verifyRefs(refs) {
   if (!refs || refs.length === 0) return refs;
   var verified = await Promise.all(refs.map(async function(ref) {
     if (!ref.url || !ref.url.startsWith('http')) return null;
+    if (isSuspectDomain(ref.url)) return null; // strip excluded domains even if cited by Claude
     try {
       var controller = new AbortController();
       var tid = setTimeout(function() { controller.abort(); }, 4000);
@@ -236,6 +269,11 @@ async function runSynthesisAgent(mind, phase1Findings) {
      mind.role === 'synthesiser' ? 'connecting dots across domains and finding second-order effects' :
      'identifying early-stage signals others missed') + '. ' +
     'Use real URLs from the search results as refs — never invent URLs. ' +
+    'IMPORTANT: Do not reproduce or quote source content verbatim. All finding bodies must be your own ' +
+    'independent synthesis and analysis — describe what is understood, not what a source says word for word. ' +
+    'Strongly prefer authoritative primary sources: regulatory filings, peer-reviewed papers, academic preprints (arXiv), ' +
+    'actuarial bodies (SOA, CAS), and official government or regulator sites. ' +
+    'If only weak sources (vendor blogs, news summaries, analyst reports) are available, set confidence to 1-2. ' +
     'Return ONLY a valid JSON array of 2-4 findings. Each must have: ' +
     'title, verdict ("SIGNAL"|"WATCH"|"NOISE"), body (2-3 sentences: describe what is found and what is understood — factual and observational, not prescriptive), confidence (1-5), ' +
     'domain, subdomain, trl (1-9), regulatoryRisk ("low"|"medium"|"high"), experiment (a research question or learning hypothesis worth exploring — frame as curiosity, not a recommendation), ' +

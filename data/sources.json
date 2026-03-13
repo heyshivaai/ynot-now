@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "note": "Edit this file to update source governance. cron.js and cron-synthesise.js read it at startup. No API code changes needed for routine source maintenance.",
+  "exclude_always": [
+    "linkedin.com",
+    "pwc.com",
+    "deloitte.com",
+    "mckinsey.com",
+    "kpmg.com",
+    "ey.com",
+    "bcg.com",
+    "bain.com",
+    "accenture.com",
+    "forbes.com",
+    "fortune.com",
+    "medium.com",
+    "substack.com",
+    "businessinsider.com",
+    "techcrunch.com",
+    "venturebeat.com",
+    "zdnet.com",
+    "marketwatch.com",
+    "businesswire.com",
+    "prnewswire.com"
+  ],
+  "authority_tlds": [".gov", ".edu", ".ac.uk", ".org", ".int", ".mil"],
+  "trusted_seeds": {
+    "pc": [
+      "naic.org", "casact.org", "lloyds.com", "iais.org",
+      "insurancejournal.com", "propertycasualty360.com"
+    ],
+    "life": [
+      "soa.org", "ssa.gov", "ncbi.nlm.nih.gov", "limra.com"
+    ],
+    "climate": [
+      "swissre.com", "munichre.com", "genre.com", "ccrif.org",
+      "disasterrisk.worldbank.org"
+    ],
+    "regulatory": [
+      "fca.org.uk", "eiopa.europa.eu", "sec.gov", "abi.org.uk",
+      "iais.org", "mas.gov.sg", "federalregister.gov"
+    ],
+    "horizontal": [
+      "arxiv.org", "nist.gov", "openreview.net",
+      "patents.google.com", "worldwide.espacenet.com",
+      "proceedings.mlr.press", "ieeexplore.ieee.org"
+    ]
+  },
+  "auto_promote_threshold": 5,
+  "auto_promote_require_authority_tld": true
+}

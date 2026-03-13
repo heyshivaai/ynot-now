@@ -6,32 +6,90 @@ var CRON_SECRET   = process.env.CRON_SECRET   || 'ynot-secret-2025';
 var TAVILY_KEY    = process.env.TAVILY_API_KEY || '';
 var CLAUDE_MODEL  = 'claude-sonnet-4-20250514';
 
+// ── SOURCE GOVERNANCE ──────────────────────────────────────────────────────
+// Edit data/sources.json to update domain lists — no cron code changes needed.
+var SOURCES = (function() {
+  try { return require('../data/sources.json'); }
+  catch(e) { return { exclude_always: [], authority_tlds: ['.gov','.edu','.ac.uk','.org','.int'], trusted_seeds: {} }; }
+})();
+
+function isSuspectDomain(url) {
+  try {
+    var host = new URL(url).hostname.replace('www.', '');
+    return (SOURCES.exclude_always || []).some(function(d) {
+      return host === d || host.endsWith('.' + d);
+    });
+  } catch(e) { return false; }
+}
+
+function isAuthorityDomain(domain) {
+  var tlds = SOURCES.authority_tlds || ['.gov','.edu','.ac.uk','.org','.int'];
+  if (tlds.some(function(t) { return domain.endsWith(t); })) return true;
+  return Object.values(SOURCES.trusted_seeds || {}).some(function(arr) {
+    return arr.indexOf(domain) !== -1;
+  });
+}
+
 // ── AGENT DEFINITIONS ──────────────────────────────────────────────────────
 var MINDS = [
   {
     id: 'scout', name: 'Scout', icon: 'Scout', domain: 'P&C',
     brief: 'You are Scout, a specialist in P&C insurance AI. Your job is to find the most significant AI developments in property and casualty insurance: fraud detection, underwriting automation, claims processing, telematics, catastrophe modelling. You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
-    querySeeds: ['AI fraud detection insurance 2026','P&C underwriting automation machine learning','claims AI automation property casualty','telematics AI underwriting 2026']
+    querySeeds: [
+      'AI fraud detection insurance 2026',
+      'P&C underwriting automation machine learning',
+      'claims AI automation property casualty',
+      'telematics AI underwriting 2026',
+      'insurance carrier AI production deployment case study 2026',
+      'AI P&C insurance Japan APAC 2026'
+    ]
   },
   {
     id: 'vita', name: 'Vita', icon: 'Vita', domain: 'Life',
     brief: 'You are Vita, a specialist in Life insurance, Annuities, and Retirement AI. Find the most significant AI developments in life insurance, annuity products, retirement income planning, and longevity risk: mortality prediction, personalised life underwriting, wearables for life insurance, actuarial ML, retirement AI. DO NOT include health insurance, pharmacy benefits, hospital systems, or healthcare IT (e.g. Optum, Epic, payers, providers, hospital claims). You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
-    querySeeds: ['life insurance AI underwriting 2026','annuity retirement income AI machine learning','longevity risk mortality prediction actuarial ML','wearables life insurance underwriting data']
+    querySeeds: [
+      'life insurance AI underwriting 2026',
+      'annuity retirement income AI machine learning',
+      'longevity risk mortality prediction actuarial ML',
+      'wearables life insurance underwriting data',
+      'life insurance AI deployment CIO carrier earnings 2026',
+      'life insurance AI India emerging market 2026'
+    ]
   },
   {
     id: 'lex', name: 'Lex', icon: 'Lex', domain: 'Regulation',
     brief: 'You are Lex, a specialist in insurance AI regulation. Find the most significant regulatory developments affecting AI in insurance: FCA, EIOPA, NAIC, EU AI Act, IAIS, model risk governance, explainability requirements. You have memory of what you found in previous weeks — use it to track regulatory signal evolution.',
-    querySeeds: ['FCA AI insurance regulation 2026','EU AI Act insurance compliance','EIOPA digital transformation insurance','NAIC AI model risk governance explainability']
+    querySeeds: [
+      'FCA AI insurance regulation 2026',
+      'EU AI Act insurance compliance',
+      'EIOPA digital transformation insurance',
+      'NAIC AI model risk governance explainability',
+      'MAS Singapore AI insurance regulation 2026',
+      'DORA EU AI Act EIOPA divergence insurance 2026'
+    ]
   },
   {
     id: 'terra', name: 'Terra', icon: 'Terra', domain: 'Climate',
     brief: 'You are Terra, a specialist in climate risk and ESG for insurance. Find the most significant AI and data science developments in climate risk modelling, parametric insurance, ESG underwriting, and catastrophe prediction. You have memory of what you found in previous weeks — use it to track signal evolution.',
-    querySeeds: ['climate risk AI insurance 2026','parametric insurance AI machine learning','ESG underwriting data analytics','catastrophe prediction AI model flood']
+    querySeeds: [
+      'climate risk AI insurance 2026',
+      'parametric insurance AI machine learning',
+      'ESG underwriting data analytics',
+      'catastrophe prediction AI model flood',
+      'climate parametric insurance APAC emerging market 2026'
+    ]
   },
   {
     id: 'horizon', name: 'Horizon', icon: 'Horizon', domain: 'Horizontal',
     brief: 'You are Horizon, a specialist in horizontal enterprise AI with insurance implications. Find the most significant developments in foundation models, agentic AI, synthetic data, federated learning, post-quantum cryptography, and real-time decisioning that will impact insurance carriers. You have memory of what you found in previous weeks — use it to track signal evolution.',
-    querySeeds: ['agentic AI enterprise insurance 2026','foundation model insurance applications','synthetic data insurance privacy federated learning','post-quantum cryptography financial services insurance']
+    querySeeds: [
+      'agentic AI enterprise insurance 2026',
+      'foundation model insurance applications',
+      'synthetic data insurance privacy federated learning',
+      'post-quantum cryptography financial services insurance',
+      'AI insurance patent filing USPTO machine learning 2026',
+      'AI financial services regulation Singapore MAS 2026'
+    ]
   }
 ];
 
@@ -77,10 +135,11 @@ async function tavilySearch(query, maxResults) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TAVILY_KEY },
       body: JSON.stringify({
         query: query,
-        search_depth: 'basic',
+        search_depth: 'advanced',
         max_results: maxResults || 5,
         include_answer: false,
-        include_raw_content: false
+        include_raw_content: false,
+        exclude_domains: SOURCES.exclude_always || []
       })
     });
     if (!r.ok) { console.warn('[YNOT] Tavily ' + r.status + ' for: ' + query); return []; }
@@ -150,6 +209,7 @@ async function verifyRefs(refs) {
   if (!refs || refs.length === 0) return refs;
   var verified = await Promise.all(refs.map(async function(ref) {
     if (!ref.url || !ref.url.startsWith('http')) return null;
+    if (isSuspectDomain(ref.url)) return null; // strip excluded domains even if cited by Claude
     try {
       var controller = new AbortController();
       var tid = setTimeout(function() { controller.abort(); }, 4000);
@@ -171,31 +231,76 @@ async function verifyRefs(refs) {
 // ── SOURCE REPUTATION: record which domains produced quality findings ──────
 async function recordSourceReputation(findings) {
   try {
-    var highQuality = findings.filter(function(f) {
-      return (f.verdict === 'SIGNAL' || f.verdict === 'WATCH') && f.confidence >= 4;
-    });
-    if (highQuality.length === 0) return;
+    // Only SIGNAL findings count for reputation (not WATCH — higher bar)
+    var signals = findings.filter(function(f) { return f.verdict === 'SIGNAL' && f.confidence >= 4; });
+    if (signals.length === 0) return;
     var domains = {};
-    highQuality.forEach(function(f) {
+    var agentId = findings[0] && findings[0].mind_id;
+    signals.forEach(function(f) {
       (f.refs || []).forEach(function(ref) {
         if (!ref.url) return;
         try {
           var d = new URL(ref.url).hostname.replace('www.', '');
-          domains[d] = (domains[d] || 0) + 1;
+          if (!isSuspectDomain(ref.url)) domains[d] = (domains[d] || 0) + 1;
         } catch(e) {}
       });
     });
+    var today = new Date().toISOString().split('T')[0];
     var rows = Object.keys(domains).map(function(d) {
-      return { domain: d, quality_hits: domains[d], last_seen: new Date().toISOString().split('T')[0], agent_id: findings[0] && findings[0].mind_id };
+      return { domain: d, mention_count: domains[d], last_seen: today, agent_names: [agentId] };
     });
     if (rows.length > 0) {
-      await supabaseCall('POST', 'source_reputation', rows).catch(function(e) {
-        console.warn('[YNOT] source_reputation table not ready yet: ' + e.message);
+      // Upsert: merge-duplicates increments mention_count via PostgREST on_conflict
+      var url = SUPABASE_URL + '/rest/v1/source_reputation';
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify(rows)
+      }).catch(function(e) { console.warn('[YNOT] source_reputation upsert failed: ' + e.message); });
+      // Surface new authoritative candidates for next week's include list
+      await proposeNewSources(Object.keys(domains)).catch(function(e) {
+        console.warn('[YNOT] proposeNewSources failed: ' + e.message);
       });
     }
   } catch(e) {
     console.warn('[YNOT] Source reputation recording failed: ' + e.message);
   }
+}
+
+// ── PROPOSED SOURCES: surface high-signal domains for auto-promotion ───────
+async function proposeNewSources(domains) {
+  var excludeList = SOURCES.exclude_always || [];
+  var threshold = SOURCES.auto_promote_threshold || 5;
+  // Fetch current reputation counts for these domains
+  var domainFilter = domains.map(function(d) { return 'domain.eq.' + d; }).join(',');
+  var existing = await supabaseCall('GET', 'source_reputation', null,
+    '?or=(' + domainFilter + ')&select=domain,mention_count').catch(function() { return []; });
+  var candidates = (existing || []).filter(function(row) {
+    return row.mention_count >= threshold &&
+      !excludeList.includes(row.domain) &&
+      isAuthorityDomain(row.domain);
+  });
+  if (candidates.length === 0) return;
+  var today = new Date().toISOString().split('T')[0];
+  var rows = candidates.map(function(c) {
+    return { domain: c.domain, hit_count: c.mention_count, first_seen: today, status: 'pending' };
+  });
+  var url = SUPABASE_URL + '/rest/v1/proposed_sources';
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Prefer': 'resolution=ignore-duplicates,return=minimal'
+    },
+    body: JSON.stringify(rows)
+  }).catch(function(e) { console.warn('[YNOT] proposed_sources insert failed: ' + e.message); });
 }
 
 // ── QUERY GENERATION (with memory context) ────────────────────────────────
@@ -245,6 +350,11 @@ async function analyseResults(mind, queries, results, memory) {
     'Analyse what you actually found and extract the most significant findings. ' +
     'Be honest: if evidence is weak, reflect that in verdict and confidence. ' +
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
+    'IMPORTANT: Do not reproduce or quote source content verbatim. All finding bodies must be your own ' +
+    'independent synthesis and analysis — describe what is understood, not what a source says word for word. ' +
+    'Strongly prefer authoritative primary sources: regulatory filings, peer-reviewed papers, academic preprints (arXiv), ' +
+    'actuarial bodies (SOA, CAS), and official government or regulator sites. ' +
+    'If only weak sources (vendor blogs, news summaries, analyst reports) are available, set confidence to 1-2. ' +
     'Return ONLY a valid JSON array of 3-5 findings. ' +
     'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"NOISE"), ' +
     'body (2-3 sentences: what it is and what is currently understood about it in the insurance context — describe factually, do not prescribe or recommend), ' +
