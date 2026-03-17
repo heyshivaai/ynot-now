@@ -66,10 +66,17 @@ async function generateExecutiveBriefing(findings, runDate, prevFindings) {
   // Agent summary line — goes in the card header, NOT the post body
   const agentSummary = `Eight agents · ${findings.length} findings — ${signals.length} Signals, ${watches.length} Watch, ${noises.length} Noise`;
 
-  // Pick the 3 most compelling findings for bullets: high-confidence SIGNALs first
+  // LAYER 4: Pick the 3 most compelling findings for bullets: prioritize freshness, then high-confidence SIGNALs
   const ranked = [
-    ...signals.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
-    ...watches.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
+    ...signals.sort((a, b) => {
+      // Sort by freshness_priority first (1=fresh, 2=undated, 3=stale), then confidence
+      const freshDiff = (a.freshness_priority || 2) - (b.freshness_priority || 2);
+      return freshDiff !== 0 ? freshDiff : (b.confidence || 0) - (a.confidence || 0);
+    }),
+    ...watches.sort((a, b) => {
+      const freshDiff = (a.freshness_priority || 2) - (b.freshness_priority || 2);
+      return freshDiff !== 0 ? freshDiff : (b.confidence || 0) - (a.confidence || 0);
+    }),
     ...noises.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
   ].slice(0, 5);
 
@@ -236,10 +243,10 @@ module.exports = async function handler(req, res) {
     if (spotlight && (section === 'spotlight' || section === 'all')) {
       try {
         const { data: fd } = await sbGet(
-          `findings?run_id=eq.${encodeURIComponent(spotlight.run_id)}&order=confidence.desc&limit=10`
+          `findings?run_id=eq.${encodeURIComponent(spotlight.run_id)}&order=freshness_priority.asc,confidence.desc&limit=15`
         );
         if (fd && fd.length) {
-          // Return top 5 SIGNALs + WATCHes, with key fields only
+          // Return top 5 SIGNALs + WATCHes (prioritized by freshness), with key fields only
           topFindings = fd
             .filter(f => f.verdict === 'SIGNAL' || f.verdict === 'WATCH')
             .slice(0, 5)
@@ -252,7 +259,9 @@ module.exports = async function handler(req, res) {
               trl: f.trl,
               confidence: f.confidence,
               body: f.body,
-              refs: f.refs
+              refs: f.refs,
+              freshness_flag: f.freshness_flag,
+              source_published_date: f.source_published_date
             }));
         }
       } catch (e) {

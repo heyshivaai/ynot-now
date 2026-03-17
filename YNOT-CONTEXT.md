@@ -6,7 +6,8 @@
 
 **Live URL:** https://ynot-now.vercel.app
 **GitHub:** https://github.com/heyshivaai/ynot-now
-**Last updated:** 2026-03-09
+**Last updated:** 2026-03-09  
+**Critical Fix:** Freshness validation system added (4-layer date filtering)
 
 ---
 
@@ -67,6 +68,14 @@ The system runs in two phases every Monday. Phase 1 agents run first and autonom
 ```sql
 ALTER TABLE findings ADD COLUMN IF NOT EXISTS signal_status text DEFAULT 'NEW';
 ALTER TABLE findings ADD COLUMN IF NOT EXISTS search_queries text[];
+
+-- Freshness validation columns (added 2026-03-09)
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS source_published_date date;
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS freshness_flag text DEFAULT 'undated';
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS freshness_priority int DEFAULT 2;
+CREATE INDEX IF NOT EXISTS idx_findings_freshness ON findings(freshness_priority, confidence DESC);
+CREATE INDEX IF NOT EXISTS idx_findings_source_date ON findings(source_published_date DESC);
+
 CREATE TABLE IF NOT EXISTS source_reputation (
   id bigserial PRIMARY KEY,
   domain text UNIQUE,
@@ -249,6 +258,13 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 ## Current State (as of 2026-03-09)
 
 ### What's working well
+- **TRUE 4-LAYER FRESHNESS VALIDATION (2026-03-09)** — prevents outdated sources from appearing in weekly briefings
+  - Layer 1: Tavily `days: 7` parameter filters at source
+  - Layer 2: Agent prompts explicitly reject sources > 7 days old
+  - Layer 3: Programmatic validation removes stale refs, assigns freshness priority (1=fresh, 2=undated, 3=stale)
+  - Layer 4: Pulse generation prioritizes fresh findings over undated/stale
+  - New DB columns: `source_published_date`, `freshness_flag`, `freshness_priority`
+  - See `/app/FRESHNESS_VALIDATION.md` for full documentation
 - **True multi-agent system** — agents autonomously generate queries, search Tavily, and Phase 2 agents read Phase 1 findings before producing synthesis
 - **Agent memory** — each agent receives its last 4 weeks of findings in its brief; signals tracked as NEW/EMERGING/CONFIRMED/RECURRING
 - **URL verification** — all refs HTTP HEAD-checked before storing; dead links removed; findings with 0 live refs flagged

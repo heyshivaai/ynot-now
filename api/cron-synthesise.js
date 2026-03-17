@@ -100,6 +100,7 @@ async function tavilySearch(query, maxResults) {
         query: query,
         search_depth: 'basic',
         max_results: maxResults || 4,
+        days: 7,  // LAYER 1: Only fetch results from last 7 days
         include_answer: false,
         include_raw_content: false
       })
@@ -185,6 +186,65 @@ async function verifyRefs(refs) {
   return live.length > 0 ? live : refs;
 }
 
+// ─── LAYER 3: PROGRAMMATIC FRESHNESS VALIDATION ──────────────────────────────
+function validateSourceFreshness(findings) {
+  var sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  
+  return findings.map(function(f) {
+    var freshRefs = [];
+    var staleRefs = [];
+    var undatedRefs = [];
+    var newestDate = null;
+    
+    (f.refs || []).forEach(function(ref) {
+      if (ref.published_date) {
+        try {
+          var pubTime = new Date(ref.published_date).getTime();
+          if (pubTime >= sevenDaysAgo) {
+            freshRefs.push(ref);
+            if (!newestDate || pubTime > new Date(newestDate).getTime()) {
+              newestDate = ref.published_date;
+            }
+          } else {
+            staleRefs.push(ref);
+            console.warn('[YNOT-S] Removed stale ref (' + ref.published_date + '): ' + ref.url);
+          }
+        } catch(e) {
+          undatedRefs.push(ref);
+        }
+      } else {
+        undatedRefs.push(ref);
+      }
+    });
+    
+    var priority = 3;
+    var flag = 'stale';
+    
+    if (freshRefs.length > 0) {
+      priority = 1;
+      flag = 'fresh';
+    } else if (undatedRefs.length > 0 && staleRefs.length === 0) {
+      priority = 2;
+      flag = 'undated';
+    }
+    
+    var keptRefs = freshRefs.concat(undatedRefs);
+    
+    return Object.assign({}, f, {
+      refs: keptRefs,
+      source_published_date: newestDate,
+      freshness_flag: flag,
+      freshness_priority: priority
+    });
+  }).filter(function(f) {
+    if (f.refs.length === 0) {
+      console.warn('[YNOT-S] Removed finding (no fresh refs): ' + f.title);
+      return false;
+    }
+    return true;
+  });
+}
+
 // ─── SYNTHESIS AGENT RUN ──────────────────────────────────────────────────────
 async function runSynthesisAgent(mind, phase1Findings) {
   // Build a summary of Phase 1 findings for context
@@ -224,13 +284,16 @@ async function runSynthesisAgent(mind, phase1Findings) {
   console.log('[YNOT-S] ' + mind.name + ': ' + deduped.length + ' Tavily results');
 
   var resultsText = deduped.slice(0, 10).map(function(r, i) {
-    var pub = r.published_date ? ' [published: ' + r.published_date + ']' : '';
+    var pub = r.published_date ? ' [published: ' + r.published_date + ']' : ' [NO DATE]';
     return '[' + (i+1) + '] ' + r.title + pub + '\nURL: ' + r.url + '\n' + r.content;
   }).join('\n\n');
 
   // Synthesis analysis with full Phase 1 context
   var analysisSystem = 'You are ' + mind.name + '. ' + mind.brief +
     ' You have read all findings from the other agents AND searched the web for additional context. ' +
+    'CRITICAL DATE REQUIREMENT: This is a WEEKLY briefing for LAST WEEK only. ONLY use sources published within the last 7 days. ' +
+    'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
+    'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
     'Produce synthesis findings that go beyond what the primary agents found — your value is in ' +
     (mind.role === 'sceptic' ? 'challenging claims and identifying noise' :
      mind.role === 'synthesiser' ? 'connecting dots across domains and finding second-order effects' :
@@ -317,6 +380,12 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'All synthesis agents failed', errors: errors });
   }
 
+  // LAYER 3: Apply programmatic freshness validation
+  console.log('[YNOT-S] Applying freshness validation (7-day window)...');
+  var preValidationCount = allSynthFindings.length;
+  allSynthFindings = validateSourceFreshness(allSynthFindings);
+  console.log('[YNOT-S] Freshness validation: ' + preValidationCount + ' → ' + allSynthFindings.length + ' findings retained');
+
   var rows = allSynthFindings.map(function(f) {
     return {
       run_id: runId,
@@ -335,7 +404,10 @@ module.exports = async function handler(req, res) {
       experiment: f.experiment || null,
       refs: f.refs || [],
       search_queries: f.search_queries || [],
-      signal_status: f.signal_status || 'NEW'
+      signal_status: f.signal_status || 'NEW',
+      source_published_date: f.source_published_date || null,
+      freshness_flag: f.freshness_flag || 'undated',
+      freshness_priority: f.freshness_priority || 2
     };
   });
 

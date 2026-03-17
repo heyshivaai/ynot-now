@@ -79,6 +79,7 @@ async function tavilySearch(query, maxResults) {
         query: query,
         search_depth: 'basic',
         max_results: maxResults || 5,
+        days: 7,  // LAYER 1: Only fetch results from last 7 days
         include_answer: false,
         include_raw_content: false
       })
@@ -234,7 +235,7 @@ async function fetchAgentResults(queries) {
 // ── ANALYSIS (with memory context, freshness metadata, signal_status) ─────
 async function analyseResults(mind, queries, results, memory) {
   var resultsText = results.slice(0, 12).map(function(r, i) {
-    var pub = r.published_date ? ' [published: ' + r.published_date + ']' : '';
+    var pub = r.published_date ? ' [published: ' + r.published_date + ']' : ' [NO DATE]';
     return '[' + (i + 1) + '] ' + r.title + pub + '\nURL: ' + r.url + '\n' + r.content;
   }).join('\n\n');
   var memorySection = memory
@@ -243,6 +244,9 @@ async function analyseResults(mind, queries, results, memory) {
   var system = 'You are ' + mind.name + ', an autonomous AI research agent. ' + mind.brief +
     ' You have searched the web using your own queries and received real live results. ' +
     'Analyse what you actually found and extract the most significant findings. ' +
+    'CRITICAL DATE REQUIREMENT: This is a WEEKLY briefing for LAST WEEK only. ONLY use sources published within the last 7 days. ' +
+    'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
+    'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
     'Be honest: if evidence is weak, reflect that in verdict and confidence. ' +
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
     'Return ONLY a valid JSON array of 3-5 findings. ' +
@@ -280,6 +284,69 @@ async function analyseResults(mind, queries, results, memory) {
     console.error('[YNOT] ' + mind.name + ' analysis failed: ' + e.message);
     return [];
   }
+}
+
+// ── LAYER 3: PROGRAMMATIC FRESHNESS VALIDATION ────────────────────────────
+function validateSourceFreshness(findings) {
+  var sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  var today = new Date().toISOString().split('T')[0];
+  
+  return findings.map(function(f) {
+    var freshRefs = [];
+    var staleRefs = [];
+    var undatedRefs = [];
+    var newestDate = null;
+    
+    (f.refs || []).forEach(function(ref) {
+      if (ref.published_date) {
+        try {
+          var pubTime = new Date(ref.published_date).getTime();
+          if (pubTime >= sevenDaysAgo) {
+            freshRefs.push(ref);
+            if (!newestDate || pubTime > new Date(newestDate).getTime()) {
+              newestDate = ref.published_date;
+            }
+          } else {
+            staleRefs.push(ref);
+            console.warn('[YNOT] Removed stale ref (' + ref.published_date + '): ' + ref.url);
+          }
+        } catch(e) {
+          undatedRefs.push(ref); // Invalid date format, treat as undated
+        }
+      } else {
+        undatedRefs.push(ref); // No date, keep but deprioritize
+      }
+    });
+    
+    // Determine freshness priority: 1=fresh (has recent dates), 2=undated, 3=stale (only old dates)
+    var priority = 3; // default: stale
+    var flag = 'stale';
+    
+    if (freshRefs.length > 0) {
+      priority = 1;
+      flag = 'fresh';
+    } else if (undatedRefs.length > 0 && staleRefs.length === 0) {
+      priority = 2;
+      flag = 'undated';
+    }
+    
+    // Keep fresh refs + undated refs, discard stale refs
+    var keptRefs = freshRefs.concat(undatedRefs);
+    
+    return Object.assign({}, f, {
+      refs: keptRefs,
+      source_published_date: newestDate,
+      freshness_flag: flag,
+      freshness_priority: priority
+    });
+  }).filter(function(f) {
+    // Remove findings with NO refs left after filtering
+    if (f.refs.length === 0) {
+      console.warn('[YNOT] Removed finding (no fresh refs): ' + f.title);
+      return false;
+    }
+    return true;
+  });
 }
 
 async function runAgent(mind) {
@@ -361,6 +428,12 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'All agents failed', errors: errors });
   }
 
+  // LAYER 3: Apply programmatic freshness validation
+  console.log('[YNOT] Applying freshness validation (7-day window)...');
+  var preValidationCount = allFindings.length;
+  allFindings = validateSourceFreshness(allFindings);
+  console.log('[YNOT] Freshness validation: ' + preValidationCount + ' → ' + allFindings.length + ' findings retained');
+
   var rows = allFindings.map(function(f) {
     return {
       run_id: runId,
@@ -379,7 +452,10 @@ module.exports = async function handler(req, res) {
       experiment: f.experiment || null,
       refs: f.refs || [],
       search_queries: f.search_queries || [],
-      signal_status: f.signal_status || 'NEW'
+      signal_status: f.signal_status || 'NEW',
+      source_published_date: f.source_published_date || null,
+      freshness_flag: f.freshness_flag || 'undated',
+      freshness_priority: f.freshness_priority || 2
     };
   });
 
