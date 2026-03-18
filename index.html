@@ -3,8 +3,8 @@
 <head>
   <!-- ── Core SEO ─────────────────────────────────────── -->
   <title>YNOT.NOW — AI Intelligence for Insurance</title>
-  <meta name="description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Noise — with evidence. Free, open, no vendor bias.">
-  <meta name="keywords" content="AI insurance, insurtech intelligence, insurance AI research, AI underwriting, claims automation, P&C AI, life insurance AI, reinsurance technology, signal watch noise">
+  <meta name="description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Unverified — with evidence. Free, open, no vendor bias.">
+  <meta name="keywords" content="AI insurance, insurtech intelligence, insurance AI research, AI underwriting, claims automation, P&C AI, life insurance AI, reinsurance technology, signal watch unverified">
   <meta name="author" content="Shiva Balasubramaniyan">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <link rel="canonical" href="https://ynot.now">
@@ -15,7 +15,7 @@
   <meta property="og:site_name" content="YNOT.NOW">
   <meta property="og:url" content="https://ynot.now">
   <meta property="og:title" content="YNOT.NOW — AI Intelligence for Insurance">
-  <meta property="og:description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Noise — with evidence. Free, open, no vendor bias.">
+  <meta property="og:description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Unverified — with evidence. Free, open, no vendor bias.">
   <meta property="og:image" content="https://ynot.now/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -25,7 +25,7 @@
   <!-- ── Twitter / X ───────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="YNOT.NOW — AI Intelligence for Insurance">
-  <meta name="twitter:description" content="Eight specialist AI minds track what's real in insurance AI. Signal, Watch, or Noise — always with evidence.">
+  <meta name="twitter:description" content="Eight specialist AI minds track what's real in insurance AI. Signal, Watch, or Unverified — always with evidence.">
   <meta name="twitter:image" content="https://ynot.now/og-image.png">
   <meta name="twitter:creator" content="@heyshivaai">
 
@@ -39,7 +39,7 @@
         "@id": "https://ynot.now/#website",
         "url": "https://ynot.now",
         "name": "YNOT.NOW",
-        "description": "Independent AI intelligence platform for the insurance industry. Eight specialist minds score findings as Signal, Watch, or Noise — with evidence.",
+        "description": "Independent AI intelligence platform for the insurance industry. Eight specialist minds score findings as Signal, Watch, or Unverified — with evidence.",
         "publisher": { "@id": "https://ynot.now/#organization" }
       },
       {
@@ -64,7 +64,7 @@
         "@id": "https://ynot.now/#webpage",
         "url": "https://ynot.now",
         "name": "YNOT.NOW — AI Intelligence for Insurance",
-        "description": "Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Noise — with evidence. Free, open, no vendor bias.",
+        "description": "Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Unverified — with evidence. Free, open, no vendor bias.",
         "isPartOf": { "@id": "https://ynot.now/#website" },
         "inLanguage": "en-US",
         "dateModified": "2026-02-23"
@@ -366,7 +366,8 @@ hr.rule{border:none;border-top:1px solid var(--rule);}
 .ps-finding-verdict{font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;padding:3px 9px;border-radius:100px;font-weight:600;}
 .pv-signal{background:#000;color:#fff;}
 .pv-watch{background:#e8e8e6;color:#333;}
-.pv-noise{background:#f5f5f3;color:#999;}
+.pv-unverified{background:#f5f5f3;color:#999;}
+.pv-noise{background:#f5f5f3;color:#999;} /* Legacy support */
 .ps-finding-domain{font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;color:var(--mid);}
 .ps-finding-trl{font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;color:var(--mid);margin-left:auto;}
 .ps-finding-body{font-size:13px;line-height:1.7;color:var(--ink);margin:0 0 10px;}
@@ -693,7 +694,8 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .vl-badge{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;}
 .vl-badge.signal{background:#dcfce7;color:#166534;}
 .vl-badge.watch{background:#fef3c7;color:#92400e;}
-.vl-badge.noise{background:#fee2e2;color:#991b1b;}
+.vl-badge.unverified{background:#f3f4f6;color:#6b7280;}
+.vl-badge.noise{background:#f3f4f6;color:#6b7280;} /* Legacy support */
 
 .sources-details{margin-top:32px;text-align:center;}
 .sources-details summary{cursor:pointer;font-size:14px;color:var(--mid);padding:12px;display:inline-block;}
@@ -731,7 +733,8 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 .rl-finding-verdict{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:3px;margin-right:8px;}
 .rl-finding-verdict.signal{background:#dcfce7;color:#166534;}
 .rl-finding-verdict.watch{background:#fef3c7;color:#92400e;}
-.rl-finding-verdict.noise{background:#fee2e2;color:#991b1b;}
+.rl-finding-verdict.unverified{background:#f3f4f6;color:#6b7280;}
+.rl-finding-verdict.noise{background:#f3f4f6;color:#6b7280;} /* Legacy support */
 .rl-finding-title{font-size:12px;color:var(--ink);line-height:1.4;}
 .rl-finding-summary{font-size:11px;color:var(--mid);margin-top:4px;line-height:1.4;}
 .rl-viewall{display:block;text-align:center;font-size:11px;color:var(--mid);padding:12px 0 4px;cursor:pointer;transition:color .15s;}
@@ -791,7 +794,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         </span>
       </span>
     </div>
-    <p class="hero-sub">Eight specialist agents continuously explore emerging technology across P&C, Life & Annuities, Reinsurance, and Horizontal Technologies. Every finding is scored, sourced, and shared freely. Signal, Watch, or Noise — always with evidence.</p>
+    <p class="hero-sub">Eight specialist agents continuously explore emerging technology across P&C, Life & Annuities, Reinsurance, and Horizontal Technologies. Every finding is scored, sourced, and shared freely. Signal, Watch, or Unverified — always with evidence.</p>
     <div class="hero-cta-row">
       <a class="btn-primary" href="#lab">Explore findings</a>
       <a class="btn-ghost" href="#system">How it works</a>
@@ -814,7 +817,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="prose">
         <p>Emerging technology is reshaping insurance faster than most organisations can track. Separating what's genuinely happening from what's being claimed — across P&C, Life & Annuities, Reinsurance, and Horizontal Tech — takes sustained expert attention most teams don't have.</p>
         <p>YNOT.NOW is that attention made visible. <strong>Eight specialist agents</strong>, each with a distinct focus and domain expertise, explore continuously. They synthesise research, analyse real deployments, and score maturity with evidence you can verify yourself.</p>
-        <p>Every verdict — <strong>Signal, Watch, or Noise</strong> — comes with its source. No subscriptions. No vendor relationships. No hidden agenda. Intelligence as a shared resource, compounding over time for everyone.</p>
+        <p>Every verdict — <strong>Signal, Watch, or Unverified</strong> — comes with its source. No subscriptions. No vendor relationships. No hidden agenda. Intelligence as a shared resource, compounding over time for everyone.</p>
         <div class="tag-row">
           <span class="tag">P&C — Personal, Commercial, Specialty</span>
           <span class="tag">Life · Annuities · Retirement · Group Benefits</span>
@@ -852,7 +855,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="ls-stat"><div class="ls-num" id="cbRuns">—</div><div class="ls-label">Weekly runs</div></div>
       <div class="ls-stat"><div class="ls-num" id="cbEver">—</div><div class="ls-label">Total findings</div></div>
       <div class="ls-stat"><div class="ls-num" id="cbSignals">—</div><div class="ls-label">Signals found</div></div>
-      <div class="ls-stat"><div class="ls-num" id="cbNoise">—</div><div class="ls-label">Noise called out</div></div>
+      <div class="ls-stat"><div class="ls-num" id="cbNoise">—</div><div class="ls-label">Unverified flagged</div></div>
     </div>
     <div class="lab-last-updated" id="labLastUpdated"></div>
 
@@ -872,7 +875,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <button class="pill on" onclick="setVerd('all',this)">All verdicts</button>
         <button class="pill" onclick="setVerd('SIGNAL',this)">Signal</button>
         <button class="pill" onclick="setVerd('WATCH',this)">Watch</button>
-        <button class="pill" onclick="setVerd('NOISE',this)">Noise</button>
+        <button class="pill" onclick="setVerd('UNVERIFIED',this)">Unverified</button>
       </div>
     </div>
     <div class="filter-section">
@@ -1172,7 +1175,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         </div>
         <div class="ac-name">Null</div>
         <div class="ac-domain">Evidence Challenger</div>
-        <div class="ac-quote">"Show me the evidence, or I'm calling Noise."</div>
+        <div class="ac-quote">"Show me the evidence, or it's Unverified."</div>
       </div>
       <div class="agent-card synthesis" data-agent="weave">
         <div class="ac-header">
@@ -1288,7 +1291,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
     <div class="verdict-legend">
       <div class="vl-item"><span class="vl-badge signal">Signal</span> Evidenced & meaningful</div>
       <div class="vl-item"><span class="vl-badge watch">Watch</span> Early but credible</div>
-      <div class="vl-item"><span class="vl-badge noise">Noise</span> Narrative over substance</div>
+      <div class="vl-item"><span class="vl-badge unverified">Unverified</span> Cannot independently confirm</div>
     </div>
 
     <!-- SOURCES COLLAPSE -->
@@ -1392,7 +1395,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
 <!-- DISCLAIMER -->
 <div class="disclaimer">
   <div class="disclaimer-inner">
-    <strong>Disclaimer:</strong> YNOT.NOW provides general intelligence and commentary on emerging technology developments in the insurance industry for <strong>informational and educational purposes only</strong>. Nothing on this site constitutes financial, legal, actuarial, regulatory, or professional advice of any kind, and no use of this site creates any professional–client relationship. All findings are generated by automated AI research agents based on publicly available open-access sources cited within each finding. <strong>AI-generated content may contain errors, inaccuracies, or omissions.</strong> Verdicts (Signal, Watch, Noise) and scores represent analytical output of an automated system and <strong>must not be relied upon as the sole basis for any business, investment, regulatory, or strategic decision.</strong> Readers are strongly encouraged to verify all references independently and seek qualified professional advice before acting on any information found here. YNOT.NOW has no commercial relationships with any technology vendors, insurers, or investment entities. Third-party links are for reference only — we do not endorse or take responsibility for external content. All views are independent. &nbsp;<a href="/terms" style="color:#aaa;">Terms of Use</a> &nbsp;·&nbsp; <a href="/privacy" style="color:#aaa;">Privacy Policy</a>
+    <strong>Disclaimer:</strong> YNOT.NOW provides general intelligence and commentary on emerging technology developments in the insurance industry for <strong>informational and educational purposes only</strong>. Nothing on this site constitutes financial, legal, actuarial, regulatory, or professional advice of any kind, and no use of this site creates any professional–client relationship. All findings are generated by automated AI research agents based on publicly available open-access sources cited within each finding. <strong>AI-generated content may contain errors, inaccuracies, or omissions.</strong> Verdicts (Signal, Watch, Unverified) and scores represent analytical output of an automated system and <strong>must not be relied upon as the sole basis for any business, investment, regulatory, or strategic decision.</strong> Readers are strongly encouraged to verify all references independently and seek qualified professional advice before acting on any information found here. YNOT.NOW has no commercial relationships with any technology vendors, insurers, or investment entities. Third-party links are for reference only — we do not endorse or take responsibility for external content. All views are independent. &nbsp;<a href="/terms" style="color:#aaa;">Terms of Use</a> &nbsp;·&nbsp; <a href="/privacy" style="color:#aaa;">Privacy Policy</a>
   </div>
 </div>
 
@@ -1497,8 +1500,8 @@ const MINDS=[
   {
     id:'null',name:'Null',icon:'⚔️',role:'Evidence Challenger — The Pessimist',
     domain:'All domains — hype detection',
-    persona:'"My job is to be the hardest person in the room to convince. If you can\'t show me the evidence, I\'m calling it Noise."',
-    desc:'Challenges every claim from every other mind. Null is deliberately sceptical — if the evidence is thin, the outcome hasn\'t matched expectations, or the deployment claims don\'t stack up, Null calls it Noise. The only mind that can override a Signal.'
+    persona:'"My job is to be the hardest person in the room to convince. If you can\'t show me the evidence, it\'s Unverified."',
+    desc:'Analyzes verification status of claims from every other mind. Null is the verification analyst — if independent third-party validation is missing, quantified claims lack external benchmarks, or only vendor sources exist, Null marks it Unverified. The only mind that can override a Signal.'
   },
   {
     id:'weave',name:'Weave',icon:'🕸️',role:'Systems Thinker — Second-Order Effects',
@@ -1610,7 +1613,7 @@ function displayBody(f){
 function makeCard(f,idx){
   const v=f.verdict||'WATCH';
   const vc=v==='SIGNAL'?'vcs':v==='WATCH'?'vcw':'vcn';
-  const cs=v==='SIGNAL'?'cs':v==='NOISE'?'cn':'';
+  const cs=v==='SIGNAL'?'cs':(v==='NOISE'||v==='UNVERIFIED')?'cn':'';
   const region=inferRegion(f);
   const rl=readinessLabel(f.trl||f.trl_score);
   const conf=f.confidence||3;
@@ -1721,10 +1724,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 function updateStats(){
   const total=insights.length;
   const signals=insights.filter(f=>f.verdict==='SIGNAL').length;
-  const noise=insights.filter(f=>f.verdict==='NOISE').length;
+  const unverified=insights.filter(f=>f.verdict==='UNVERIFIED'||f.verdict==='NOISE').length; // Support legacy NOISE
   document.getElementById('cbEver').textContent=total||'—';
   document.getElementById('cbSignals').textContent=signals||'—';
-  document.getElementById('cbNoise').textContent=noise||'—';
+  document.getElementById('cbNoise').textContent=unverified||'—';
   updatePathwayCounts();
   updateRegionalLive();
 }
@@ -1774,7 +1777,7 @@ function loadSampleFindings(){
     {mindId:'scout',mindName:'Scout',mindIcon:'🔭',title:'Agentic Claims Orchestration Reaches Production Scale',verdict:'SIGNAL',body:'Leading US P&C carriers including Travelers and Nationwide have deployed end-to-end agentic claims systems handling 40-60% of simple claims with no human intervention. Average cycle time down from 8 days to under 4 hours for eligible claims. ROI demonstrated within 12 months across multiple implementations.',domain:'P&C',subdomain:'Claims',trl:8,confidence:5,regulatoryRisk:'medium',experiment:'Track straight-through processing rates quarterly at carriers with public filings',refs:[{label:'NAIC AI Working Group',url:'https://content.naic.org/cipr-topics/artificial-intelligence'},{label:'arXiv: Agentic Systems Survey',url:'https://arxiv.org'}]},
     {mindId:'vita',mindName:'Vita',mindIcon:'🧬',title:'AI Accelerated Underwriting Now Standard in US Life Market',verdict:'SIGNAL',body:'Over 60% of US life insurance applications are now processed through AI accelerated underwriting pathways that eliminate or defer the traditional paramedical exam. Average decision time reduced from 3 weeks to under 48 hours. Lapse rates and mortality experience remain within expected ranges across early cohorts.',domain:'Life',subdomain:'Underwriting',trl:9,confidence:5,regulatoryRisk:'medium',experiment:'Monitor 5-year mortality experience for AI-underwritten cohorts vs traditional',refs:[{label:'NAIC Life Insurance Model Regulation',url:'https://content.naic.org'},{label:'arXiv: AI Underwriting',url:'https://arxiv.org'}]},
     {mindId:'atlas',mindName:'Atlas',mindIcon:'🌍',title:'ML-Enhanced Cat Models Changing Reinsurance Pricing Dynamics',verdict:'SIGNAL',body:'Leading reinsurers including Swiss Re and Munich Re are deploying ML-enhanced catastrophe models that incorporate real-time satellite imagery and climate data. Florida hurricane and California wildfire models showing 15-20% improvement in loss prediction accuracy versus traditional vendor models in back-testing.',domain:'Reinsurance',subdomain:'Cat Modelling',trl:7,confidence:4,regulatoryRisk:'low',experiment:'Compare ML-enhanced vs vendor model predictions against actual 2023-2025 loss events',refs:[{label:'Geneva Association: Climate Risk',url:'https://www.genevaassociation.org'},{label:'NIST: ML Risk Assessment',url:'https://www.nist.gov'}]},
-    {mindId:'null',mindName:'Null',mindIcon:'⚔️',title:'Blockchain for Insurance Claims: Still Noise After 8 Years',verdict:'NOISE',body:'Despite a decade of pilots and proof-of-concepts, no major carrier has successfully deployed blockchain for claims processing at meaningful scale. The fundamental problem remains: blockchain solves trust problems between untrusting parties, but carriers need fast, centralised systems. The few remaining pilots are quietly being wound down.',domain:'Horizontal',subdomain:'Blockchain',trl:2,confidence:5,regulatoryRisk:'low',experiment:'Identify any carrier with >10,000 claims processed on blockchain in 2024',refs:[{label:'FCA Innovation Hub',url:'https://www.fca.org.uk/firms/innovation'},{label:'EIOPA InsurTech Report',url:'https://www.eiopa.europa.eu'}]},
+    {mindId:'null',mindName:'Null',mindIcon:'⚔️',title:'Blockchain for Insurance Claims: Deployment Claims Remain Unverified',verdict:'UNVERIFIED',body:'Despite a decade of pilots and proof-of-concepts, no major carrier has disclosed independently verified deployment of blockchain for claims processing at meaningful scale. The few publicized pilots have not published third-party validation of transaction volumes or system performance. Claims lack external benchmarking.',domain:'Horizontal',subdomain:'Blockchain',trl:2,confidence:2,regulatoryRisk:'low',experiment:'Identify any carrier with >10,000 claims processed on blockchain verified by independent audit',refs:[{label:'FCA Innovation Hub',url:'https://www.fca.org.uk/firms/innovation'},{label:'EIOPA InsurTech Report',url:'https://www.eiopa.europa.eu'}]},
     {mindId:'prism',mindName:'Prism',mindIcon:'💎',title:'Vibe Coding Enters the Carrier Back Office',verdict:'WATCH',body:'AI-assisted development tools (Cursor, GitHub Copilot, Windsurf) have crossed 1M+ enterprise seats in 2025, with several mid-size carriers reporting actuarial and ops teams building internal tooling without IT involvement. The productivity gains are real but the governance gap — undocumented models in production, no version control, no audit trail — is emerging as a model risk concern regulators have not yet addressed.',domain:'Horizontal',subdomain:'AI Dev Tooling',trl:5,confidence:3,regulatoryRisk:'medium',experiment:'Audit one carrier business unit for shadow AI tooling built with vibe coding in the past 12 months — quantify the governance gap before regulators do.',refs:[{label:'GitHub Copilot Enterprise adoption report 2025',url:'https://github.blog/news-insights/product-news/github-copilot-the-agent-awakens/'},{label:'Cursor AI — 1M users milestone',url:'https://cursor.sh'}]},
     {mindId:'weave',mindName:'Weave',mindIcon:'🕸️',title:'AI is Bifurcating the Insurance Talent Market',verdict:'SIGNAL',body:'AI adoption is creating two distinct career trajectories in insurance: roles being augmented by AI (underwriters, actuaries using AI tools) are seeing productivity gains and salary growth; roles being automated (data entry, basic claims review) face genuine displacement. The gap is widening faster than workforce transition programmes are adapting.',domain:'Horizontal',subdomain:'Workforce',trl:7,confidence:4,regulatoryRisk:'medium',experiment:'Track job posting ratios for AI-augmented vs AI-replaced roles quarterly',refs:[{label:'EIOPA: Digital Transformation',url:'https://www.eiopa.europa.eu'},{label:'Geneva Association: Workforce',url:'https://www.genevaassociation.org'}]},
     {mindId:'deploy',mindName:'Deploy',mindIcon:'🚀',title:'NLP FNOL Automation: Proven ROI, Deployable in 6 Months',verdict:'SIGNAL',body:'NLP-based FNOL intake automation is the highest-confidence deployment opportunity in P&C right now. Multiple vendors offer carrier-ready solutions. Live deployments across 12+ mid-large carriers show 55-75% reduction in handling time for eligible claims, 18-24% improvement in customer satisfaction scores, and ROI within 9-14 months. Implementation risk is low.',domain:'P&C',subdomain:'Claims',trl:9,confidence:5,regulatoryRisk:'low',experiment:'Pilot with 500 claims, measure cycle time and CSAT vs control group',refs:[{label:'NAIC: AI in Claims',url:'https://content.naic.org'},{label:'arXiv: NLP Insurance',url:'https://arxiv.org'}]},
