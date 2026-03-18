@@ -7,7 +7,9 @@
 **Live URL:** https://ynot-now.vercel.app
 **GitHub:** https://github.com/heyshivaai/ynot-now
 **Last updated:** 2026-03-09  
-**Critical Fix:** Freshness validation system added (4-layer date filtering)
+**Critical Fixes:** 
+- Freshness validation system (4-layer date filtering)
+- Legal-safe verdict system (NOISE → UNVERIFIED with objective criteria)
 
 ---
 
@@ -108,7 +110,7 @@ Every finding has these fields:
 | Field | Type | Description |
 |-------|------|-------------|
 | `title` | string | Specific, named finding |
-| `verdict` | SIGNAL \| WATCH \| NOISE | Evidenced & meaningful \| Worth monitoring \| Overhyped |
+| `verdict` | SIGNAL \| WATCH \| UNVERIFIED | Independently verified \| Worth monitoring \| Cannot independently confirm |
 | `body` | string | 2–3 sentences with evidence, deployments, numbers |
 | `confidence` | 1–5 | How well-evidenced the finding is |
 | `domain` | string | P&C \| Life \| Reinsurance \| Horizontal |
@@ -117,6 +119,16 @@ Every finding has these fields:
 | `trl` | 1–9 | Technology Readiness Level (1–3 Idea, 4–5 Experiment, 6–7 Pilot, 8–9 Proven) |
 | `regulatoryRisk` | low \| medium \| high | Regulatory exposure of deploying this |
 | `refs` | array of {label, url} | Real, publicly accessible sources only — never placeholder URLs |
+
+### Verdict Criteria (Legal-Safe Framework - 2026-03-09)
+
+**SIGNAL:** Multiple independent sources (2+), quantified claims, named deployments or peer-reviewed research, confidence ≥ 4.
+
+**WATCH:** Single source OR early-stage, qualitative claims or limited data, worth monitoring, confidence 2-3.
+
+**UNVERIFIED:** Claims lack independent third-party validation, single vendor/promotional source, quantified claims without external benchmarks. NOT A QUALITY JUDGMENT — factual statement about verification status ("we cannot independently verify" not "this is false"). Confidence 1-2.
+
+See `/app/VERDICT_SYSTEM_LEGAL_SAFE.md` for full criteria and legal protection framework.
 
 ### TRL Scale
 - **1–3 Idea/Research** — Academic, theoretical, pre-prototype

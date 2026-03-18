@@ -39,7 +39,8 @@ var MINDS = [
 function normalizeVerdict(v) {
   var u = String(v || '').toUpperCase();
   if (u === 'SIGNAL') return 'SIGNAL';
-  if (u === 'NOISE') return 'NOISE';
+  if (u === 'UNVERIFIED') return 'UNVERIFIED';
+  if (u === 'NOISE') return 'UNVERIFIED'; // Legacy support: map old NOISE to UNVERIFIED
   return 'WATCH';
 }
 function normalizeRisk(r) {
@@ -250,14 +251,19 @@ async function analyseResults(mind, queries, results, memory) {
     'Be honest: if evidence is weak, reflect that in verdict and confidence. ' +
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
     'Return ONLY a valid JSON array of 3-5 findings. ' +
-    'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"NOISE"), ' +
+    'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"UNVERIFIED"), ' +
     'body (2-3 sentences: what it is and what is currently understood about it in the insurance context — describe factually, do not prescribe or recommend), ' +
     'confidence (1-5 integer), domain (string), subdomain (string), ' +
     'trl (1-9 integer), regulatoryRisk ("low"|"medium"|"high"), ' +
     'experiment (a research question or learning hypothesis worth exploring further — frame as curiosity, not a recommendation or action item), ' +
     'refs (array of {label, url} using real URLs from results), ' +
     'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING") — NEW if first time seeing this topic, ' +
-    'EMERGING if seen once before, CONFIRMED if seen 2+ times, RECURRING if it has appeared every week.';
+    'EMERGING if seen once before, CONFIRMED if seen 2+ times, RECURRING if it has appeared every week. ' +
+    '\n\nVERDICT CRITERIA (use these objective rules): ' +
+    '\n• SIGNAL: (1) Multiple independent sources (2+ refs from different organizations), (2) Quantified claims with specific numbers/data, (3) Named deployments or peer-reviewed research, (4) Confidence ≥ 4. ' +
+    '\n• WATCH: (1) Single source OR early-stage development, (2) Qualitative claims or limited data, (3) Worth monitoring as evidence develops, (4) Confidence 2-3. ' +
+    '\n• UNVERIFIED: (1) Claims lack independent third-party validation, (2) Single vendor/promotional source only, (3) Quantified claims with no external benchmarks, (4) Not necessarily false, but verification status unclear. Use UNVERIFIED for factual accuracy — this means "we cannot independently verify" not "this is false." Confidence 1-2. ' +
+    '\n\nIMPORTANT: UNVERIFIED is a factual statement about verification status, not a quality judgment. Frame objectively.';
   var user = 'Your search queries this week:\n' + queries.map(function(q, i) { return (i + 1) + '. ' + q; }).join('\n') +
     '\n\nLive web results:\n\n' + resultsText + memorySection +
     '\n\nProduce your findings. Return only the JSON array.';
@@ -369,13 +375,13 @@ async function runAgent(mind) {
 async function generateWeeklyDigest(findings, runDate) {
   var signals = findings.filter(function(f) { return f.verdict === 'SIGNAL'; });
   var watches  = findings.filter(function(f) { return f.verdict === 'WATCH'; });
-  var noises   = findings.filter(function(f) { return f.verdict === 'NOISE'; });
+  var unverified = findings.filter(function(f) { return f.verdict === 'UNVERIFIED' || f.verdict === 'NOISE'; }); // Include legacy NOISE
   var top = signals.slice(0, 5).concat(watches.slice(0, 3));
   var findingsText = top.map(function(f) {
     return f.title + ' [' + f.verdict + ', TRL ' + (f.trl || '?') + ', ' + f.domain + ', ' + (f.signal_status || 'NEW') + ']: ' + String(f.body || '').substring(0, 200);
   }).join('\n');
   var prompt = 'Week of ' + runDate + '. Five autonomous agents independently searched the web this week using self-generated queries. ' +
-    'Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
+    'Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + unverified.length + ' Unverified).\n\n' +
     'Top findings:\n' + findingsText + '\n\n' +
     'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike. Format EXACTLY:\n\n' +
     '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +

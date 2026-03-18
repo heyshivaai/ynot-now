@@ -19,10 +19,10 @@ var SYNTHESIS_MINDS = [
   {
     id: 'null', name: 'Null', icon: 'Null',
     domain: 'All',
-    brief: 'You are Null, the sceptic and noise detector. You have read all findings from the other agents this week. Your job: challenge the most overhyped claims, identify where evidence is thin, find vendor marketing dressed as innovation, and call out AI washing in insurance.',
-    role: 'sceptic',
+    brief: 'You are Null, the verification analyst. You have read all findings from the other agents this week. Your job: identify claims that lack independent third-party verification, distinguish vendor marketing from independent evidence, and flag where quantified claims have no external benchmarks. You provide factual analysis of verification status, not quality judgments.',
+    role: 'verification',
     extendedThinking: true,
-    querySeeds: ['AI insurance hype overpromised 2026', 'insurtech AI failure abandoned pilot', 'AI insurance vendor marketing claims reality', 'AI insurance ROI disappointing results']
+    querySeeds: ['AI insurance claims verification independent study', 'insurtech vendor claims third-party validation', 'AI insurance pilot results peer review', 'insurance AI deployment independent audit']
   },
   {
     id: 'weave', name: 'Weave', icon: 'Weave',
@@ -46,7 +46,8 @@ var SYNTHESIS_MINDS = [
 function normalizeVerdict(v) {
   var u = String(v || '').toUpperCase();
   if (u === 'SIGNAL') return 'SIGNAL';
-  if (u === 'NOISE')  return 'NOISE';
+  if (u === 'UNVERIFIED') return 'UNVERIFIED';
+  if (u === 'NOISE')  return 'UNVERIFIED'; // Legacy support: map old NOISE to UNVERIFIED
   return 'WATCH';
 }
 function normalizeRisk(r) {
@@ -295,15 +296,20 @@ async function runSynthesisAgent(mind, phase1Findings) {
     'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
     'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
     'Produce synthesis findings that go beyond what the primary agents found — your value is in ' +
-    (mind.role === 'sceptic' ? 'challenging claims and identifying noise' :
+    (mind.role === 'verification' ? 'analyzing verification status and distinguishing independently verified claims from unverified ones' :
      mind.role === 'synthesiser' ? 'connecting dots across domains and finding second-order effects' :
      'identifying early-stage signals others missed') + '. ' +
     'Use real URLs from the search results as refs — never invent URLs. ' +
     'Return ONLY a valid JSON array of 2-4 findings. Each must have: ' +
-    'title, verdict ("SIGNAL"|"WATCH"|"NOISE"), body (2-3 sentences: describe what is found and what is understood — factual and observational, not prescriptive), confidence (1-5), ' +
+    'title, verdict ("SIGNAL"|"WATCH"|"UNVERIFIED"), body (2-3 sentences: describe what is found and what is understood — factual and observational, not prescriptive), confidence (1-5), ' +
     'domain, subdomain, trl (1-9), regulatoryRisk ("low"|"medium"|"high"), experiment (a research question or learning hypothesis worth exploring — frame as curiosity, not a recommendation), ' +
     'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING"), ' +
-    'refs (array of {label, url} from real search results).';
+    'refs (array of {label, url} from real search results). ' +
+    '\n\nVERDICT CRITERIA (use these objective rules): ' +
+    '\n• SIGNAL: (1) Multiple independent sources (2+ refs from different organizations), (2) Quantified claims with specific numbers/data, (3) Named deployments or peer-reviewed research, (4) Confidence ≥ 4. ' +
+    '\n• WATCH: (1) Single source OR early-stage development, (2) Qualitative claims or limited data, (3) Worth monitoring as evidence develops, (4) Confidence 2-3. ' +
+    '\n• UNVERIFIED: (1) Claims lack independent third-party validation, (2) Single vendor/promotional source only, (3) Quantified claims with no external benchmarks, (4) Not necessarily false, but verification status unclear. Use UNVERIFIED for factual accuracy — this means "we cannot independently verify" not "this is false." Confidence 1-2. ' +
+    '\n\nIMPORTANT: UNVERIFIED is a factual statement about verification status, not a quality judgment. Frame objectively.';
 
   var analysisUser = 'Phase 1 findings from other agents:\n' + findingsSummary +
     '\n\nYour additional web search results:\n\n' + (resultsText || '(no results)') +
@@ -423,7 +429,7 @@ module.exports = async function handler(req, res) {
   try {
     var signals = allFindings.filter(function(f){ return f.verdict === 'SIGNAL'; });
     var watches  = allFindings.filter(function(f){ return f.verdict === 'WATCH'; });
-    var noises   = allFindings.filter(function(f){ return f.verdict === 'NOISE'; });
+    var unverified = allFindings.filter(function(f){ return f.verdict === 'UNVERIFIED' || f.verdict === 'NOISE'; }); // Include legacy NOISE
     var top = signals.slice(0, 5).concat(watches.slice(0, 3));
     var findingsText = top.map(function(f) {
       return f.title + ' [' + f.verdict + ', TRL ' + (f.trl||'?') + ', ' + f.domain + ']: ' + String(f.body||'').substring(0, 200);
@@ -432,7 +438,7 @@ module.exports = async function handler(req, res) {
     var prompt = 'Week of ' + runDate + '. Eight autonomous agents independently searched the web this week using self-generated queries. ' +
       'Five primary agents (Scout, Vita, Lex, Terra, Horizon) ran first. ' +
       'Three synthesis agents (Null, Weave, Faro) then read all primary findings and produced cross-agent insights. ' +
-      'Total findings: ' + allFindings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + noises.length + ' Noise).\n\n' +
+      'Total findings: ' + allFindings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + unverified.length + ' Unverified).\n\n' +
       'Top findings:\n' + findingsText + '\n\n' +
       'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike. Format EXACTLY:\n\n' +
       '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
