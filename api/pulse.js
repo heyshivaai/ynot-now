@@ -213,7 +213,8 @@ module.exports = async function handler(req, res) {
       const generated = [];
       for (let i = 0; i < runs.length; i++) {
         const run = runs[i];
-        const { data: findings } = await sbGet(`findings?run_id=eq.${encodeURIComponent(run.run_id)}&order=verdict.asc,confidence.desc`);
+        // Filter out 'needs_review' findings (historical data before fix)
+        const { data: findings } = await sbGet(`findings?run_id=eq.${encodeURIComponent(run.run_id)}&order=verdict.asc,confidence.desc&freshness_flag=neq.needs_review`);
         if (!findings || !findings.length) continue;
         // Pass previous week's findings for 'what changed' context
         let prevFindings = [];
@@ -248,7 +249,7 @@ module.exports = async function handler(req, res) {
         if (fd && fd.length) {
           // Return top 5 SIGNALs + WATCHes (prioritized by freshness), with key fields only
           topFindings = fd
-            .filter(f => f.verdict === 'SIGNAL' || f.verdict === 'WATCH')
+            .filter(f => (f.verdict === 'SIGNAL' || f.verdict === 'WATCH') && f.freshness_flag !== 'needs_review')
             .slice(0, 5)
             .map(f => ({
               id: f.id,
