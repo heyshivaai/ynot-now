@@ -61,10 +61,11 @@ async function sbPost(table, rows) {
 async function generateExecutiveBriefing(findings, runDate, prevFindings) {
   const signals = findings.filter(f => f.verdict === 'SIGNAL');
   const watches = findings.filter(f => f.verdict === 'WATCH');
-  const noises  = findings.filter(f => f.verdict === 'NOISE');
+  const unverified = findings.filter(f => f.verdict === 'UNVERIFIED');
+  const noises  = findings.filter(f => f.verdict === 'NOISE'); // Legacy support
 
   // Agent summary line — goes in the card header, NOT the post body
-  const agentSummary = `Eight agents · ${findings.length} findings — ${signals.length} Signals, ${watches.length} Watch, ${noises.length} Noise`;
+  const agentSummary = `Eight agents · ${findings.length} findings — ${signals.length} Signals, ${watches.length} Watch, ${unverified.length + noises.length} Unverified`;
 
   // LAYER 4: Pick the 3 most compelling findings for bullets: prioritize freshness, then high-confidence SIGNALs
   const ranked = [
@@ -77,7 +78,8 @@ async function generateExecutiveBriefing(findings, runDate, prevFindings) {
       const freshDiff = (a.freshness_priority || 2) - (b.freshness_priority || 2);
       return freshDiff !== 0 ? freshDiff : (b.confidence || 0) - (a.confidence || 0);
     }),
-    ...noises.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+    ...unverified.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
+    ...noises.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)) // Legacy support
   ].slice(0, 5);
 
   const bulletData = ranked.map(f => {
@@ -108,7 +110,7 @@ async function generateExecutiveBriefing(findings, runDate, prevFindings) {
   const prompt =
     `You are writing the weekly post for YNOT.NOW — a free, independent AI signal tracker for the insurance industry, read by insurance professionals, students, researchers, and anyone curious about how AI is developing in insurance.\n\n` +
     `SCOPE: Life insurance, annuities, retirement products, P&C insurance (personal lines, commercial lines, specialty), and horizontal/deep tech with insurance implications. DO NOT include health insurance, pharmacy benefits, or healthcare IT findings (e.g. Optum, Epic, hospital systems).\n\n` +
-    `Week of ${runDate}. Eight specialist agents scanned the market and produced ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${noises.length} Noise.\n\n` +
+    `Week of ${runDate}. Eight specialist agents scanned the market and produced ${findings.length} findings: ${signals.length} Signal, ${watches.length} Watch, ${unverified.length + noises.length} Unverified.\n\n` +
     `TOP FINDINGS FOR BULLETS:\n${bulletData}\n\n` +
     `ALL FINDINGS (for context only):\n${allLines}\n` +
     changedContext + `\n` +
@@ -248,6 +250,7 @@ module.exports = async function handler(req, res) {
         );
         if (fd && fd.length) {
           // Return top 5 SIGNALs + WATCHes (prioritized by freshness), with key fields only
+          // Filter out historical 'needs_review' findings
           topFindings = fd
             .filter(f => (f.verdict === 'SIGNAL' || f.verdict === 'WATCH') && f.freshness_flag !== 'needs_review')
             .slice(0, 5)
