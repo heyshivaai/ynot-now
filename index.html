@@ -852,7 +852,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
       <div class="ls-stat"><div class="ls-num" id="cbRuns">—</div><div class="ls-label">Weekly runs</div></div>
       <div class="ls-stat"><div class="ls-num" id="cbEver">—</div><div class="ls-label">Total findings</div></div>
       <div class="ls-stat"><div class="ls-num" id="cbSignals">—</div><div class="ls-label">Signals found</div></div>
-      <div class="ls-stat"><div class="ls-num" id="cbNoise">—</div><div class="ls-label">Noise called out</div></div>
+      <div class="ls-stat"><div class="ls-num" id="cbNoise">—</div><div class="ls-label">Unverified flagged</div></div>
     </div>
     <div class="lab-last-updated" id="labLastUpdated"></div>
 
@@ -872,7 +872,7 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <button class="pill on" onclick="setVerd('all',this)">All verdicts</button>
         <button class="pill" onclick="setVerd('SIGNAL',this)">Signal</button>
         <button class="pill" onclick="setVerd('WATCH',this)">Watch</button>
-        <button class="pill" onclick="setVerd('NOISE',this)">Noise</button>
+        <button class="pill" onclick="setVerd('UNVERIFIED',this)">Unverified</button>
       </div>
     </div>
     <div class="filter-section">
