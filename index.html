@@ -1606,9 +1606,18 @@ function displayBody(f){
   return f.body||'';
 }
 
+// ── NORMALIZE VERDICT (Backend compat: NOISE → UNVERIFIED) ──
+function normalizeVerdict(v){
+  const upper=(v||'').toUpperCase();
+  if(upper==='NOISE')return 'UNVERIFIED';
+  if(upper==='SIGNAL')return 'SIGNAL';
+  if(upper==='UNVERIFIED')return 'UNVERIFIED';
+  return 'WATCH';
+}
+
 // ── RENDER CARDS ──
 function makeCard(f,idx){
-  const v=f.verdict||'WATCH';
+  const v=normalizeVerdict(f.verdict);
   const vc=v==='SIGNAL'?'vcs':v==='WATCH'?'vcw':'vcn';
   const cs=v==='SIGNAL'?'cs':v==='NOISE'?'cn':'';
   const region=inferRegion(f);
@@ -1682,7 +1691,7 @@ function refresh(){
 
 // ── MODAL ──
 function openModal(f){
-  const v=f.verdict||'WATCH';
+  const v=normalizeVerdict(f.verdict);
   const vc=v==='SIGNAL'?'vcs':v==='WATCH'?'vcw':'vcn';
   const region=inferRegion(f);
   const rl=readinessLabel(f.trl||f.trl_score);
@@ -1751,11 +1760,12 @@ function updateRegionalLive(){
         // Show top 3 findings with verdict, title, and short summary
         const topFindings=filtered.slice(0,3);
         findingsEl.innerHTML=topFindings.map((f,idx)=>{
-          const verdict=(f.verdict||'watch').toLowerCase();
+          const normalizedVerdict=normalizeVerdict(f.verdict);
+          const verdict=normalizedVerdict.toLowerCase();
           const summary=(f.body||'').substring(0,100)+(f.body&&f.body.length>100?'...':'');
           const realIndex=insights.indexOf(f);
           return `<div class="rl-finding" onclick="openModal(insights[${realIndex}])" title="Click to view full finding">
-            <span class="rl-finding-verdict ${verdict}">${f.verdict||'Watch'}</span>
+            <span class="rl-finding-verdict ${verdict}">${normalizedVerdict}</span>
             <span class="rl-finding-title">${f.title||'Untitled'}</span>
             <div class="rl-finding-summary">${summary}</div>
           </div>`;
@@ -1977,10 +1987,11 @@ function renderPulseText(text, isSpotlight, topFindings){
             });
             refsHtml+='</div>';
           }
-          var verdictClass='pv-'+((match.verdict||'').toLowerCase());
+          var normalizedVerdict=normalizeVerdict(match.verdict);
+          var verdictClass='pv-'+(normalizedVerdict.toLowerCase());
           html+='<div class="ps-finding-drawer" id="'+uid+'-drawer">';
           html+='<div class="ps-finding-meta">';
-          html+='<span class="ps-finding-verdict '+verdictClass+'">'+escHtml(match.verdict||'')+'</span>';
+          html+='<span class="ps-finding-verdict '+verdictClass+'">'+escHtml(normalizedVerdict)+'</span>';
           if(match.domain) html+='<span class="ps-finding-domain">'+escHtml(match.domain)+(match.subdomain?' · '+escHtml(match.subdomain):'')+'</span>';
           if(match.trl) html+='<span class="ps-finding-trl">TRL '+match.trl+'</span>';
           html+='</div>';
