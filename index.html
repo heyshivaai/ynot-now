@@ -1917,7 +1917,18 @@ function renderPulseText(text, isSpotlight, topFindings){
 
   // ── Spotlight: parse into structured sections ──────────────────────────────
   if(isSpotlight){
-    var lines = raw.split(/\n/).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+    // Strip markdown formatting and section markers
+    var cleaned = raw
+      .replace(/\*\*\[HOOK\]\*\*\s*/gi, '')
+      .replace(/\*\*\[CONTEXT\]\*\*\s*/gi, '')
+      .replace(/\*\*\[CLOSE\]\*\*\s*/gi, '')
+      .replace(/\*\*AI in Insurance Intelligence Briefing\*\*\s*/gi, '')
+      .replace(/\*Week of [^*]+\*\s*/gi, '')
+      .replace(/\*\*->\s*/g, '-> ')  // Convert **-> to ->
+      .replace(/\*\*([^*]+)\*\*/g, '$1')  // Strip remaining **bold**
+      .replace(/\*([^*]+)\*/g, '$1');     // Strip *italic*
+    
+    var lines = cleaned.split(/\n/).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
     var hook=[], summary=[], bullets=[], close=[], attribution='', hashtags='';
     var state='hook';
     for(var i=0;i<lines.length;i++){
@@ -1927,11 +1938,11 @@ function renderPulseText(text, isSpotlight, topFindings){
         bullets.push(l.replace(/^(→|->) /,''));
       } else if(l.startsWith('#')){
         hashtags=l; state='done';
-      } else if(l.match(/^All findings this week/i) || l.match(/^Full analysis/i)){
-        attribution=l; state='attr';
-      } else if(state==='hook' && hook.length>0 && l.match(/^(Eight|\d+) agents?/i)){
+      } else if(l.match(/^All findings this week/i) || l.match(/^Full analysis/i) || l.match(/^\*?All findings/i)){
+        attribution=l.replace(/^\*|\*$/g,''); state='attr';
+      } else if(state==='hook' && hook.length>0 && l.match(/^(Eight|\d+) (autonomous )?agents?/i)){
         summary.push(l); state='summary';
-      } else if(state==='summary' && !l.match(/^(Eight|\d+) agents?/i)){
+      } else if(state==='summary' && !l.match(/^(Eight|\d+) (autonomous )?agents?/i)){
         state='close'; close.push(l);
       } else if(state==='bullets'){
         state='close'; close.push(l);
