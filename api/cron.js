@@ -280,9 +280,26 @@ async function analyseResults(mind, queries, results, memory) {
     if (!match) throw new Error('no JSON array');
     var findings = JSON.parse(match[0]);
     if (!Array.isArray(findings)) throw new Error('not array');
-    // Verify refs and attach metadata
+    
+    // Build URL-to-date lookup from original Tavily results
+    var urlDateMap = {};
+    results.forEach(function(r) {
+      if (r.url && r.published_date) {
+        urlDateMap[r.url] = r.published_date;
+      }
+    });
+    
+    // Verify refs and attach metadata including published_date from Tavily
     var enriched = await Promise.all(findings.map(async function(f) {
-      var verifiedRefs = await verifyRefs(f.refs || []);
+      // Enrich refs with published_date from original Tavily results
+      var refsWithDates = (f.refs || []).map(function(ref) {
+        var enrichedRef = Object.assign({}, ref);
+        if (ref.url && urlDateMap[ref.url]) {
+          enrichedRef.published_date = urlDateMap[ref.url];
+        }
+        return enrichedRef;
+      });
+      var verifiedRefs = await verifyRefs(refsWithDates);
       return Object.assign({}, f, {
         mind_id: mind.id,
         mind_name: mind.name,
