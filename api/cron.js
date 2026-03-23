@@ -390,13 +390,20 @@ async function generateWeeklyDigest(findings, runDate) {
   var prompt = 'Week of ' + runDate + '. Five autonomous agents independently searched the web this week using self-generated queries. ' +
     'Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + unverified.length + ' Unverified).\n\n' +
     'Top findings:\n' + findingsText + '\n\n' +
-    'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike. Format EXACTLY:\n\n' +
-    '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
-    '[CONTEXT] 1-2 sentences on what the agents found and what it reveals about how AI in insurance is evolving. Mention agent count and finding counts naturally.\n\n' +
-    '-> [Finding title] - [One sharp sentence: what was found and what it reveals about the state of AI in insurance]\n' +
-    '-> [Finding title] - [One sharp sentence]\n' +
-    '-> [Finding title] - [One sharp sentence]\n\n' +
-    '[CLOSE] One observational sentence on what is worth following or learning more about. No "In conclusion". No "The future is...".\n\n' +
+    'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike.\n\n' +
+    'CRITICAL FORMAT RULES:\n' +
+    '- Output PLAIN TEXT only. NO markdown formatting (no **, no *, no #, no [])\n' +
+    '- Do NOT include section labels like [HOOK] or [CONTEXT] in the output\n' +
+    '- Each bullet MUST start with -> followed by a space\n\n' +
+    'Structure (follow exactly, no labels):\n\n' +
+    'First line: One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
+    'Second paragraph: 1-2 sentences on what the agents found. Mention "Eight autonomous agents" and finding counts naturally.\n\n' +
+    '-> Finding title - One sharp sentence about what was found\n' +
+    '-> Finding title - One sharp sentence\n' +
+    '-> Finding title - One sharp sentence\n' +
+    '-> Finding title - One sharp sentence\n' +
+    '-> Finding title - One sharp sentence\n\n' +
+    'Final line: One observational sentence on what is worth following. No "In conclusion". No "The future is...".\n\n' +
     'All findings this week -> ynot.now\n\n' +
     '#InsurTech #AIinInsurance #Insurance #Innovation\n\n' +
     'Banned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. Vary sentence length. Inform, do not advise.';

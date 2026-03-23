@@ -355,25 +355,34 @@ The Weekly Pulse is the primary content surface. It serves two audiences simulta
 1. **Website visitors** — scannable, structured, visually clear
 2. **LinkedIn** — the same post is copy-ready for LinkedIn with one click
 
-### Post Format (enforced in `pulse.js` prompt — do not change without updating this doc)
+### Post Format (enforced in `cron.js` generateWeeklyDigest — do not change without updating this doc)
+
+**CRITICAL: Output must be PLAIN TEXT only. NO markdown formatting (no **, no *, no #, no []). The frontend parser (renderPulseText) expects plain text.**
 
 The briefing must follow this exact structure, with each section on its own line:
 
 ```
-[Hook — one specific, slightly provocative sentence from a real finding. No generic openers.]
+One specific, slightly provocative sentence from a real finding. No generic openers.
 
-[Agent summary — "N agents scanned the market this week and delivered X findings — Y Signals, Z Watch, W Noise — with [dominant theme] dominating across [domains]."]
+Eight autonomous agents scanning the web this week found X developments. 1-2 sentences on what was found.
 
-→ [Finding Title] — [one sharp sentence: what + why it matters]
-→ [Finding Title] — [one sharp sentence]
-→ [Finding Title] — [one sharp sentence]
+-> Finding Title - one sharp sentence: what + why it matters
+-> Finding Title - one sharp sentence
+-> Finding Title - one sharp sentence
+-> Finding Title - one sharp sentence
+-> Finding Title - one sharp sentence
 
-[Close — one observational sentence. What is worth watching or learning more about. No clichés. No "game-changer", "landscape", "transformative", "leverage".]
+One observational sentence. What is worth watching or learning more about. No clichés.
 
-All findings this week → ynot.now
+All findings this week -> ynot.now
 
 #InsurTech #AIinInsurance #Insurance #Innovation
 ```
+
+**Format rules:**
+- Bullets MUST start with `-> ` (arrow + space), NOT `→` unicode
+- NO section labels like [HOOK], [CONTEXT], [CLOSE] in output
+- NO markdown: no `**bold**`, no `*italic*`, no `# headings`
 
 **Banned words in the prompt:** leverage, landscape, transformative, game-changer, revolutionize, unprecedented, cutting-edge, robust, seamless, unlock, empower, harness, synergy, paradigm.
 
