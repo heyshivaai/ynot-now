@@ -50,6 +50,44 @@ function normalizeRisk(r) {
   return 'medium';
 }
 
+// Extract date from URL patterns like /2026/03/23/ or /2026-03-23/ or /20260323/
+function extractDateFromUrl(url) {
+  if (!url) return null;
+  try {
+    // Pattern 1: /YYYY/MM/DD/ or /YYYY-MM-DD/
+    var match = url.match(/\/(\d{4})[\/-](\d{2})[\/-](\d{2})/);
+    if (match) {
+      var dateStr = match[1] + '-' + match[2] + '-' + match[3];
+      var d = new Date(dateStr);
+      if (!isNaN(d.getTime())) return dateStr;
+    }
+    // Pattern 2: /YYYYMMDD/ (8 digits together)
+    match = url.match(/\/(\d{4})(\d{2})(\d{2})\//);
+    if (match) {
+      var dateStr = match[1] + '-' + match[2] + '-' + match[3];
+      var d = new Date(dateStr);
+      if (!isNaN(d.getTime())) return dateStr;
+    }
+    // Pattern 3: month names like /march-2026/ or /2026/march/
+    var months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+    match = url.toLowerCase().match(/\/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\/-](\d{4})/);
+    if (match) return match[2] + '-' + months[match[1]] + '-01';
+    match = url.toLowerCase().match(/\/(\d{4})[\/-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+    if (match) return match[1] + '-' + months[match[2]] + '-01';
+  } catch(e) {}
+  return null;
+}
+
+// Check if a date string is within the last N days
+function isWithinDays(dateStr, days) {
+  if (!dateStr) return false;
+  try {
+    var d = new Date(dateStr);
+    var cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+    return d.getTime() >= cutoff;
+  } catch(e) { return false; }
+}
+
 async function supabaseCall(method, table, body, query) {
   var url = SUPABASE_URL + '/rest/v1/' + table + (query || '');
   var opts = {
@@ -88,11 +126,13 @@ async function tavilySearch(query, maxResults) {
     if (!r.ok) { console.warn('[YNOT] Tavily ' + r.status + ' for: ' + query); return []; }
     var data = await r.json();
     return (data.results || []).map(function(item) {
+      // Try to extract date from URL if Tavily didn't provide one
+      var pubDate = item.published_date || extractDateFromUrl(item.url);
       return {
         title: item.title || '',
         url: item.url || '',
         content: String(item.content || item.snippet || '').substring(0, 400),
-        published_date: item.published_date || null
+        published_date: pubDate
       };
     });
   } catch(e) { console.warn('[YNOT] Tavily error: ' + e.message); return []; }
@@ -242,12 +282,20 @@ async function analyseResults(mind, queries, results, memory) {
   var memorySection = memory
     ? '\n\nYour findings from the last 4 weeks (for context — do not repeat these, find what is NEW):\n' + memory
     : '';
+  var todayStr = new Date().toISOString().split('T')[0];
   var system = 'You are ' + mind.name + ', an autonomous AI research agent. ' + mind.brief +
     ' You have searched the web using your own queries and received real live results. ' +
     'Analyse what you actually found and extract the most significant findings. ' +
-    'CRITICAL DATE REQUIREMENT: This is a WEEKLY briefing for LAST WEEK only. ONLY use sources published within the last 7 days. ' +
-    'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
-    'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
+    '\n\n=== FRESHNESS REQUIREMENT (CRITICAL - READ CAREFULLY) ===' +
+    '\nToday is ' + todayStr + '. This is a WEEKLY briefing covering ONLY the last 7 days.' +
+    '\n• ONLY include findings about events, announcements, or developments from the LAST 7 DAYS' +
+    '\n• If a source shows [published: YYYY-MM-DD], calculate if it is within 7 days of today. REJECT if older.' +
+    '\n• Sources marked [NO DATE] are LOWER PRIORITY - only use if the content clearly describes recent events' +
+    '\n• DO NOT include general background information, historical context, or evergreen content' +
+    '\n• DO NOT report on old laws, old regulations, or past events as if they are new' +
+    '\n• Each finding must be about something that HAPPENED or was ANNOUNCED in the last 7 days' +
+    '\n• If you cannot find 3+ genuinely fresh findings, return fewer findings rather than padding with old content' +
+    '\n=== END FRESHNESS REQUIREMENT ===' +
     '\n\nLEGAL SAFETY REQUIREMENT (NON-NEGOTIABLE): You are an EDUCATIONAL intelligence platform, not an investigative journalist. ' +
     'OBSERVE, DON\'T ACCUSE. State facts, not judgments. Document verification status, don\'t imply fraud. ' +
     '\n\nBANNED WORDS (never use): suspicious, dubious, questionable, exposed, revealed, hype, washing, fake, fabricated, hiding, refusing, coordinated, collusion, misleading, deceptive, dishonest. ' +
@@ -256,7 +304,7 @@ async function analyseResults(mind, queries, results, memory) {
     'TONE: University researcher writing peer-reviewed paper, not tabloid exposé. ' +
     '\n\nBe honest: if evidence is weak, reflect that in verdict and confidence. ' +
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
-    'Return ONLY a valid JSON array of 3-5 findings. ' +
+    'Return ONLY a valid JSON array of 3-5 findings (or fewer if insufficient fresh content). ' +
     'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"UNVERIFIED"), ' +
     'body (2-3 sentences: what it is and what is currently understood about it in the insurance context — describe factually, do not prescribe or recommend), ' +
     'confidence (1-5 integer), domain (string), subdomain (string), ' +

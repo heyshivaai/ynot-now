@@ -267,16 +267,18 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 
 ---
 
-## Current State (as of 2026-03-09)
+## Current State (as of 2026-03-23)
 
 ### What's working well
-- **TRUE 4-LAYER FRESHNESS VALIDATION (2026-03-09)** — prevents outdated sources from appearing in weekly briefings
+- **ENHANCED 4-LAYER FRESHNESS VALIDATION (2026-03-23)** — prevents outdated sources from appearing in weekly briefings
   - Layer 1: Tavily `days: 7` parameter filters at source
-  - Layer 2: Agent prompts explicitly reject sources > 7 days old
+  - Layer 2: **STRENGTHENED** Agent prompts with explicit freshness requirements, includes today's date and strict 7-day rule
   - Layer 3: Programmatic validation removes stale refs, assigns freshness priority (1=fresh, 2=undated, 3=stale)
+  - Layer 3b: **NEW** URL date extraction - extracts publish dates from URL patterns (e.g., /2026/03/23/)
   - Layer 4: Pulse generation prioritizes fresh findings over undated/stale
   - New DB columns: `source_published_date`, `freshness_flag`, `freshness_priority`
   - See `/app/FRESHNESS_VALIDATION.md` for full documentation
+- **Limitation noted**: Tavily API does not return `published_date` in search results, so Layer 3b URL extraction supplements this
 - **True multi-agent system** — agents autonomously generate queries, search Tavily, and Phase 2 agents read Phase 1 findings before producing synthesis
 - **Agent memory** — each agent receives its last 4 weeks of findings in its brief; signals tracked as NEW/EMERGING/CONFIRMED/RECURRING
 - **URL verification** — all refs HTTP HEAD-checked before storing; dead links removed; findings with 0 live refs flagged
