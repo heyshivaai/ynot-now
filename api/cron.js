@@ -50,6 +50,44 @@ function normalizeRisk(r) {
   return 'medium';
 }
 
+// Extract date from URL patterns like /2026/03/23/ or /2026-03-23/ or /20260323/
+function extractDateFromUrl(url) {
+  if (!url) return null;
+  try {
+    // Pattern 1: /YYYY/MM/DD/ or /YYYY-MM-DD/
+    var match = url.match(/\/(\d{4})[\/-](\d{2})[\/-](\d{2})/);
+    if (match) {
+      var dateStr = match[1] + '-' + match[2] + '-' + match[3];
+      var d = new Date(dateStr);
+      if (!isNaN(d.getTime())) return dateStr;
+    }
+    // Pattern 2: /YYYYMMDD/ (8 digits together)
+    match = url.match(/\/(\d{4})(\d{2})(\d{2})\//);
+    if (match) {
+      var dateStr = match[1] + '-' + match[2] + '-' + match[3];
+      var d = new Date(dateStr);
+      if (!isNaN(d.getTime())) return dateStr;
+    }
+    // Pattern 3: month names like /march-2026/ or /2026/march/
+    var months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+    match = url.toLowerCase().match(/\/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\/-](\d{4})/);
+    if (match) return match[2] + '-' + months[match[1]] + '-01';
+    match = url.toLowerCase().match(/\/(\d{4})[\/-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+    if (match) return match[1] + '-' + months[match[2]] + '-01';
+  } catch(e) {}
+  return null;
+}
+
+// Check if a date string is within the last N days
+function isWithinDays(dateStr, days) {
+  if (!dateStr) return false;
+  try {
+    var d = new Date(dateStr);
+    var cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+    return d.getTime() >= cutoff;
+  } catch(e) { return false; }
+}
+
 async function supabaseCall(method, table, body, query) {
   var url = SUPABASE_URL + '/rest/v1/' + table + (query || '');
   var opts = {
@@ -88,11 +126,13 @@ async function tavilySearch(query, maxResults) {
     if (!r.ok) { console.warn('[YNOT] Tavily ' + r.status + ' for: ' + query); return []; }
     var data = await r.json();
     return (data.results || []).map(function(item) {
+      // Try to extract date from URL if Tavily didn't provide one
+      var pubDate = item.published_date || extractDateFromUrl(item.url);
       return {
         title: item.title || '',
         url: item.url || '',
         content: String(item.content || item.snippet || '').substring(0, 400),
-        published_date: item.published_date || null
+        published_date: pubDate
       };
     });
   } catch(e) { console.warn('[YNOT] Tavily error: ' + e.message); return []; }
@@ -242,12 +282,20 @@ async function analyseResults(mind, queries, results, memory) {
   var memorySection = memory
     ? '\n\nYour findings from the last 4 weeks (for context — do not repeat these, find what is NEW):\n' + memory
     : '';
+  var todayStr = new Date().toISOString().split('T')[0];
   var system = 'You are ' + mind.name + ', an autonomous AI research agent. ' + mind.brief +
     ' You have searched the web using your own queries and received real live results. ' +
     'Analyse what you actually found and extract the most significant findings. ' +
-    'CRITICAL DATE REQUIREMENT: This is a WEEKLY briefing for LAST WEEK only. ONLY use sources published within the last 7 days. ' +
-    'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
-    'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
+    '\n\n=== FRESHNESS REQUIREMENT (CRITICAL - READ CAREFULLY) ===' +
+    '\nToday is ' + todayStr + '. This is a WEEKLY briefing covering ONLY the last 7 days.' +
+    '\n• ONLY include findings about events, announcements, or developments from the LAST 7 DAYS' +
+    '\n• If a source shows [published: YYYY-MM-DD], calculate if it is within 7 days of today. REJECT if older.' +
+    '\n• Sources marked [NO DATE] are LOWER PRIORITY - only use if the content clearly describes recent events' +
+    '\n• DO NOT include general background information, historical context, or evergreen content' +
+    '\n• DO NOT report on old laws, old regulations, or past events as if they are new' +
+    '\n• Each finding must be about something that HAPPENED or was ANNOUNCED in the last 7 days' +
+    '\n• If you cannot find 3+ genuinely fresh findings, return fewer findings rather than padding with old content' +
+    '\n=== END FRESHNESS REQUIREMENT ===' +
     '\n\nLEGAL SAFETY REQUIREMENT (NON-NEGOTIABLE): You are an EDUCATIONAL intelligence platform, not an investigative journalist. ' +
     'OBSERVE, DON\'T ACCUSE. State facts, not judgments. Document verification status, don\'t imply fraud. ' +
     '\n\nBANNED WORDS (never use): suspicious, dubious, questionable, exposed, revealed, hype, washing, fake, fabricated, hiding, refusing, coordinated, collusion, misleading, deceptive, dishonest. ' +
@@ -262,7 +310,7 @@ async function analyseResults(mind, queries, results, memory) {
     'If the only source is a vendor press release or product announcement with no independent validation, verdict must be UNVERIFIED. ' +
     '\n\nBe honest: if evidence is weak, reflect that in verdict and confidence. ' +
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
-    'Return ONLY a valid JSON array of 3-5 findings. ' +
+    'Return ONLY a valid JSON array of 3-5 findings (or fewer if insufficient fresh content). ' +
     'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"UNVERIFIED"), ' +
     'body (2-3 sentences: what it is and what is currently understood about it in the insurance context — describe factually, do not prescribe or recommend), ' +
     'confidence (1-5 integer), domain (string), subdomain (string), ' +
@@ -287,9 +335,26 @@ async function analyseResults(mind, queries, results, memory) {
     if (!match) throw new Error('no JSON array');
     var findings = JSON.parse(match[0]);
     if (!Array.isArray(findings)) throw new Error('not array');
-    // Verify refs and attach metadata
+    
+    // Build URL-to-date lookup from original Tavily results
+    var urlDateMap = {};
+    results.forEach(function(r) {
+      if (r.url && r.published_date) {
+        urlDateMap[r.url] = r.published_date;
+      }
+    });
+    
+    // Verify refs and attach metadata including published_date from Tavily
     var enriched = await Promise.all(findings.map(async function(f) {
-      var verifiedRefs = await verifyRefs(f.refs || []);
+      // Enrich refs with published_date from original Tavily results
+      var refsWithDates = (f.refs || []).map(function(ref) {
+        var enrichedRef = Object.assign({}, ref);
+        if (ref.url && urlDateMap[ref.url]) {
+          enrichedRef.published_date = urlDateMap[ref.url];
+        }
+        return enrichedRef;
+      });
+      var verifiedRefs = await verifyRefs(refsWithDates);
       return Object.assign({}, f, {
         mind_id: mind.id,
         mind_name: mind.name,
@@ -583,13 +648,20 @@ async function generateWeeklyDigest(findings, runDate) {
   var prompt = 'Week of ' + runDate + '. Five autonomous agents independently searched the web this week using self-generated queries. ' +
     'Total findings: ' + findings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + unverified.length + ' Unverified).\n\n' +
     'Top findings:\n' + findingsText + '\n\n' +
-    'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike. Format EXACTLY:\n\n' +
-    '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
-    '[CONTEXT] 1-2 sentences on what the agents found and what it reveals about how AI in insurance is evolving. Mention agent count and finding counts naturally.\n\n' +
-    '-> [Finding title] - [One sharp sentence: what was found and what it reveals about the state of AI in insurance]\n' +
-    '-> [Finding title] - [One sharp sentence]\n' +
-    '-> [Finding title] - [One sharp sentence]\n\n' +
-    '[CLOSE] One observational sentence on what is worth following or learning more about. No "In conclusion". No "The future is...".\n\n' +
+    'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike.\n\n' +
+    'CRITICAL FORMAT RULES:\n' +
+    '- Output PLAIN TEXT only. NO markdown formatting (no **, no *, no #, no [])\n' +
+    '- Do NOT include section labels like [HOOK] or [CONTEXT] in the output\n' +
+    '- Each bullet MUST start with -> followed by a space\n\n' +
+    'Structure (follow exactly, no labels):\n\n' +
+    'First line: One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
+    'Second paragraph: 1-2 sentences on what the agents found. Mention "Eight autonomous agents" and finding counts naturally.\n\n' +
+    '-> Finding title - One sharp sentence about what was found\n' +
+    '-> Finding title - One sharp sentence\n' +
+    '-> Finding title - One sharp sentence\n' +
+    '-> Finding title - One sharp sentence\n' +
+    '-> Finding title - One sharp sentence\n\n' +
+    'Final line: One observational sentence on what is worth following. No "In conclusion". No "The future is...".\n\n' +
     'All findings this week -> ynot.now\n\n' +
     '#InsurTech #AIinInsurance #Insurance #Innovation\n\n' +
     'Banned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. Vary sentence length. Inform, do not advise.';

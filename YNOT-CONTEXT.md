@@ -341,13 +341,15 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 - **RAW INTELLIGENCE STORAGE (2026-03-30)** — all Tavily search results stored in `intelligence_raw` table per agent per run, enabling re-analysis and source quality tracking over time.
 - **MONTH IN REVIEW (2026-03-30)** — `/api/month-review` generates a monthly narrative synthesis from 4 weeks of findings + signal trajectories. Cached in `monthly_reviews` table. Shown in frontend.
 - **ENRICHED SOURCE SEEDS (2026-03-30)** — agent query seeds now include patent filings, Artemis/ILS, SEC earnings, AM Best, regulatory sandboxes (MAS, HKIA), conference proceedings, and GitHub trending.
-- **TRUE 4-LAYER FRESHNESS VALIDATION (2026-03-09)** — prevents outdated sources from appearing in weekly briefings
+- **ENHANCED 4-LAYER FRESHNESS VALIDATION (2026-03-23)** — prevents outdated sources from appearing in weekly briefings
   - Layer 1: Tavily `days: 7` parameter filters at source
-  - Layer 2: Agent prompts explicitly reject sources > 7 days old
+  - Layer 2: **STRENGTHENED** Agent prompts with explicit freshness requirements, includes today's date and strict 7-day rule
   - Layer 3: Programmatic validation removes stale refs, assigns freshness priority (1=fresh, 2=undated, 3=stale)
+  - Layer 3b: **NEW** URL date extraction - extracts publish dates from URL patterns (e.g., /2026/03/23/)
   - Layer 4: Pulse generation prioritizes fresh findings over undated/stale
   - New DB columns: `source_published_date`, `freshness_flag`, `freshness_priority`
   - See `/app/FRESHNESS_VALIDATION.md` for full documentation
+- **Limitation noted**: Tavily API does not return `published_date` in search results, so Layer 3b URL extraction supplements this
 - **True multi-agent system** — agents autonomously generate queries, search Tavily, and Phase 2 agents read Phase 1 findings before producing synthesis
 - **Agent memory** — each agent receives its last 4 weeks of findings in its brief; signals tracked as NEW/EMERGING/CONFIRMED/RECURRING
 - **URL verification** — all refs HTTP HEAD-checked before storing; dead links removed; findings with 0 live refs flagged
@@ -436,25 +438,34 @@ The Weekly Pulse is the primary content surface. It serves two audiences simulta
 1. **Website visitors** — scannable, structured, visually clear
 2. **LinkedIn** — the same post is copy-ready for LinkedIn with one click
 
-### Post Format (enforced in `pulse.js` prompt — do not change without updating this doc)
+### Post Format (enforced in `cron.js` generateWeeklyDigest — do not change without updating this doc)
+
+**CRITICAL: Output must be PLAIN TEXT only. NO markdown formatting (no **, no *, no #, no []). The frontend parser (renderPulseText) expects plain text.**
 
 The briefing must follow this exact structure, with each section on its own line:
 
 ```
-[Hook — one specific, slightly provocative sentence from a real finding. No generic openers.]
+One specific, slightly provocative sentence from a real finding. No generic openers.
 
-[Agent summary — "N agents scanned the market this week and delivered X findings — Y Signals, Z Watch, W Noise — with [dominant theme] dominating across [domains]."]
+Eight autonomous agents scanning the web this week found X developments. 1-2 sentences on what was found.
 
-→ [Finding Title] — [one sharp sentence: what + why it matters]
-→ [Finding Title] — [one sharp sentence]
-→ [Finding Title] — [one sharp sentence]
+-> Finding Title - one sharp sentence: what + why it matters
+-> Finding Title - one sharp sentence
+-> Finding Title - one sharp sentence
+-> Finding Title - one sharp sentence
+-> Finding Title - one sharp sentence
 
-[Close — one observational sentence. What is worth watching or learning more about. No clichés. No "game-changer", "landscape", "transformative", "leverage".]
+One observational sentence. What is worth watching or learning more about. No clichés.
 
-All findings this week → ynot.now
+All findings this week -> ynot.now
 
 #InsurTech #AIinInsurance #Insurance #Innovation
 ```
+
+**Format rules:**
+- Bullets MUST start with `-> ` (arrow + space), NOT `→` unicode
+- NO section labels like [HOOK], [CONTEXT], [CLOSE] in output
+- NO markdown: no `**bold**`, no `*italic*`, no `# headings`
 
 **Banned words in the prompt:** leverage, landscape, transformative, game-changer, revolutionize, unprecedented, cutting-edge, robust, seamless, unlock, empower, harness, synergy, paradigm.
 
@@ -518,12 +529,4 @@ ALTER TABLE weekly_posts ADD COLUMN IF NOT EXISTS linkedin_post text;
 - Comparison view: how has a specific technology's TRL changed over weeks? → partially solved by signal_trajectories
 - Could Null become more targeted — e.g. debunking a specific vendor claim each week?
 - Should findings link to a permanent URL (e.g. `/findings/run_id/slug`) for sharing?
-- Should the platform eventually accept community-submitted signals for human editorial review?
-- ~~Add a dedicated `agent_memory` Supabase table for proper signal trajectory tracking~~ ✅ DONE (2026-03-30) — `signal_trajectories` table
-- Upgrade to Vercel Pro to remove 60s function timeout and consolidate back to a single cron job
-- Add inter-agent communication: let Phase 2 agents ask Phase 1 agents follow-up questions
-- Embedding-based deduplication: use vector similarity to cluster findings across weeks (replace keyword overlap)
-- Publish Context Hub API to MCP registry and/or as a Claude plugin for distribution
-- Job posting analysis: track carrier AI hiring patterns as deployment signals
-- LinkedIn / earnings call ingestion: carrier CIO announcements and CFO AI mentions
-- Quarterly reviews: synthesize 3 months of trajectories into strategic narrative arcs
+- Should the platform eventually acce
