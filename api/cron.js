@@ -50,6 +50,42 @@ function normalizeRisk(r) {
   return 'medium';
 }
 
+// ── VENDOR-NEUTRAL FILTER (hard programmatic safety net) ─────────────────
+var VENDOR_NAMES = [
+  'accenture','deloitte','mckinsey','ey ','ernst young','ernst & young','pwc','pricewaterhousecoopers','kpmg',
+  'bain ','bcg','boston consulting','capgemini','cognizant','infosys','wipro','tcs','tata consultancy',
+  'guidewire','duck creek','majesco','sapiens','unqork','socotra','earnix','shift technology',
+  'verisk','lexisnexis','moody','cape analytics','tractable','lemonade','hippo insurance','root insurance',
+  'microsoft','google','amazon','aws','ibm','oracle','salesforce','palantir','snowflake','databricks',
+  'openai','anthropic','meta ','nvidia','tesla'
+];
+function isVendorCentricTitle(title) {
+  var lower = String(title || '').toLowerCase();
+  for (var i = 0; i < VENDOR_NAMES.length; i++) {
+    var v = VENDOR_NAMES[i].trim();
+    // Check if title STARTS with the vendor name
+    if (lower.indexOf(v) === 0) return v;
+    // Check patterns like "Vendor launches...", "Vendor's new..."
+    var actions = ['launches','announces','unveils','releases','partners','introduces',
+      'expands','acquires','rolls out','deploys','reports','predicts','projects'];
+    for (var j = 0; j < actions.length; j++) {
+      if (lower.indexOf(v + ' ' + actions[j]) !== -1) return v;
+    }
+    if (lower.indexOf(v + "'s ") !== -1 && lower.indexOf(v + "'s ") < 3) return v;
+  }
+  return null;
+}
+function applyVendorFilter(findings) {
+  return findings.filter(function(f) {
+    var vendor = isVendorCentricTitle(f.title);
+    if (vendor) {
+      console.warn('[YNOT] VENDOR FILTER: blocked finding "' + f.title + '" (vendor-centric: ' + vendor + ')');
+      return false;
+    }
+    return true;
+  });
+}
+
 // Extract date from URL patterns like /2026/03/23/ or /2026-03-23/ or /20260323/
 function extractDateFromUrl(url) {
   if (!url) return null;
@@ -711,6 +747,13 @@ module.exports = async function handler(req, res) {
   var preValidationCount = allFindings.length;
   allFindings = validateSourceFreshness(allFindings);
   console.log('[YNOT] Freshness validation: ' + preValidationCount + ' → ' + allFindings.length + ' findings retained');
+
+  // VENDOR-NEUTRAL FILTER: programmatically block vendor-centric titles
+  var preVendorCount = allFindings.length;
+  allFindings = applyVendorFilter(allFindings);
+  if (preVendorCount !== allFindings.length) {
+    console.log('[YNOT] Vendor filter: ' + preVendorCount + ' → ' + allFindings.length + ' findings retained');
+  }
 
   var rows = allFindings.map(function(f) {
     return {
