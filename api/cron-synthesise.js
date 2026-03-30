@@ -187,6 +187,113 @@ async function verifyRefs(refs) {
   return live.length > 0 ? live : refs;
 }
 
+// ─── RAW INTELLIGENCE STORAGE ────────────────────────────────────────────────
+async function storeRawIntelligence(mindId, queries, results, runId, runDate) {
+  try {
+    var row = {
+      run_id: runId,
+      run_date: runDate,
+      mind_id: mindId,
+      search_queries: queries,
+      result_count: results.length,
+      results: results.slice(0, 15).map(function(r) {
+        return { title: r.title, url: r.url, content: r.content, published_date: r.published_date };
+      })
+    };
+    await supabaseCall('POST', 'intelligence_raw', [row]).catch(function(e) {
+      console.warn('[YNOT-S] intelligence_raw table not ready: ' + e.message);
+    });
+  } catch(e) {
+    console.warn('[YNOT-S] Raw intel storage failed: ' + e.message);
+  }
+}
+
+// ─── NORMALIZE TOPIC KEY FOR TRAJECTORY TRACKING ──────────────────────────────
+function normalizeTopicKey(title) {
+  return String(title || '').toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\b(the|a|an|in|on|at|for|to|of|and|or|is|are|was|were|with|by|from|as|its|this|that)\b/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 80);
+}
+
+// ─── UPDATE SIGNAL TRAJECTORIES + CROSS-AGENT AGREEMENT ──────────────────────
+async function updateSignalTrajectories(findings, runDate) {
+  try {
+    var topics = {};
+    findings.forEach(function(f) {
+      var key = normalizeTopicKey(f.title);
+      if (!topics[key]) {
+        topics[key] = { title: f.title, key: key, trl: f.trl, verdict: f.verdict, confidence: f.confidence, minds: [f.mind_id], domain: f.domain, regions: f.regions || ['Global'] };
+      } else {
+        if (topics[key].minds.indexOf(f.mind_id) === -1) topics[key].minds.push(f.mind_id);
+        if (f.confidence > topics[key].confidence) {
+          topics[key].confidence = f.confidence;
+          topics[key].trl = f.trl;
+          topics[key].verdict = f.verdict;
+        }
+      }
+    });
+
+    var existingData = [];
+    try {
+      existingData = await supabaseCall('GET', 'signal_trajectories', null, '?select=id,topic_key,appearances,trajectory_data,current_trl,first_seen&limit=500');
+    } catch(e) { return; }
+    var existingMap = {};
+    existingData.forEach(function(row) { existingMap[row.topic_key] = row; });
+
+    var upserts = [];
+    Object.keys(topics).forEach(function(key) {
+      var t = topics[key];
+      var existing = existingMap[key];
+      var snapshot = { date: runDate, trl: t.trl, verdict: t.verdict, confidence: t.confidence, minds: t.minds };
+
+      if (existing) {
+        var trajData = existing.trajectory_data || [];
+        trajData.push(snapshot);
+        var appearances = (existing.appearances || 0) + 1;
+        var trlVelocity = trajData.length >= 2 ? (t.trl - trajData[0].trl) / trajData.length : 0;
+        var crossAgentCount = t.minds.length;
+        var compoundScore = Math.round(((Math.min(appearances, 10) / 10) * 0.3 + (t.confidence / 5) * 0.2 + (Math.min(crossAgentCount, 4) / 4) * 0.25 + (Math.max(0, Math.min(trlVelocity + 0.5, 1))) * 0.25) * 100);
+
+        upserts.push({
+          id: existing.id, topic_key: key, title: t.title, domain: t.domain, regions: t.regions,
+          current_trl: t.trl, current_verdict: t.verdict, current_confidence: t.confidence,
+          last_seen: runDate, first_seen: existing.first_seen, appearances: appearances,
+          cross_agent_count: crossAgentCount, compound_score: compoundScore,
+          trl_velocity: Math.round(trlVelocity * 100) / 100, trajectory_data: trajData
+        });
+      } else {
+        upserts.push({
+          topic_key: key, title: t.title, domain: t.domain, regions: t.regions,
+          current_trl: t.trl, current_verdict: t.verdict, current_confidence: t.confidence,
+          first_seen: runDate, last_seen: runDate, appearances: 1,
+          cross_agent_count: t.minds.length,
+          compound_score: Math.round(((1/10) * 0.3 + (t.confidence / 5) * 0.2 + (Math.min(t.minds.length, 4) / 4) * 0.25 + 0.5 * 0.25) * 100),
+          trl_velocity: 0, trajectory_data: [snapshot]
+        });
+      }
+    });
+
+    if (upserts.length > 0) {
+      var url = SUPABASE_URL + '/rest/v1/signal_trajectories';
+      var r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify(upserts)
+      });
+      if (r.ok) console.log('[YNOT-S] Signal trajectories updated: ' + upserts.length + ' topics');
+    }
+  } catch(e) {
+    console.warn('[YNOT-S] Signal trajectories update failed: ' + e.message);
+  }
+}
+
 // ─── LAYER 3: PROGRAMMATIC FRESHNESS VALIDATION ──────────────────────────────
 function validateSourceFreshness(findings) {
   var sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
@@ -247,7 +354,7 @@ function validateSourceFreshness(findings) {
 }
 
 // ─── SYNTHESIS AGENT RUN ──────────────────────────────────────────────────────
-async function runSynthesisAgent(mind, phase1Findings) {
+async function runSynthesisAgent(mind, phase1Findings, runId, runDate) {
   // Build a summary of Phase 1 findings for context
   var findingsSummary = phase1Findings.slice(0, 20).map(function(f, i) {
     return (i+1) + '. [' + f.mind_name + ' / ' + f.verdict + ' / TRL' + (f.trl||'?') + '] ' +
@@ -284,6 +391,9 @@ async function runSynthesisAgent(mind, phase1Findings) {
   });
   console.log('[YNOT-S] ' + mind.name + ': ' + deduped.length + ' Tavily results');
 
+  // Store raw intelligence for this mind
+  await storeRawIntelligence(mind.id, queries, deduped, runId, runDate).catch(function(){});
+
   var resultsText = deduped.slice(0, 10).map(function(r, i) {
     var pub = r.published_date ? ' [published: ' + r.published_date + ']' : ' [NO DATE]';
     return '[' + (i+1) + '] ' + r.title + pub + '\nURL: ' + r.url + '\n' + r.content;
@@ -301,6 +411,11 @@ async function runSynthesisAgent(mind, phase1Findings) {
     '\n\nSAFE FRAMING: "[Entity] reports [claim]; independent validation not published" NOT "Suspicious pattern suggests coordinated marketing". ' +
     'Use: reports, states, claims, announces, not published, not disclosed, not documented, independent validation, third-party verification. ' +
     'TONE: University researcher writing peer-reviewed paper, not tabloid exposé. ' +
+    '\n\nVENDOR-NEUTRAL RULE (NON-NEGOTIABLE): This is a MARKET-LEVEL intelligence platform, not a vendor tracker. ' +
+    'NEVER center a finding around a single company, consultancy, or vendor (e.g. "Accenture launches...", "McKinsey reports...", "Guidewire releases..."). ' +
+    'Instead, identify the MARKET PATTERN or TECHNOLOGY TREND the vendor activity represents. ' +
+    'Vendor names may appear as supporting evidence INSIDE a finding body, but must NEVER be the subject of the title. ' +
+    'If the only source is a vendor press release or product announcement with no independent validation, verdict must be UNVERIFIED. ' +
     '\n\nProduce synthesis findings that go beyond what the primary agents found — your value is in ' +
     (mind.role === 'verification' ? 'analyzing verification status and distinguishing independently verified claims from unverified ones' :
      mind.role === 'synthesiser' ? 'connecting dots across domains and finding second-order effects' :
@@ -310,6 +425,7 @@ async function runSynthesisAgent(mind, phase1Findings) {
     'title, verdict ("SIGNAL"|"WATCH"|"UNVERIFIED"), body (2-3 sentences: describe what is found and what is understood — factual and observational, not prescriptive), confidence (1-5), ' +
     'domain, subdomain, trl (1-9), regulatoryRisk ("low"|"medium"|"high"), experiment (a research question or learning hypothesis worth exploring — frame as curiosity, not a recommendation), ' +
     'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING"), ' +
+    'regions (array of strings — tag regions: "US", "EU", "UK", "APAC", "Global"), ' +
     'refs (array of {label, url} from real search results). ' +
     '\n\nVERDICT CRITERIA (use these objective rules): ' +
     '\n• SIGNAL: (1) Multiple independent sources (2+ refs from different organizations), (2) Quantified claims with specific numbers/data, (3) Named deployments or peer-reviewed research, (4) Confidence ≥ 4. ' +
@@ -381,7 +497,7 @@ module.exports = async function handler(req, res) {
   var errors = [];
 
   var outcomes = await Promise.allSettled(
-    SYNTHESIS_MINDS.map(function(m) { return runSynthesisAgent(m, phase1Findings); })
+    SYNTHESIS_MINDS.map(function(m) { return runSynthesisAgent(m, phase1Findings, runId, runDate); })
   );
 
   outcomes.forEach(function(o, i) {
@@ -420,7 +536,8 @@ module.exports = async function handler(req, res) {
       signal_status: f.signal_status || 'NEW',
       source_published_date: f.source_published_date || null,
       freshness_flag: f.freshness_flag || 'undated',
-      freshness_priority: f.freshness_priority || 2
+      freshness_priority: f.freshness_priority || 2,
+      regions: f.regions || ['Global']
     };
   });
 
@@ -433,6 +550,11 @@ module.exports = async function handler(req, res) {
 
   // Regenerate the weekly digest now that ALL 8 agents have contributed
   var allFindings = phase1Findings.concat(allSynthFindings);
+
+  // Update signal trajectories for ALL findings (Phase 1 + Phase 2 combined)
+  await updateSignalTrajectories(allFindings, runDate).catch(function(e) {
+    console.warn('[YNOT-S] Trajectory update error: ' + e.message);
+  });
   try {
     var signals = allFindings.filter(function(f){ return f.verdict === 'SIGNAL'; });
     var watches  = allFindings.filter(function(f){ return f.verdict === 'WATCH'; });
@@ -480,6 +602,7 @@ module.exports = async function handler(req, res) {
     phase1_findings: phase1Findings.length,
     synthesis_findings: allSynthFindings.length,
     total_findings: allFindings.length,
+    trajectories_updated: true,
     errors: errors
   });
 };

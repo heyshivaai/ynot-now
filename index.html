@@ -867,6 +867,8 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <button class="pill" onclick="setDom('Life',this)">Life &amp; Annuities</button>
         <button class="pill" onclick="setDom('Reinsurance',this)">Reinsurance</button>
         <button class="pill" onclick="setDom('Horizontal',this)">Horizontal Tech</button>
+        <button class="pill" onclick="setDom('Regulation',this)">Regulation</button>
+        <button class="pill" onclick="setDom('Climate',this)">Climate &amp; ESG</button>
       </div>
     </div>
     <div class="filter-section">
@@ -1097,6 +1099,14 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
         <div class="rl-caveat">Signals from open-access sources only. No signals shown doesn't mean none exist — we're constantly expanding coverage.</div>
       </div>
     </div>
+
+    <!-- Month in Review -->
+    <div id="monthReview" style="margin-top:48px;">
+      <div class="eyebrow">Month in Review</div>
+      <div id="monthReviewContent" style="background:var(--off);border:1.5px solid var(--rule);border-radius:var(--radius);padding:28px;margin-top:16px;">
+        <div style="font-family:var(--ff-mono);font-size:12px;color:var(--mid);text-align:center;padding:20px;">Loading month in review...</div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1107,6 +1117,15 @@ footer{background:var(--black);border-top:1px solid #111;padding:32px var(--pad)
     <div class="eyebrow">Signal History</div>
     <h2 class="section-h2">Signal intelligence,<br><em>from 2004 to now.</em></h2>
     <p class="history-intro">Understanding where AI in insurance stands today requires knowing where it came from. Two decades of evolution — from early statistical models to agentic systems — shows a field that has moved in waves, not straight lines.</p>
+
+    <!-- Signal Trajectories (Compound Intelligence) -->
+    <div id="trajectories-section" style="margin-bottom:48px;">
+      <h3 class="tax-h3">Signal Trajectories</h3>
+      <p class="tax-intro">Topics that compound over time. Signals that appear across multiple weeks and agents carry more weight. The compound score reflects persistence, confidence, cross-agent agreement, and TRL velocity.</p>
+      <div id="trajGrid" style="display:grid;grid-template-columns:1fr;gap:12px;">
+        <div style="font-family:var(--ff-mono);font-size:12px;color:var(--mid);padding:20px;text-align:center;">Loading signal trajectories...</div>
+      </div>
+    </div>
 
     <div id="ts-wrap"></div>
   </div>
@@ -2493,6 +2512,109 @@ document.addEventListener('click',function(e){
   });
   document.addEventListener('scroll',hide,{passive:true});
 })();
+
+// ── SIGNAL TRAJECTORIES ──────────────────────────────────────
+function loadTrajectories() {
+  var grid = document.getElementById('trajGrid');
+  if (!grid) return;
+
+  fetch('/api/findings')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var trajs = data.signal_trajectories || [];
+      if (trajs.length === 0) {
+        grid.innerHTML = '<div style="font-family:var(--ff-mono);font-size:12px;color:var(--mid);padding:20px;text-align:center;">Signal trajectories build over time. Check back after a few weekly runs.</div>';
+        return;
+      }
+
+      grid.innerHTML = trajs.slice(0, 12).map(function(t) {
+        var scoreColor = t.compound_score >= 60 ? '#2e7d32' : t.compound_score >= 35 ? '#c8a96e' : '#999';
+        var velocityLabel = t.trl_velocity > 0 ? '↑ ' + t.trl_velocity : t.trl_velocity < 0 ? '↓ ' + Math.abs(t.trl_velocity) : '→ stable';
+        var verdictClass = t.current_verdict === 'SIGNAL' ? 'vcs' : t.current_verdict === 'WATCH' ? 'vcw' : 'vcn';
+
+        return '<div style="background:var(--white);border:2px solid var(--rule);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;gap:16px;transition:all .2s;cursor:default;" onmouseover="this.style.borderColor=\'var(--ink)\'" onmouseout="this.style.borderColor=\'var(--rule)\'">' +
+          '<div style="min-width:48px;text-align:center;">' +
+            '<div style="font-family:var(--ff-serif);font-size:28px;color:' + scoreColor + ';line-height:1;">' + t.compound_score + '</div>' +
+            '<div style="font-family:var(--ff-mono);font-size:9px;letter-spacing:.08em;color:var(--mid);margin-top:2px;">SCORE</div>' +
+          '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-family:var(--ff-serif);font-size:17px;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (t.title || t.topic_key) + '</div>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+              '<span class="vc ' + verdictClass + '" style="font-size:9px;padding:3px 8px;">' + (t.current_verdict || 'WATCH') + '</span>' +
+              '<span style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);">' + (t.domain || '') + '</span>' +
+              '<span style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);">TRL ' + (t.current_trl || '?') + '</span>' +
+              '<span style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);">' + velocityLabel + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0;">' +
+            '<div style="font-family:var(--ff-mono);font-size:18px;color:var(--ink);">' + (t.appearances || 1) + 'w</div>' +
+            '<div style="font-family:var(--ff-mono);font-size:9px;color:var(--mid);">' + (t.cross_agent_count || 1) + ' agents</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(e) {
+      grid.innerHTML = '<div style="font-family:var(--ff-mono);font-size:12px;color:var(--mid);padding:20px;text-align:center;">Trajectories coming soon.</div>';
+    });
+}
+
+// ── MONTH IN REVIEW ──────────────────────────────────────────
+function loadMonthReview() {
+  var container = document.getElementById('monthReviewContent');
+  if (!container) return;
+
+  fetch('/api/month-review')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.review) {
+        container.innerHTML = '<div style="font-family:var(--ff-mono);font-size:12px;color:var(--mid);text-align:center;padding:20px;">Month in review will be available after a few weekly runs.</div>';
+        return;
+      }
+
+      var statsHtml = '';
+      if (data.stats) {
+        statsHtml = '<div style="display:flex;gap:0;background:var(--white);border:1.5px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:20px;">' +
+          '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--rule);"><div style="font-family:var(--ff-serif);font-size:28px;color:var(--black);">' + data.stats.total_findings + '</div><div style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);margin-top:2px;">FINDINGS</div></div>' +
+          '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--rule);"><div style="font-family:var(--ff-serif);font-size:28px;color:var(--black);">' + data.stats.signals + '</div><div style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);margin-top:2px;">SIGNALS</div></div>' +
+          '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--rule);"><div style="font-family:var(--ff-serif);font-size:28px;color:var(--black);">' + data.stats.weeks + '</div><div style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);margin-top:2px;">WEEKS</div></div>' +
+          '<div style="flex:1;padding:16px;text-align:center;"><div style="font-family:var(--ff-serif);font-size:28px;color:var(--black);">' + (data.trajectories || []).length + '</div><div style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);margin-top:2px;">TRAJECTORIES</div></div>' +
+        '</div>';
+      }
+
+      var trajHtml = '';
+      if (data.trajectories && data.trajectories.length > 0) {
+        trajHtml = '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule);">' +
+          '<div style="font-family:var(--ff-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:12px;">Compounding Signals</div>' +
+          data.trajectories.slice(0, 5).map(function(t) {
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--off);">' +
+              '<span style="font-family:var(--ff-serif);font-size:18px;color:' + (t.compound_score >= 60 ? '#2e7d32' : '#c8a96e') + ';min-width:36px;">' + t.compound_score + '</span>' +
+              '<span style="font-size:14px;color:var(--ink);flex:1;">' + t.title + '</span>' +
+              '<span style="font-family:var(--ff-mono);font-size:10px;color:var(--mid);">' + t.appearances + 'w · ' + (t.current_verdict || 'WATCH') + '</span>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+      }
+
+      var reviewParagraphs = data.review.split('\n\n').map(function(p) {
+        if (!p.trim()) return '';
+        if (p.trim().toUpperCase().indexOf('TITLE:') === 0 || p.indexOf('Month in Review') > -1) {
+          return '<div style="font-family:var(--ff-serif);font-size:24px;letter-spacing:-.01em;color:var(--ink);margin-bottom:16px;">' + p.replace(/^TITLE:\s*/i, '') + '</div>';
+        }
+        return '<p style="font-size:15px;line-height:1.85;color:#444440;margin-bottom:14px;">' + p + '</p>';
+      }).join('');
+
+      container.innerHTML = statsHtml + reviewParagraphs + trajHtml;
+    })
+    .catch(function(e) {
+      container.innerHTML = '<div style="font-family:var(--ff-mono);font-size:12px;color:var(--mid);text-align:center;padding:20px;">Month in review coming soon.</div>';
+    });
+}
+
+// Load new features on page load
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(loadTrajectories, 500);
+  setTimeout(loadMonthReview, 1000);
+});
 </script>
 <script src="cookie-consent.js"></script>
 </body>

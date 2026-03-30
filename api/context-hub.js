@@ -108,8 +108,40 @@ function groupByWeek(findings) {
   return groups;
 }
 
+// Fetch signal trajectories from Supabase
+async function fetchTrajectories(domainFilter) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/signal_trajectories?order=compound_score.desc&limit=20', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    if (!res.ok) return [];
+    let trajectories = await res.json();
+    if (domainFilter) {
+      trajectories = trajectories.filter(t =>
+        (t.domain || '').toLowerCase().includes(domainFilter)
+      );
+    }
+    return trajectories;
+  } catch (e) { return []; }
+}
+
+// Fetch cross-agent agreements from Supabase (last 2 weeks)
+async function fetchAgreements() {
+  try {
+    const cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - 14);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/cross_agent_agreements?run_date=gte.' + cutoffStr + '&order=agreement_strength.desc&limit=15',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) { return []; }
+}
+
 // Build the full DOC.md for a domain (or all domains)
-function buildDocMd(findings, domainFilter, updatedOn) {
+function buildDocMd(findings, domainFilter, updatedOn, trajectories, agreements) {
   const signals = findings.filter(f => f.verdict === 'SIGNAL');
   const watches = findings.filter(f => f.verdict === 'WATCH');
   const byWeek = groupByWeek(findings);
@@ -175,6 +207,46 @@ ${findings.slice(0, 10).map(f => `| ${(f.title || '').slice(0, 60)} | ${f.verdic
 
 ---`;
 
+  // Signal Trajectories section (strongest signals over time)
+  let trajSection = '';
+  if (trajectories && trajectories.length > 0) {
+    const trajRows = trajectories.slice(0, 10).map(t => {
+      const velocity = t.trl_velocity > 0 ? '↑' : t.trl_velocity < 0 ? '↓' : '→';
+      return `| ${(t.title || t.topic_key || '').slice(0, 55)} | ${t.compound_score || 0} | TRL ${t.current_trl || '?'} ${velocity} | ${t.appearances || 1}w | ${t.cross_agent_count || 1} agents |`;
+    }).join('\n');
+
+    trajSection = `
+
+## Signal Trajectories — Strongest Compound Signals
+
+Topics that persist across multiple weeks accumulate a compound score (0–100) based on persistence, confidence, cross-agent agreement, and TRL velocity. Higher = stronger signal.
+
+| Topic | Score | TRL | Persistence | Agreement |
+|-------|-------|-----|-------------|-----------|
+${trajRows}
+
+`;
+  }
+
+  // Cross-agent agreements section
+  let agreeSection = '';
+  if (agreements && agreements.length > 0) {
+    const agreeRows = agreements.slice(0, 8).map(a => {
+      return `| ${(a.topic_label || a.topic_key || '').slice(0, 50)} | ${(a.agents || []).join(', ')} | ${a.agreement_strength ? a.agreement_strength.toFixed(1) : '?'} |`;
+    }).join('\n');
+
+    agreeSection = `
+## Cross-Agent Agreement Index
+
+When 2+ agents independently surface the same topic, it's a stronger signal. These topics had the highest agreement this period.
+
+| Topic | Agents | Strength |
+|-------|--------|----------|
+${agreeRows}
+
+`;
+  }
+
   const weekSections = weeks.map(week => {
     const wFindings = byWeek[week];
     const wSignals = wFindings.filter(f => f.verdict === 'SIGNAL');
@@ -220,7 +292,7 @@ YNOT.NOW is an autonomous multi-agent intelligence system that scans the insuran
 
 *This document is auto-generated every Monday after the weekly intelligence run.*`;
 
-  return [frontmatter, '', intro, '', weekSections, '', footer].join('\n');
+  return [frontmatter, '', intro, trajSection, agreeSection, '', weekSections, '', footer].join('\n');
 }
 
 export default async function handler(req, res) {
@@ -250,6 +322,8 @@ export default async function handler(req, res) {
     }
 
     const findings = await fetchFindings(domain, weeks);
+    const trajectories = await fetchTrajectories(domain);
+    const agreements = await fetchAgreements();
 
     if (format === 'json') {
       return res.status(200).json({
@@ -261,13 +335,15 @@ export default async function handler(req, res) {
         total_findings: findings.length,
         signals: findings.filter(f => f.verdict === 'SIGNAL').length,
         watches: findings.filter(f => f.verdict === 'WATCH').length,
-        findings: findings
+        findings: findings,
+        signal_trajectories: trajectories,
+        cross_agent_agreements: agreements
       });
     }
 
     // Default: return Context Hub-compatible markdown
     const updatedOn = new Date().toISOString().split('T')[0];
-    const docMd = buildDocMd(findings, domain, updatedOn);
+    const docMd = buildDocMd(findings, domain, updatedOn, trajectories, agreements);
 
     res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600'); // cache 1 hour

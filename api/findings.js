@@ -63,6 +63,22 @@ module.exports = async function handler(req, res) {
       '?order=recorded_at.asc&select=technology_name,domain,trl,verdict,recorded_at,direction,previous_trl'
     );
 
+    // Signal trajectories (compound scoring)
+    let signal_trajectories = [];
+    try {
+      signal_trajectories = await supabaseGet('signal_trajectories',
+        '?order=compound_score.desc&limit=20'
+      );
+    } catch(e) { /* table may not exist yet */ }
+
+    // Cross-agent agreements
+    let cross_agreements = [];
+    try {
+      cross_agreements = await supabaseGet('cross_agent_agreements',
+        '?run_date=eq.' + encodeURIComponent(run_date) + '&order=agent_count.desc&limit=10'
+      );
+    } catch(e) { /* table may not exist yet */ }
+
     const runCount = await supabaseGet('findings',
       '?select=run_id&order=run_date.desc'
     );
@@ -77,6 +93,8 @@ module.exports = async function handler(req, res) {
       prev_findings: prev_findings,
       prev_run_date: prev_run_date,
       trajectory:    trajectory,
+      signal_trajectories: signal_trajectories,
+      cross_agreements: cross_agreements,
       run_date:      run_date,
       total_runs:    uniqueRuns,
       total_ever:    allFindings.length,

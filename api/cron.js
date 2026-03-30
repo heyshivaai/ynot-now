@@ -11,27 +11,27 @@ var MINDS = [
   {
     id: 'scout', name: 'Scout', icon: 'Scout', domain: 'P&C',
     brief: 'You are Scout, a specialist in P&C insurance AI. Your job is to find the most significant AI developments in property and casualty insurance: fraud detection, underwriting automation, claims processing, telematics, catastrophe modelling. You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
-    querySeeds: ['AI fraud detection insurance 2026','P&C underwriting automation machine learning','claims AI automation property casualty','telematics AI underwriting 2026']
+    querySeeds: ['AI fraud detection insurance 2026','P&C underwriting automation machine learning','claims AI automation property casualty','telematics AI underwriting 2026','insurance patent filing AI claims automation','Artemis catastrophe bond insurtech']
   },
   {
     id: 'vita', name: 'Vita', icon: 'Vita', domain: 'Life',
     brief: 'You are Vita, a specialist in Life insurance, Annuities, and Retirement AI. Find the most significant AI developments in life insurance, annuity products, retirement income planning, and longevity risk: mortality prediction, personalised life underwriting, wearables for life insurance, actuarial ML, retirement AI. DO NOT include health insurance, pharmacy benefits, hospital systems, or healthcare IT (e.g. Optum, Epic, payers, providers, hospital claims). You have memory of what you found in previous weeks — use it to track signal evolution and avoid repeating old findings.',
-    querySeeds: ['life insurance AI underwriting 2026','annuity retirement income AI machine learning','longevity risk mortality prediction actuarial ML','wearables life insurance underwriting data']
+    querySeeds: ['life insurance AI underwriting 2026','annuity retirement income AI machine learning','longevity risk mortality prediction actuarial ML','wearables life insurance underwriting data','SEC earnings call insurance AI deployment','AM Best insurance AI investment']
   },
   {
     id: 'lex', name: 'Lex', icon: 'Lex', domain: 'Regulation',
     brief: 'You are Lex, a specialist in insurance AI regulation. Find the most significant regulatory developments affecting AI in insurance: FCA, EIOPA, NAIC, EU AI Act, IAIS, model risk governance, explainability requirements. You have memory of what you found in previous weeks — use it to track regulatory signal evolution.',
-    querySeeds: ['FCA AI insurance regulation 2026','EU AI Act insurance compliance','EIOPA digital transformation insurance','NAIC AI model risk governance explainability']
+    querySeeds: ['FCA AI insurance regulation 2026','EU AI Act insurance compliance','EIOPA digital transformation insurance','NAIC AI model risk governance explainability','regulatory sandbox insurance AI fintech 2026','Singapore MAS Hong Kong HKIA insurance AI']
   },
   {
     id: 'terra', name: 'Terra', icon: 'Terra', domain: 'Climate',
     brief: 'You are Terra, a specialist in climate risk and ESG for insurance. Find the most significant AI and data science developments in climate risk modelling, parametric insurance, ESG underwriting, and catastrophe prediction. You have memory of what you found in previous weeks — use it to track signal evolution.',
-    querySeeds: ['climate risk AI insurance 2026','parametric insurance AI machine learning','ESG underwriting data analytics','catastrophe prediction AI model flood']
+    querySeeds: ['climate risk AI insurance 2026','parametric insurance AI machine learning','ESG underwriting data analytics','catastrophe prediction AI model flood','Artemis ILS catastrophe bond AI','Google Patents climate risk insurance model']
   },
   {
     id: 'horizon', name: 'Horizon', icon: 'Horizon', domain: 'Horizontal',
     brief: 'You are Horizon, a specialist in horizontal enterprise AI with insurance implications. Find the most significant developments in foundation models, agentic AI, synthetic data, federated learning, post-quantum cryptography, and real-time decisioning that will impact insurance carriers. You have memory of what you found in previous weeks — use it to track signal evolution.',
-    querySeeds: ['agentic AI enterprise insurance 2026','foundation model insurance applications','synthetic data insurance privacy federated learning','post-quantum cryptography financial services insurance']
+    querySeeds: ['agentic AI enterprise insurance 2026','foundation model insurance applications','synthetic data insurance privacy federated learning','post-quantum cryptography financial services insurance','GitHub trending AI insurance actuarial repository','conference InsurTech Connect ITC AI speaker']
   }
 ];
 
@@ -254,6 +254,12 @@ async function analyseResults(mind, queries, results, memory) {
     '\n\nSAFE FRAMING: "[Entity] reports [claim]; independent validation not published" NOT "Suspicious pattern suggests coordinated marketing". ' +
     'Use: reports, states, claims, announces, not published, not disclosed, not documented, independent validation, third-party verification. ' +
     'TONE: University researcher writing peer-reviewed paper, not tabloid exposé. ' +
+    '\n\nVENDOR-NEUTRAL RULE (NON-NEGOTIABLE): This is a MARKET-LEVEL intelligence platform, not a vendor tracker. ' +
+    'NEVER center a finding around a single company, consultancy, or vendor (e.g. "Accenture launches...", "McKinsey reports...", "Guidewire releases..."). ' +
+    'Instead, identify the MARKET PATTERN or TECHNOLOGY TREND the vendor activity represents. ' +
+    'Example: Instead of "Accenture launches AI claims platform" write "Consulting-led AI claims platforms entering carrier procurement cycles — multiple system integrators now offering turnkey solutions." ' +
+    'Vendor names may appear as supporting evidence INSIDE a finding body, but must NEVER be the subject of the title. ' +
+    'If the only source is a vendor press release or product announcement with no independent validation, verdict must be UNVERIFIED. ' +
     '\n\nBe honest: if evidence is weak, reflect that in verdict and confidence. ' +
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
     'Return ONLY a valid JSON array of 3-5 findings. ' +
@@ -262,6 +268,7 @@ async function analyseResults(mind, queries, results, memory) {
     'confidence (1-5 integer), domain (string), subdomain (string), ' +
     'trl (1-9 integer), regulatoryRisk ("low"|"medium"|"high"), ' +
     'experiment (a research question or learning hypothesis worth exploring further — frame as curiosity, not a recommendation or action item), ' +
+    'regions (array of strings — tag which regions this finding is relevant to. Use: "US", "EU", "UK", "APAC", "Global". Most findings will be "Global". Use specific regions when the finding mentions specific geographies, regulators like FCA→"UK", EIOPA→"EU", NAIC→"US", or carriers in specific markets), ' +
     'refs (array of {label, url} using real URLs from results), ' +
     'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING") — NEW if first time seeing this topic, ' +
     'EMERGING if seen once before, CONFIRMED if seen 2+ times, RECURRING if it has appeared every week. ' +
@@ -362,7 +369,192 @@ function validateSourceFreshness(findings) {
   });
 }
 
-async function runAgent(mind) {
+// ── TOPIC KEY NORMALIZATION ───────────────────────────────────────────────
+function normalizeTopicKey(title) {
+  return String(title || '').toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\b(the|a|an|in|on|at|for|to|of|and|or|is|are|was|were|with|by|from|as|its|this|that)\b/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 80);
+}
+
+// ── SIGNAL TRAJECTORIES UPDATE ─────────────────────────────────────────────
+async function updateSignalTrajectories(findings, runDate) {
+  try {
+    // Build topic map from this run
+    var topics = {};
+    findings.forEach(function(f) {
+      var key = normalizeTopicKey(f.title);
+      if (!topics[key]) {
+        topics[key] = { title: f.title, key: key, trl: f.trl, verdict: f.verdict, confidence: f.confidence, minds: [f.mind_id], domain: f.domain, regions: f.regions || ['Global'] };
+      } else {
+        if (topics[key].minds.indexOf(f.mind_id) === -1) topics[key].minds.push(f.mind_id);
+        if (f.confidence > topics[key].confidence) {
+          topics[key].confidence = f.confidence;
+          topics[key].trl = f.trl;
+          topics[key].verdict = f.verdict;
+        }
+      }
+    });
+
+    // Fetch existing trajectories
+    var existingData = [];
+    try {
+      existingData = await supabaseCall('GET', 'signal_trajectories', null, '?select=id,topic_key,appearances,trajectory_data,current_trl,first_seen&limit=500');
+    } catch(e) {
+      console.warn('[YNOT] signal_trajectories table may not exist yet: ' + e.message);
+      return;
+    }
+    var existingMap = {};
+    existingData.forEach(function(row) { existingMap[row.topic_key] = row; });
+
+    var upserts = [];
+    Object.keys(topics).forEach(function(key) {
+      var t = topics[key];
+      var existing = existingMap[key];
+      var snapshot = { date: runDate, trl: t.trl, verdict: t.verdict, confidence: t.confidence, minds: t.minds };
+
+      if (existing) {
+        var trajData = existing.trajectory_data || [];
+        trajData.push(snapshot);
+        var appearances = (existing.appearances || 0) + 1;
+        var trlVelocity = trajData.length >= 2 ? (t.trl - trajData[0].trl) / trajData.length : 0;
+        var crossAgentCount = t.minds.length;
+        var compoundScore = Math.round(((Math.min(appearances, 10) / 10) * 0.3 + (t.confidence / 5) * 0.2 + (Math.min(crossAgentCount, 4) / 4) * 0.25 + (Math.max(0, Math.min(trlVelocity + 0.5, 1))) * 0.25) * 100);
+
+        upserts.push({
+          id: existing.id,
+          topic_key: key,
+          title: t.title,
+          domain: t.domain,
+          regions: t.regions,
+          current_trl: t.trl,
+          current_verdict: t.verdict,
+          current_confidence: t.confidence,
+          last_seen: runDate,
+          first_seen: existing.first_seen,
+          appearances: appearances,
+          cross_agent_count: crossAgentCount,
+          compound_score: compoundScore,
+          trl_velocity: Math.round(trlVelocity * 100) / 100,
+          trajectory_data: trajData
+        });
+      } else {
+        upserts.push({
+          topic_key: key,
+          title: t.title,
+          domain: t.domain,
+          regions: t.regions,
+          current_trl: t.trl,
+          current_verdict: t.verdict,
+          current_confidence: t.confidence,
+          first_seen: runDate,
+          last_seen: runDate,
+          appearances: 1,
+          cross_agent_count: t.minds.length,
+          compound_score: Math.round(((1/10) * 0.3 + (t.confidence / 5) * 0.2 + (Math.min(t.minds.length, 4) / 4) * 0.25 + 0.5 * 0.25) * 100),
+          trl_velocity: 0,
+          trajectory_data: [snapshot]
+        });
+      }
+    });
+
+    if (upserts.length > 0) {
+      // Use POST with upsert via Prefer header
+      var url = SUPABASE_URL + '/rest/v1/signal_trajectories';
+      var r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify(upserts)
+      });
+      if (!r.ok) {
+        var t = await r.text().catch(function() { return ''; });
+        console.warn('[YNOT] signal_trajectories upsert: ' + r.status + ' ' + t);
+      } else {
+        console.log('[YNOT] Signal trajectories updated: ' + upserts.length + ' topics');
+      }
+    }
+  } catch(e) {
+    console.warn('[YNOT] Signal trajectories update failed (non-blocking): ' + e.message);
+  }
+}
+
+// ── RAW INTELLIGENCE STORAGE ───────────────────────────────────────────────
+async function storeRawIntelligence(mindId, queries, results, runId, runDate) {
+  try {
+    var row = {
+      run_id: runId,
+      run_date: runDate,
+      mind_id: mindId,
+      search_queries: queries,
+      result_count: results.length,
+      results: results.slice(0, 15).map(function(r) {
+        return { title: r.title, url: r.url, content: r.content, published_date: r.published_date };
+      })
+    };
+    await supabaseCall('POST', 'intelligence_raw', [row]).catch(function(e) {
+      console.warn('[YNOT] intelligence_raw table not ready: ' + e.message);
+    });
+  } catch(e) {
+    console.warn('[YNOT] Raw intel storage failed: ' + e.message);
+  }
+}
+
+// ── CROSS-AGENT AGREEMENT DETECTION ────────────────────────────────────────
+async function detectCrossAgentAgreement(findings, runDate) {
+  try {
+    var topicMindMap = {};
+    findings.forEach(function(f) {
+      var words = String(f.title || '').toLowerCase().split(/\s+/).filter(function(w) { return w.length > 4; });
+      findings.forEach(function(f2) {
+        if (f2.mind_id === f.mind_id) return;
+        var words2 = String(f2.title || '').toLowerCase().split(/\s+/).filter(function(w) { return w.length > 4; });
+        var overlap = words.filter(function(w) { return words2.indexOf(w) >= 0; });
+        if (overlap.length >= 2) {
+          var key = overlap.sort().join('-');
+          if (!topicMindMap[key]) topicMindMap[key] = { topic: overlap.join(' '), minds: new Set(), findings: [] };
+          topicMindMap[key].minds.add(f.mind_id);
+          topicMindMap[key].minds.add(f2.mind_id);
+          topicMindMap[key].findings.push(f.title);
+        }
+      });
+    });
+
+    var agreements = Object.keys(topicMindMap)
+      .filter(function(k) { return topicMindMap[k].minds.size >= 2; })
+      .map(function(k) {
+        var a = topicMindMap[k];
+        return {
+          run_date: runDate,
+          topic_key: k,
+          topic_label: a.topic,
+          agent_count: a.minds.size,
+          agents: Array.from(a.minds),
+          finding_titles: a.findings.slice(0, 5),
+          agreement_strength: Math.min(a.minds.size / 4, 1)
+        };
+      })
+      .sort(function(a, b) { return b.agent_count - a.agent_count; })
+      .slice(0, 10);
+
+    if (agreements.length > 0) {
+      await supabaseCall('POST', 'cross_agent_agreements', agreements).catch(function(e) {
+        console.warn('[YNOT] cross_agent_agreements table not ready: ' + e.message);
+      });
+      console.log('[YNOT] Cross-agent agreements detected: ' + agreements.length);
+    }
+  } catch(e) {
+    console.warn('[YNOT] Cross-agent agreement detection failed: ' + e.message);
+  }
+}
+
+async function runAgent(mind, runId, runDate) {
   console.log('[YNOT] ' + mind.name + ': loading memory...');
   var memory = await fetchAgentMemory(mind.id);
   console.log('[YNOT] ' + mind.name + ': ' + (memory ? 'memory loaded' : 'no prior memory'));
@@ -372,6 +564,7 @@ async function runAgent(mind) {
   var results = await fetchAgentResults(queries);
   console.log('[YNOT] ' + mind.name + ': ' + results.length + ' unique results from Tavily');
   if (results.length === 0) { console.warn('[YNOT] ' + mind.name + ': no results, skipping'); return []; }
+  await storeRawIntelligence(mind.id, queries, results, runId, runDate);
   var findings = await analyseResults(mind, queries, results, memory);
   console.log('[YNOT] ' + mind.name + ': ' + findings.length + ' findings (refs verified)');
   await recordSourceReputation(findings);
@@ -431,7 +624,7 @@ module.exports = async function handler(req, res) {
   var allFindings = []; var errors = [];
 
   console.log('[YNOT] Phase 1: 5 primary agents running with memory + Tavily + URL verification...');
-  var outcomes = await Promise.allSettled(MINDS.map(function(m) { return runAgent(m); }));
+  var outcomes = await Promise.allSettled(MINDS.map(function(m) { return runAgent(m, runId, runDate); }));
   outcomes.forEach(function(o, i) {
     if (o.status === 'fulfilled') allFindings = allFindings.concat(o.value);
     else errors.push({ mind: MINDS[i].id, error: o.reason && o.reason.message });
@@ -463,6 +656,7 @@ module.exports = async function handler(req, res) {
       trl: f.trl || 5,
       regulatory_risk: normalizeRisk(f.regulatoryRisk || f.regulatory_risk),
       experiment: f.experiment || null,
+      regions: f.regions || ['Global'],
       refs: f.refs || [],
       search_queries: f.search_queries || [],
       signal_status: f.signal_status || 'NEW',
@@ -479,6 +673,16 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Storage failed', details: err.message });
   }
 
+  // Update signal trajectories (non-blocking)
+  await updateSignalTrajectories(allFindings, runDate).catch(function(e) {
+    console.warn('[YNOT] Trajectory update error: ' + e.message);
+  });
+
+  // Detect cross-agent agreement (non-blocking)
+  await detectCrossAgentAgreement(allFindings, runDate).catch(function(e) {
+    console.warn('[YNOT] Agreement detection error: ' + e.message);
+  });
+
   var digestStatus = 'skipped';
   try { await saveWeeklyDigest(allFindings, runId, runDate); digestStatus = 'ready'; }
   catch(dErr) { console.error('[YNOT] Digest failed:', dErr.message); digestStatus = 'error: ' + dErr.message; }
@@ -486,6 +690,7 @@ module.exports = async function handler(req, res) {
   return res.status(200).json({
     success: true, phase: 1, run_id: runId, run_date: runDate,
     findings_count: allFindings.length, digest: digestStatus, errors: errors,
+    trajectories_updated: true,
     note: 'Phase 2 synthesis (Null, Weave, Faro) runs at 06:02 UTC via cron-synthesise.js'
   });
 };

@@ -129,6 +129,7 @@ async function generateExecutiveBriefing(findings, runDate, prevFindings) {
     `BLANK LINE\n\n` +
     `HASHTAGS LINE: Exactly this text: #InsurTech #AIinInsurance #Insurance #Innovation\n\n` +
     `Rules:\n` +
+    `- VENDOR-NEUTRAL: Never center a bullet around a single vendor, consultancy, or company name. Describe market patterns and technology trends, not vendor announcements. Vendor names may appear as evidence but never as the subject.\n` +
     `- Plain English. No jargon unless it is the precise term.\n` +
     `- Do not use: leverage, landscape, transformative, game-changer, revolutionise, unlock, ecosystem, synergy, paradigm, holistic, robust, seamless.\n` +
     `- No markdown, no bold, no asterisks — plain text only.\n` +
