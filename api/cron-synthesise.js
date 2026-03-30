@@ -295,7 +295,13 @@ async function runSynthesisAgent(mind, phase1Findings) {
     'CRITICAL DATE REQUIREMENT: This is a WEEKLY briefing for LAST WEEK only. ONLY use sources published within the last 7 days. ' +
     'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
     'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
-    'Produce synthesis findings that go beyond what the primary agents found — your value is in ' +
+    '\n\nLEGAL SAFETY REQUIREMENT (NON-NEGOTIABLE): You are an EDUCATIONAL intelligence platform, not an investigative journalist. ' +
+    'OBSERVE, DON\'T ACCUSE. State facts, not judgments. Document verification status, don\'t imply fraud. ' +
+    '\n\nBANNED WORDS (never use): suspicious, dubious, questionable, exposed, revealed, hype, washing, fake, fabricated, hiding, refusing, coordinated, collusion, misleading, deceptive, dishonest. ' +
+    '\n\nSAFE FRAMING: "[Entity] reports [claim]; independent validation not published" NOT "Suspicious pattern suggests coordinated marketing". ' +
+    'Use: reports, states, claims, announces, not published, not disclosed, not documented, independent validation, third-party verification. ' +
+    'TONE: University researcher writing peer-reviewed paper, not tabloid exposé. ' +
+    '\n\nProduce synthesis findings that go beyond what the primary agents found — your value is in ' +
     (mind.role === 'verification' ? 'analyzing verification status and distinguishing independently verified claims from unverified ones' :
      mind.role === 'synthesiser' ? 'connecting dots across domains and finding second-order effects' :
      'identifying early-stage signals others missed') + '. ' +
@@ -309,7 +315,8 @@ async function runSynthesisAgent(mind, phase1Findings) {
     '\n• SIGNAL: (1) Multiple independent sources (2+ refs from different organizations), (2) Quantified claims with specific numbers/data, (3) Named deployments or peer-reviewed research, (4) Confidence ≥ 4. ' +
     '\n• WATCH: (1) Single source OR early-stage development, (2) Qualitative claims or limited data, (3) Worth monitoring as evidence develops, (4) Confidence 2-3. ' +
     '\n• UNVERIFIED: (1) Claims lack independent third-party validation, (2) Single vendor/promotional source only, (3) Quantified claims with no external benchmarks, (4) Not necessarily false, but verification status unclear. Use UNVERIFIED for factual accuracy — this means "we cannot independently verify" not "this is false." Confidence 1-2. ' +
-    '\n\nIMPORTANT: UNVERIFIED is a factual statement about verification status, not a quality judgment. Frame objectively.';
+    '\n\nIMPORTANT: UNVERIFIED is a factual statement about verification status, not a quality judgment. Frame objectively. ' +
+    'LEGAL SAFETY: Never imply fraud, collusion, or intent to deceive. State verification gaps factually.';
 
   var analysisUser = 'Phase 1 findings from other agents:\n' + findingsSummary +
     '\n\nYour additional web search results:\n\n' + (resultsText || '(no results)') +

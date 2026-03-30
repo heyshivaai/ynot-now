@@ -248,7 +248,13 @@ async function analyseResults(mind, queries, results, memory) {
     'CRITICAL DATE REQUIREMENT: This is a WEEKLY briefing for LAST WEEK only. ONLY use sources published within the last 7 days. ' +
     'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
     'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
-    'Be honest: if evidence is weak, reflect that in verdict and confidence. ' +
+    '\n\nLEGAL SAFETY REQUIREMENT (NON-NEGOTIABLE): You are an EDUCATIONAL intelligence platform, not an investigative journalist. ' +
+    'OBSERVE, DON\'T ACCUSE. State facts, not judgments. Document verification status, don\'t imply fraud. ' +
+    '\n\nBANNED WORDS (never use): suspicious, dubious, questionable, exposed, revealed, hype, washing, fake, fabricated, hiding, refusing, coordinated, collusion, misleading, deceptive, dishonest. ' +
+    '\n\nSAFE FRAMING: "[Entity] reports [claim]; independent validation not published" NOT "Suspicious pattern suggests coordinated marketing". ' +
+    'Use: reports, states, claims, announces, not published, not disclosed, not documented, independent validation, third-party verification. ' +
+    'TONE: University researcher writing peer-reviewed paper, not tabloid exposé. ' +
+    '\n\nBe honest: if evidence is weak, reflect that in verdict and confidence. ' +
     'Use real URLs from the search results as your refs — copy them exactly. NEVER invent URLs. ' +
     'Return ONLY a valid JSON array of 3-5 findings. ' +
     'Each finding must have: title (string), verdict ("SIGNAL"|"WATCH"|"UNVERIFIED"), ' +
@@ -263,7 +269,8 @@ async function analyseResults(mind, queries, results, memory) {
     '\n• SIGNAL: (1) Multiple independent sources (2+ refs from different organizations), (2) Quantified claims with specific numbers/data, (3) Named deployments or peer-reviewed research, (4) Confidence ≥ 4. ' +
     '\n• WATCH: (1) Single source OR early-stage development, (2) Qualitative claims or limited data, (3) Worth monitoring as evidence develops, (4) Confidence 2-3. ' +
     '\n• UNVERIFIED: (1) Claims lack independent third-party validation, (2) Single vendor/promotional source only, (3) Quantified claims with no external benchmarks, (4) Not necessarily false, but verification status unclear. Use UNVERIFIED for factual accuracy — this means "we cannot independently verify" not "this is false." Confidence 1-2. ' +
-    '\n\nIMPORTANT: UNVERIFIED is a factual statement about verification status, not a quality judgment. Frame objectively.';
+    '\n\nIMPORTANT: UNVERIFIED is a factual statement about verification status, not a quality judgment. Frame objectively. ' +
+    'LEGAL SAFETY: Never imply fraud, collusion, or intent to deceive. State verification gaps factually.';
   var user = 'Your search queries this week:\n' + queries.map(function(q, i) { return (i + 1) + '. ' + q; }).join('\n') +
     '\n\nLive web results:\n\n' + resultsText + memorySection +
     '\n\nProduce your findings. Return only the JSON array.';
