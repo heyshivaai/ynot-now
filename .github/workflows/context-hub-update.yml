@@ -1,11 +1,25 @@
 name: Update Context Hub
 
-# Runs every Monday at 07:00 UTC - 1 hour after YNOT.NOW cron (06:00 UTC)
+# Runs every Monday at 07:00 UTC — 1 hour after Phase 2 synthesis completes at 06:02 UTC.
 # This gives the multi-agent system time to complete before we export.
 on:
   schedule:
     - cron: '0 7 * * 1'
   workflow_dispatch:
+    inputs:
+      weeks:
+        description: 'Weeks of findings to include (default: 2, max: 8)'
+        required: false
+        default: '2'
+      dry_run:
+        description: 'Dry run — fetch and validate but do not push or create PR'
+        required: false
+        default: 'false'
+
+env:
+  YNOT_API: https://ynot-now.vercel.app/api/context-hub
+  WEEKS: ${{ github.event.inputs.weeks || '2' }}
+  DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
 
 jobs:
   update-context-hub:
@@ -23,6 +37,18 @@ jobs:
         with:
           node-version: '20'
 
+      # ── Health check: make sure the API is alive before we start ──
+      - name: Health check — YNOT.NOW API
+        run: |
+          echo "Checking API health..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$YNOT_API?weeks=1")
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::YNOT.NOW API returned HTTP $HTTP_CODE — aborting"
+            exit 1
+          fi
+          echo "API is healthy (HTTP $HTTP_CODE)"
+
+      # ── Clone fork and sync with upstream ──
       - name: Clone Context Hub fork
         env:
           GH_TOKEN: ${{ secrets.CONTEXT_HUB_TOKEN }}
@@ -31,66 +57,152 @@ jobs:
           git config --global user.email "shiva@ynotnow.com"
           git clone "https://x-access-token:${GH_TOKEN}@github.com/heyshivaai/context-hub.git" /tmp/context-hub
           cd /tmp/context-hub
+
+          # Sync fork with upstream
           git remote add upstream https://github.com/andrewyng/context-hub.git
           git fetch upstream
-          git merge upstream/main --no-edit || true
+          if ! git merge upstream/main --no-edit; then
+            echo "::warning::Merge conflict with upstream — using fork state as-is"
+            git merge --abort || true
+          fi
 
+      # ── Fetch all 6 domain docs from live API ──
       - name: Fetch latest findings from YNOT.NOW API
         run: |
           mkdir -p /tmp/ynot-docs
+          ERRORS=0
 
-          echo "Fetching all insurance AI signals..."
-          curl -s "https://ynot-now.vercel.app/api/context-hub?weeks=2" \
-            -H "Accept: text/markdown" \
-            -o /tmp/ynot-docs/insurance-ai-signals.md
+          echo "=== Fetching all insurance AI signals (weeks=$WEEKS) ==="
+          if ! curl -sf "$YNOT_API?weeks=$WEEKS" -H "Accept: text/markdown" -o /tmp/ynot-docs/insurance-ai-signals.md; then
+            echo "::error::Failed to fetch all-domain signals"
+            ERRORS=$((ERRORS + 1))
+          fi
 
           for domain in life pc regulation climate horizontal; do
-            echo "Fetching domain: $domain"
-            curl -s "https://ynot-now.vercel.app/api/context-hub?domain=${domain}&weeks=2" \
-              -H "Accept: text/markdown" \
-              -o /tmp/ynot-docs/insurance-${domain}-signals.md
-          done
-
-          for f in /tmp/ynot-docs/*.md; do
-            size=$(wc -c < "$f")
-            echo "$f: ${size} bytes"
-            if [ "$size" -lt 200 ]; then
-              echo "WARNING: $f seems too small, may have failed"
+            echo "=== Fetching domain: $domain ==="
+            if ! curl -sf "$YNOT_API?domain=${domain}&weeks=$WEEKS" -H "Accept: text/markdown" -o /tmp/ynot-docs/insurance-${domain}-signals.md; then
+              echo "::error::Failed to fetch $domain signals"
+              ERRORS=$((ERRORS + 1))
             fi
           done
 
+          if [ "$ERRORS" -gt 3 ]; then
+            echo "::error::Too many fetch failures ($ERRORS/6) — aborting"
+            exit 1
+          fi
+
+      # ── Validate fetched content ──
+      - name: Validate fetched documents
+        run: |
+          echo "=== Validating documents ==="
+          VALID=0
+          TOTAL=0
+
+          for f in /tmp/ynot-docs/*.md; do
+            TOTAL=$((TOTAL + 1))
+            FILENAME=$(basename "$f")
+            SIZE=$(wc -c < "$f")
+            LINES=$(wc -l < "$f")
+
+            echo "$FILENAME: ${SIZE} bytes, ${LINES} lines"
+
+            # Must have frontmatter
+            if ! head -1 "$f" | grep -q "^---"; then
+              echo "::warning::$FILENAME missing YAML frontmatter"
+              continue
+            fi
+
+            # Must have at least 500 bytes of content
+            if [ "$SIZE" -lt 500 ]; then
+              echo "::warning::$FILENAME too small (${SIZE} bytes) — may be empty or errored"
+              continue
+            fi
+
+            # Must contain at least one finding header (###)
+            if ! grep -q "^### " "$f"; then
+              echo "::warning::$FILENAME has no findings (no ### headers)"
+              continue
+            fi
+
+            VALID=$((VALID + 1))
+          done
+
+          echo "Validated: $VALID/$TOTAL documents pass"
+
+          if [ "$VALID" -lt 3 ]; then
+            echo "::error::Fewer than 3 valid documents — aborting to avoid pushing bad content"
+            exit 1
+          fi
+
+      # ── Fetch JSON summary for PR description ──
+      - name: Fetch JSON summary for PR metadata
+        run: |
+          curl -sf "$YNOT_API?format=json&weeks=$WEEKS" -o /tmp/ynot-docs/summary.json || true
+
+          if [ -f /tmp/ynot-docs/summary.json ]; then
+            TOTAL=$(jq '.total_findings // 0' /tmp/ynot-docs/summary.json)
+            SIGNALS=$(jq '.signals // 0' /tmp/ynot-docs/summary.json)
+            WATCHES=$(jq '.watches // 0' /tmp/ynot-docs/summary.json)
+            TRAJS=$(jq '.signal_trajectories | length // 0' /tmp/ynot-docs/summary.json)
+            AGREES=$(jq '.cross_agent_agreements | length // 0' /tmp/ynot-docs/summary.json)
+            echo "FINDINGS_TOTAL=$TOTAL" >> "$GITHUB_ENV"
+            echo "FINDINGS_SIGNALS=$SIGNALS" >> "$GITHUB_ENV"
+            echo "FINDINGS_WATCHES=$WATCHES" >> "$GITHUB_ENV"
+            echo "TRAJECTORIES_COUNT=$TRAJS" >> "$GITHUB_ENV"
+            echo "AGREEMENTS_COUNT=$AGREES" >> "$GITHUB_ENV"
+          else
+            echo "FINDINGS_TOTAL=?" >> "$GITHUB_ENV"
+            echo "FINDINGS_SIGNALS=?" >> "$GITHUB_ENV"
+            echo "FINDINGS_WATCHES=?" >> "$GITHUB_ENV"
+            echo "TRAJECTORIES_COUNT=?" >> "$GITHUB_ENV"
+            echo "AGREEMENTS_COUNT=?" >> "$GITHUB_ENV"
+          fi
+
+      # ── Copy README and docs to fork ──
       - name: Update Context Hub content
         run: |
-          mkdir -p /tmp/context-hub/content/ynot/docs/insurance-ai-signals
-          mkdir -p /tmp/context-hub/content/ynot/docs/insurance-life-signals
-          mkdir -p /tmp/context-hub/content/ynot/docs/insurance-pc-signals
-          mkdir -p /tmp/context-hub/content/ynot/docs/insurance-regulation-signals
-          mkdir -p /tmp/context-hub/content/ynot/docs/insurance-climate-signals
-          mkdir -p /tmp/context-hub/content/ynot/docs/insurance-horizontal-signals
+          # Create all content directories
+          for doc in insurance-ai-signals insurance-life-signals insurance-pc-signals insurance-regulation-signals insurance-climate-signals insurance-horizontal-signals; do
+            mkdir -p "/tmp/context-hub/content/ynot/docs/${doc}"
+          done
 
-          cp /tmp/ynot-docs/insurance-ai-signals.md \
-             /tmp/context-hub/content/ynot/docs/insurance-ai-signals/DOC.md
-          cp /tmp/ynot-docs/insurance-life-signals.md \
-             /tmp/context-hub/content/ynot/docs/insurance-life-signals/DOC.md
-          cp /tmp/ynot-docs/insurance-pc-signals.md \
-             /tmp/context-hub/content/ynot/docs/insurance-pc-signals/DOC.md
-          cp /tmp/ynot-docs/insurance-regulation-signals.md \
-             /tmp/context-hub/content/ynot/docs/insurance-regulation-signals/DOC.md
-          cp /tmp/ynot-docs/insurance-climate-signals.md \
-             /tmp/context-hub/content/ynot/docs/insurance-climate-signals/DOC.md
-          cp /tmp/ynot-docs/insurance-horizontal-signals.md \
-             /tmp/context-hub/content/ynot/docs/insurance-horizontal-signals/DOC.md
+          # Copy documents
+          cp /tmp/ynot-docs/insurance-ai-signals.md /tmp/context-hub/content/ynot/docs/insurance-ai-signals/DOC.md
+          cp /tmp/ynot-docs/insurance-life-signals.md /tmp/context-hub/content/ynot/docs/insurance-life-signals/DOC.md
+          cp /tmp/ynot-docs/insurance-pc-signals.md /tmp/context-hub/content/ynot/docs/insurance-pc-signals/DOC.md
+          cp /tmp/ynot-docs/insurance-regulation-signals.md /tmp/context-hub/content/ynot/docs/insurance-regulation-signals/DOC.md
+          cp /tmp/ynot-docs/insurance-climate-signals.md /tmp/context-hub/content/ynot/docs/insurance-climate-signals/DOC.md
+          cp /tmp/ynot-docs/insurance-horizontal-signals.md /tmp/context-hub/content/ynot/docs/insurance-horizontal-signals/DOC.md
+
+          # Copy README if it exists in the ynot-now repo
+          if [ -f "CONTEXT-HUB-README.md" ]; then
+            cp CONTEXT-HUB-README.md /tmp/context-hub/content/ynot/README.md
+          fi
 
           echo "Content updated successfully"
 
+      # ── Dry run exits here ──
+      - name: Dry run summary
+        if: env.DRY_RUN == 'true'
+        run: |
+          echo "=== DRY RUN — would have pushed these changes ==="
+          cd /tmp/context-hub
+          git diff --stat
+          echo "Findings: $FINDINGS_TOTAL ($FINDINGS_SIGNALS signals, $FINDINGS_WATCHES watches)"
+          echo "Trajectories: $TRAJECTORIES_COUNT | Agreements: $AGREEMENTS_COUNT"
+          echo "Exiting without push."
+
+      # ── Commit and push ──
       - name: Commit and push to fork
+        if: env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ secrets.CONTEXT_HUB_TOKEN }}
         run: |
           cd /tmp/context-hub
 
           if git diff --quiet && git diff --cached --quiet; then
-            echo "No changes to commit - findings unchanged since last week"
+            echo "No changes to commit — findings unchanged since last update"
+            echo "BRANCH=" >> "$GITHUB_ENV"
             exit 0
           fi
 
@@ -99,24 +211,69 @@ jobs:
 
           git checkout -b "${BRANCH}"
           git add content/ynot/
-          git commit -m "feat(ynot): weekly insurance AI signals update ${WEEK}"
+          MSG="feat(ynot): weekly insurance AI signals update ${WEEK}"
+          MSG="${MSG}
+
+          ${FINDINGS_TOTAL} findings (${FINDINGS_SIGNALS} signals, ${FINDINGS_WATCHES} watches)
+          ${TRAJECTORIES_COUNT} signal trajectories tracked
+          ${AGREEMENTS_COUNT} cross-agent agreements detected"
+          git commit -m "${MSG}"
 
           git push origin "${BRANCH}"
           echo "BRANCH=${BRANCH}" >> "$GITHUB_ENV"
 
+      # ── Create PR with rich description ──
       - name: Create PR to upstream Context Hub
+        if: env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ secrets.CONTEXT_HUB_TOKEN }}
         run: |
           cd /tmp/context-hub
 
           if [ -z "${BRANCH}" ]; then
-            echo "No branch created - skipping PR"
+            echo "No branch created — skipping PR"
             exit 0
           fi
 
           WEEK=$(date -u +"%Y-W%V")
-          PR_BODY="Weekly update of YNOT.NOW insurance AI signal intelligence for ${WEEK}. Six domain-specific docs updated. Auto-generated by YNOT.NOW 8-agent system. Live endpoint: https://ynot-now.vercel.app/api/context-hub"
+
+          PR_BODY=$(cat <<'PREOF'
+          ## YNOT.NOW Weekly Insurance AI Intelligence Update
+
+          **Week:** WEEK_PLACEHOLDER
+          **Findings:** TOTAL_PLACEHOLDER (SIGNALS_PLACEHOLDER signals, WATCHES_PLACEHOLDER watches)
+          **Signal Trajectories:** TRAJS_PLACEHOLDER compound signals tracked
+          **Cross-Agent Agreements:** AGREES_PLACEHOLDER topics with multi-agent consensus
+
+          ### What changed
+          - 6 domain-specific intelligence documents updated with latest findings
+          - Signal trajectory scores recalculated (compound scoring: persistence × confidence × agreement × TRL velocity)
+          - Cross-agent agreement index refreshed
+
+          ### Documents updated
+          | Document | Coverage |
+          |----------|----------|
+          | `insurance-ai-signals/DOC.md` | Full cross-domain view |
+          | `insurance-life-signals/DOC.md` | Life, annuities, retirement |
+          | `insurance-pc-signals/DOC.md` | Property & casualty |
+          | `insurance-regulation-signals/DOC.md` | Regulation & compliance |
+          | `insurance-climate-signals/DOC.md` | Climate risk & ESG |
+          | `insurance-horizontal-signals/DOC.md` | Horizontal AI tech |
+
+          ### How this is generated
+          8 specialist AI agents (5 domain + 3 synthesis) run every Monday on [YNOT.NOW](https://ynot-now.vercel.app), scanning live sources via Tavily API. Findings are cross-validated, URL-verified, and scored for freshness before export.
+
+          **Live endpoint:** `GET https://ynot-now.vercel.app/api/context-hub`
+          PREOF
+          )
+
+          # Replace placeholders
+          PR_BODY="${PR_BODY//WEEK_PLACEHOLDER/$WEEK}"
+          PR_BODY="${PR_BODY//TOTAL_PLACEHOLDER/$FINDINGS_TOTAL}"
+          PR_BODY="${PR_BODY//SIGNALS_PLACEHOLDER/$FINDINGS_SIGNALS}"
+          PR_BODY="${PR_BODY//WATCHES_PLACEHOLDER/$FINDINGS_WATCHES}"
+          PR_BODY="${PR_BODY//TRAJS_PLACEHOLDER/$TRAJECTORIES_COUNT}"
+          PR_BODY="${PR_BODY//AGREES_PLACEHOLDER/$AGREEMENTS_COUNT}"
 
           gh pr create \
             --repo andrewyng/context-hub \

@@ -295,6 +295,46 @@ YNOT.NOW is an autonomous multi-agent intelligence system that scans the insuran
   return [frontmatter, '', intro, trajSection, agreeSection, '', weekSections, '', footer].join('\n');
 }
 
+// Log API usage to Supabase (fire-and-forget, never blocks response)
+function logUsage(req, domain, format, findingsCount) {
+  try {
+    const ua = req.headers['user-agent'] || '';
+    const referer = req.headers['referer'] || req.headers['origin'] || '';
+    const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '';
+
+    // Classify the consumer
+    let consumer_type = 'unknown';
+    if (ua.includes('chub') || ua.includes('context-hub')) consumer_type = 'context-hub-cli';
+    else if (referer.includes('github.com') || ua.includes('github-actions')) consumer_type = 'github-action';
+    else if (ua.includes('curl') || ua.includes('wget') || ua.includes('httpie')) consumer_type = 'cli-tool';
+    else if (ua.includes('python') || ua.includes('node') || ua.includes('axios')) consumer_type = 'programmatic';
+    else if (ua.includes('Mozilla') || ua.includes('Chrome') || ua.includes('Safari')) consumer_type = 'browser';
+
+    const row = {
+      endpoint: 'context-hub',
+      domain_filter: domain || 'all',
+      format: format,
+      consumer_type: consumer_type,
+      user_agent: ua.slice(0, 500),
+      referer: referer.slice(0, 500),
+      findings_served: findingsCount,
+      ip_hash: ip ? Buffer.from(ip).toString('base64').slice(0, 12) : null,
+      created_at: new Date().toISOString()
+    };
+
+    fetch(SUPABASE_URL + '/rest/v1/api_usage', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(row)
+    }).catch(() => {}); // silent fail — tracking should never break the API
+  } catch (e) { /* never block */ }
+}
+
 export default async function handler(req, res) {
   // CORS headers for public access
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -324,6 +364,9 @@ export default async function handler(req, res) {
     const findings = await fetchFindings(domain, weeks);
     const trajectories = await fetchTrajectories(domain);
     const agreements = await fetchAgreements();
+
+    // Track usage (fire-and-forget)
+    logUsage(req, domain, format, findings.length);
 
     if (format === 'json') {
       return res.status(200).json({
