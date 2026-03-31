@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YNOT.NOW — Radical Redesign Concept</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+:root{
+  --bg:#050505;--surface:#0c0c0c;--card:#111;--border:#1a1a1a;
+  --text:#e8e8e4;--dim:#666;--accent:#c8a96e;--glow:rgba(200,169,110,.15);
+  --ff-sans:'DM Sans',sans-serif;--ff-serif:'DM Serif Display',serif;--ff-mono:'DM Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--ff-sans);line-height:1.7;overflow-x:hidden}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* ── PROGRESS BAR ── */
+.progress-bar{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--accent),#f0d090);z-index:999;width:0;transition:width .1s}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:900;padding:20px 40px;display:flex;align-items:center;justify-content:space-between;mix-blend-mode:difference}
+.nav-logo{font-family:var(--ff-serif);font-size:20px;color:#fff;letter-spacing:-.02em}
+.nav-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#fff;opacity:.5}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:120px 40px 80px;position:relative;overflow:hidden}
+.hero-canvas{position:absolute;inset:0;z-index:0}
+.hero-content{position:relative;z-index:1;max-width:900px}
+.hero-tag{font-family:var(--ff-mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);margin-bottom:32px;opacity:0;animation:fadeUp .8s .3s forwards}
+.hero-h1{font-family:var(--ff-serif);font-size:clamp(48px,10vw,120px);line-height:.9;letter-spacing:-.04em;margin-bottom:24px;opacity:0;animation:fadeUp .8s .5s forwards}
+.hero-h1 em{font-style:italic;color:var(--accent)}
+.hero-sub{font-size:18px;color:var(--dim);max-width:500px;margin:0 auto 48px;opacity:0;animation:fadeUp .8s .7s forwards}
+.hero-badge{display:inline-flex;align-items:center;gap:10px;background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.2);border-radius:100px;padding:10px 24px;font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;color:var(--accent);opacity:0;animation:fadeUp .8s .9s forwards}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.hero-tag,.hero-h1,.hero-sub,.hero-badge{transform:translateY(20px)}
+.scroll-hint{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;animation:fadeUp .8s 1.2s forwards}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--accent),transparent);animation:scrollPulse 2s infinite}
+@keyframes scrollPulse{0%{opacity:.2;height:40px}50%{opacity:1;height:60px}100%{opacity:.2;height:40px}}
+.scroll-text{font-family:var(--ff-mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+
+/* ── SECTIONS ── */
+.section{padding:clamp(80px,12vh,160px) clamp(20px,5vw,80px)}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-tag{font-family:var(--ff-mono);font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.section-h2{font-family:var(--ff-serif);font-size:clamp(32px,5vw,64px);line-height:1;letter-spacing:-.03em;margin-bottom:20px}
+.section-h2 em{font-style:italic;color:var(--dim)}
+.section-sub{font-size:17px;color:var(--dim);max-width:600px;margin-bottom:48px;line-height:1.8}
+
+/* ── DIAGNOSIS SECTION ── */
+.diagnosis{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.diag-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+@media(max-width:800px){.diag-grid{grid-template-columns:1fr}}
+.diag-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;overflow:hidden}
+.diag-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.diag-card.before::before{background:linear-gradient(90deg,#444,#222)}
+.diag-card.after::before{background:linear-gradient(90deg,var(--accent),#f0d090)}
+.diag-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.diag-label-dot{width:6px;height:6px;border-radius:50%}
+.diag-label-dot.red{background:#e55}
+.diag-label-dot.green{background:var(--accent)}
+.diag-item{padding:14px 0;border-bottom:1px solid var(--border);font-size:15px;display:flex;align-items:flex-start;gap:12px}
+.diag-item:last-child{border-bottom:none}
+.diag-icon{font-size:18px;flex-shrink:0;margin-top:2px}
+.diag-text{color:var(--dim);line-height:1.6}
+.diag-text strong{color:var(--text);font-weight:600}
+
+/* ── CONCEPT CARDS ── */
+.concepts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
+.concept-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:0;overflow:hidden;cursor:pointer;transition:all .35s cubic-bezier(.22,1,.36,1);position:relative}
+.concept-card:hover{transform:translateY(-4px);border-color:rgba(200,169,110,.3);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.concept-card:hover .cc-preview{opacity:1;transform:scale(1)}
+.cc-header{padding:28px 28px 20px;display:flex;align-items:flex-start;gap:16px}
+.cc-num{font-family:var(--ff-mono);font-size:40px;color:rgba(200,169,110,.15);line-height:1;font-weight:300}
+.cc-meta{flex:1}
+.cc-tag{font-family:var(--ff-mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.cc-title{font-family:var(--ff-serif);font-size:22px;letter-spacing:-.01em;line-height:1.15;margin-bottom:4px}
+.cc-effort{font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;color:var(--dim);padding:3px 8px;border:1px solid var(--border);border-radius:100px;display:inline-block;margin-top:8px}
+.cc-body{padding:0 28px 24px;font-size:14px;line-height:1.8;color:var(--dim)}
+.cc-preview{position:absolute;inset:0;background:rgba(200,169,110,.03);opacity:0;transform:scale(.98);transition:all .35s;pointer-events:none;display:flex;align-items:flex-end;justify-content:flex-end;padding:16px}
+.cc-arrow{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:14px}
+
+/* ── EXPANDED CONCEPT ── */
+.concept-expanded{display:none;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;margin-top:16px;animation:expandIn .3s ease}
+.concept-expanded.active{display:block}
+@keyframes expandIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.ce-close{float:right;background:none;border:1px solid var(--border);border-radius:50%;width:32px;height:32px;color:var(--dim);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ce-close:hover{border-color:var(--accent);color:var(--accent)}
+.ce-section{margin-bottom:28px}
+.ce-section:last-child{margin-bottom:0}
+.ce-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.ce-text{font-size:15px;line-height:1.85;color:var(--dim)}
+.ce-text strong{color:var(--text)}
+.ce-features{display:flex;flex-direction:column;gap:10px}
+.ce-feature{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--card);border-radius:10px;border:1px solid var(--border)}
+.ce-feature-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.ce-feature-text{font-size:14px;line-height:1.65;color:var(--dim)}
+.ce-feature-text strong{color:var(--text);font-weight:600}
+.ce-tech{display:flex;flex-wrap:wrap;gap:8px}
+.ce-tech-tag{font-family:var(--ff-mono);font-size:11px;padding:6px 14px;border:1px solid var(--border);border-radius:100px;color:var(--dim);background:var(--card)}
+.ce-inspiration{font-style:italic;color:var(--dim);padding-left:16px;border-left:2px solid var(--accent);font-size:14px;line-height:1.7}
+
+/* ── VISION SECTION ── */
+.vision-strip{display:flex;gap:0;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:48px}
+@media(max-width:700px){.vision-strip{flex-direction:column}}
+.vs-item{flex:1;padding:28px;text-align:center;border-right:1px solid var(--border);transition:background .2s}
+.vs-item:last-child{border-right:none}
+.vs-item:hover{background:var(--card)}
+.vs-num{font-family:var(--ff-serif);font-size:48px;color:var(--accent);line-height:1;margin-bottom:8px}
+.vs-label{font-family:var(--ff-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
+
+/* ── PHASING ── */
+.phase-timeline{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.phase{padding:28px 32px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:24px;transition:background .2s}
+.phase:last-child{border-bottom:none}
+.phase:hover{background:var(--card)}
+.phase-marker{flex-shrink:0;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:12px;color:var(--accent);transition:all .2s}
+.phase:hover .phase-marker{border-color:var(--accent);background:rgba(200,169,110,.1)}
+.phase-content{flex:1}
+.phase-name{font-family:var(--ff-serif);font-size:20px;margin-bottom:4px;letter-spacing:-.01em}
+.phase-time{font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.phase-desc{font-size:14px;color:var(--dim);line-height:1.7}
+
+/* ── FOOTER ── */
+.concept-footer{text-align:center;padding:80px 40px;border-top:1px solid var(--border)}
+.cf-quote{font-family:var(--ff-serif);font-style:italic;font-size:clamp(24px,3.5vw,42px);line-height:1.25;letter-spacing:-.02em;max-width:700px;margin:0 auto 24px;color:var(--text)}
+.cf-attr{font-family:var(--ff-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
+
+/* ── PARTICLES ── */
+.particle{position:fixed;width:2px;height:2px;background:var(--accent);border-radius:50%;opacity:0;pointer-events:none;z-index:0}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<nav>
+  <div class="nav-logo">YNOT.NOW</div>
+  <div class="nav-label">Redesign Concept — March 2026</div>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero" id="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-tag">Radical Redesign Concept</div>
+    <h1 class="hero-h1">What if intelligence<br>felt like <em>an experience?</em></h1>
+    <p class="hero-sub">A vision to transform YNOT.NOW from a text-heavy dashboard into an immersive, multi-sensory intelligence experience unlike anything in insurtech.</p>
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      8 Concepts · 3 Phases · 1 Radical Shift
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <div class="scroll-text">Explore the vision</div>
+  </div>
+</section>
+
+<!-- ═══════════════ DIAGNOSIS ═══════════════ -->
+<section class="section diagnosis">
+  <div class="section-inner">
+    <div class="section-tag">01 — Diagnosis</div>
+    <h2 class="section-h2">Your site is powerful.<br>It just doesn't <em>feel</em> it.</h2>
+    <p class="section-sub">YNOT.NOW has one of the most sophisticated multi-agent intelligence architectures in insurtech. But the experience hides it behind walls of text and static cards.</p>
+
+    <div class="diag-grid">
+      <div class="diag-card before">
+        <div class="diag-label"><span class="diag-label-dot red"></span> Current Pain Points</div>
+        <div class="diag-item"><span class="diag-icon">📄</span><span class="diag-text"><strong>Text-heavy monotony</strong> — 27+ findings presented as identical card grids. No hierarchy of importance, no visual distinction between breakthrough signals and routine watches.</span></div>
+        <div class="diag-item"><span class="diag-icon">🧊</span><span class="diag-text"><strong>Static, lifeless data</strong> — TRL scores, confidence ratings, trajectories — all encoded as tiny text. The data doesn't breathe or move or tell a story.</span></div>
+        <div class="diag-item"><span class="diag-icon">🔇</span><span class="diag-text"><strong>Single modality</strong> — Pure text + cards. No audio, no visual narratives, no interactive exploration. Users scan, they don't discover.</span></div>
+        <div class="diag-item"><span class="diag-icon">⬜</span><span class="diag-text"><strong>Generic aesthetic</strong> — White background, bordered cards, monospace labels. Competent but indistinguishable from any SaaS dashboard.</span></div>
+        <div class="diag-item"><span class="diag-icon">📱</span><span class="diag-text"><strong>No engagement loops</strong> — No quizzes, flashcards, or ways to test understanding. Users consume passively rather than learn actively.</span></div>
+      </div>
+
+      <div class="diag-card after">
+        <div class="diag-label"><span class="diag-label-dot green"></span> The Opportunity</div>
+        <div class="diag-item"><span class="diag-icon">🌌</span><span class="diag-text"><strong>Immersive intelligence</strong> — Make every finding a destination. WebGL particle systems, scroll-driven narratives, spatial audio. Intelligence you can <em>feel</em>.</span></div>
+        <div class="diag-item"><span class="diag-icon">🎙️</span><span class="diag-text"><strong>Multi-modal learning</strong> — Weekly AI-generated audio overviews (à la NotebookLM), flashcard decks, quizzes, and mind maps. Same data, five ways to absorb it.</span></div>
+        <div class="diag-item"><span class="diag-icon">🗺️</span><span class="diag-text"><strong>Spatial data storytelling</strong> — Transform 27 findings into an interactive constellation. Zoom, filter, connect. See the landscape, not just the list.</span></div>
+        <div class="diag-item"><span class="diag-icon">🖤</span><span class="diag-text"><strong>Luxury dark aesthetic</strong> — Rich blacks, gold accents, generous whitespace. Position YNOT.NOW as the premium intelligence source it actually is.</span></div>
+        <div class="diag-item"><span class="diag-icon">🧠</span><span class="diag-text"><strong>Active engagement</strong> — Flashcards, quizzes, knowledge checks. Turn passive readers into informed professionals who retain what they learn.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CONCEPTS ═══════════════ -->
+<section class="section" id="concepts">
+  <div class="section-inner">
+    <div class="section-tag">02 — The Eight Concepts</div>
+    <h2 class="section-h2">Eight radical shifts.<br>Each one <em>a first.</em></h2>
+    <p class="section-sub">These aren't incremental improvements. Each concept pushes what a tech intelligence site can be — borrowing from immersive art, data journalism, and AI-native interfaces.</p>
+
+    <div class="concepts-grid" id="conceptsGrid">
+
+      <!-- CONCEPT 1: Signal Constellation -->
+      <div class="concept-card" data-concept="1">
+        <div class="cc-header">
+          <div class="cc-num">01</div>
+          <div class="cc-meta">
+            <div class="cc-tag">WebGL · Three.js</div>
+            <div class="cc-title">The Signal Constellation</div>
+            <div class="cc-effort">High effort · High impact</div>
+          </div>
+        </div>
+        <div class="cc-body">Replace the card grid with an interactive 3D particle constellation. Each finding is a star — size = confidence, color = verdict, orbit = domain. Click to explore. Zoom to discover. The intelligence landscape becomes something you navigate, not just read.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-1">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">Imagine landing on YNOT.NOW and instead of a card grid, you see a <strong>living galaxy of intelligence</strong>. Each of the 27 weekly findings floats as a luminous particle in 3D space. <strong>Signal findings glow gold</strong>, Watch findings pulse white, Unverified ones dim at the edges. The bigger the particle, the higher the confidence. Clusters form naturally around domains — P&C stars orbit together, Life & Annuities form their own nebula. Click any star and it expands into a detailed finding card that slides in from the side. Drag to rotate the view. Scroll to zoom. This is NASA Eyes on Asteroids meets The Pudding meets Lusion — applied to insurance intelligence.</p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Key Features</div>
+          <div class="ce-features">
+            <div class="ce-feature"><span class="ce-feature-icon">🌟</span><span class="ce-feature-text"><strong>Particle physics</strong> — Each finding is a Three.js particle with mass (confidence), color (verdict), and orbital path (domain). They attract and repel based on topic similarity.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🔍</span><span class="ce-feature-text"><strong>Semantic zoom</strong> — Zooming in reveals finding titles, then full details. Like Google Maps but for intelligence signals.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🕸️</span><span class="ce-feature-text"><strong>Connection threads</strong> — When Weave (your systems thinker) identifies cross-domain connections, glowing threads appear between related findings.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">⏱️</span><span class="ce-feature-text"><strong>Time scrubbing</strong> — Drag a timeline slider and watch the constellation evolve across weeks. See signals emerge, strengthen, and sometimes fade.</span></div>
+          </div>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Tech Stack</div>
+          <div class="ce-tech">
+            <span class="ce-tech-tag">Three.js r160+</span>
+            <span class="ce-tech-tag">Custom shaders (GLSL)</span>
+            <span class="ce-tech-tag">OrbitControls</span>
+            <span class="ce-tech-tag">Raycaster for click</span>
+            <span class="ce-tech-tag">Canvas fallback for mobile</span>
+          </div>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Inspiration</div>
+          <p class="ce-inspiration">"The best data experiences don't just show you information — they make you feel like an explorer discovering it." — Inspired by Lusion's WebGL mastery, NASA Eyes on Asteroids, and The Pudding's data journalism.</p>
+        </div>
+      </div>
+
+      <!-- CONCEPT 2: Audio Intelligence -->
+      <div class="concept-card" data-concept="2">
+        <div class="cc-header">
+          <div class="cc-num">02</div>
+          <div class="cc-meta">
+            <div class="cc-tag">AI Audio · Web Audio API</div>
+            <div class="cc-title">The Weekly Ear</div>
+            <div class="cc-effort">Medium effort · Very high impact</div>
+          </div>
+        </div>
+        <div class="cc-body">Generate a weekly AI audio briefing — a 3-5 minute "podcast" where two AI voices discuss the top findings, debate what's signal vs. noise, and break down what insurance professionals should pay attention to. Think NotebookLM Audio Overviews, but for insurance AI intelligence.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-2">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">Every Monday after the cron runs, a new 3-5 minute audio briefing is auto-generated. <strong>Two distinct AI voices</strong> — one plays the optimist (like Scout), the other the skeptic (like Null) — and they have a natural-sounding conversation about the week's most important findings. The audio player sits as a <strong>persistent floating pill</strong> at the bottom of the screen with a waveform visualizer. Users can listen while reading, on their commute, or during their morning coffee. This makes YNOT.NOW the <strong>first insurance intelligence platform with a built-in AI podcast</strong>.</p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Key Features</div>
+          <div class="ce-features">
+            <div class="ce-feature"><span class="ce-feature-icon">🎙️</span><span class="ce-feature-text"><strong>Auto-generated weekly briefing</strong> — Claude generates a dialogue script from findings, then a TTS API (ElevenLabs/OpenAI) voices it with two distinct speakers.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">📊</span><span class="ce-feature-text"><strong>Live waveform visualizer</strong> — Web Audio API analyzes the audio stream and renders a responsive waveform using Canvas, with peaks synced to emphasis words.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">📝</span><span class="ce-feature-text"><strong>Timestamped transcript</strong> — Click any line in the transcript and the audio jumps to that moment. Finding cards highlight as they're discussed.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🔊</span><span class="ce-feature-text"><strong>Ambient data sonification</strong> — Optional: subtle background tones that shift based on the week's signal composition. More signals = warmer, more noise = cooler. A vibe, not noise.</span></div>
+          </div>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Tech Stack</div>
+          <div class="ce-tech">
+            <span class="ce-tech-tag">Anthropic API (script gen)</span>
+            <span class="ce-tech-tag">ElevenLabs / OpenAI TTS</span>
+            <span class="ce-tech-tag">Web Audio API</span>
+            <span class="ce-tech-tag">Canvas waveform</span>
+            <span class="ce-tech-tag">Supabase Storage</span>
+          </div>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Inspiration</div>
+          <p class="ce-inspiration">"NotebookLM proved that AI audio overviews aren't a gimmick — they're a new modality for understanding. YNOT.NOW could be the first vertical intelligence platform to adopt this."</p>
+        </div>
+      </div>
+
+      <!-- CONCEPT 3: Flashcards & Quiz -->
+      <div class="concept-card" data-concept="3">
+        <div class="cc-header">
+          <div class="cc-num">03</div>
+          <div class="cc-meta">
+            <div class="cc-tag">Active Learning</div>
+            <div class="cc-title">Signal Flashcards & Quiz Mode</div>
+            <div class="cc-effort">Medium effort · High impact</div>
+          </div>
+        </div>
+        <div class="cc-body">Auto-generate interactive flashcard decks and quizzes from each week's findings. "What TRL is parametric flood insurance at?" "Which mind flagged EU AI Act compliance risks?" Turn passive reading into active retention. A first for any intelligence platform.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-3">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">After browsing findings, users can tap <strong>"Test Your Knowledge"</strong> to enter Quiz Mode. Claude auto-generates 10 questions per week based on the findings — multiple choice, true/false, and "which mind said this?" format. There's also a <strong>Flashcard Deck</strong> mode: swipeable cards with the finding title on front, verdict + key insight on back. Streak tracking, weekly scores, and a subtle gamification layer make this addictive. Insurance professionals actually <strong>retain</strong> what they read instead of skimming and forgetting.</p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Key Features</div>
+          <div class="ce-features">
+            <div class="ce-feature"><span class="ce-feature-icon">🃏</span><span class="ce-feature-text"><strong>Swipeable flashcards</strong> — Tinder-style swipe UX. Swipe right = "I knew this", left = "Need to review". Spaced repetition algorithm resurfaces weak areas.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">❓</span><span class="ce-feature-text"><strong>AI-generated quizzes</strong> — 10 questions per week, auto-generated from findings. Tracks accuracy over time. "Your insurance AI IQ: 87/100".</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🔥</span><span class="ce-feature-text"><strong>Streak system</strong> — "You've checked in 4 weeks in a row." Lightweight gamification without being childish. Professional, not playful.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">📊</span><span class="ce-feature-text"><strong>Knowledge gaps</strong> — "You're strong on P&C signals but haven't engaged with Climate & ESG findings." Personalized suggestions.</span></div>
+          </div>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Tech Stack</div>
+          <div class="ce-tech">
+            <span class="ce-tech-tag">Vanilla JS (gesture handling)</span>
+            <span class="ce-tech-tag">CSS transforms (card flip)</span>
+            <span class="ce-tech-tag">LocalStorage (scores)</span>
+            <span class="ce-tech-tag">Anthropic API (quiz gen)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCEPT 4: The Mind Map -->
+      <div class="concept-card" data-concept="4">
+        <div class="cc-header">
+          <div class="cc-num">04</div>
+          <div class="cc-meta">
+            <div class="cc-tag">Interactive Data Viz</div>
+            <div class="cc-title">The Intelligence Mind Map</div>
+            <div class="cc-effort">Medium effort · High impact</div>
+          </div>
+        </div>
+        <div class="cc-body">An auto-generated, interactive mind map showing how this week's findings connect across domains, agents, and themes. Nodes expand on click. Animated connections pulse between related signals. See the whole intelligence landscape at a glance.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-4">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">A <strong>force-directed graph</strong> that auto-organizes around themes, not just domains. The central node is the week. Branch out to domains (P&C, Life, Climate, etc.), then to individual findings, then to shared themes. When Scout and Terra both surface climate-related signals, a gold thread connects them. When Null challenges a finding, a red dashed line appears. The mind map is <strong>zoomable, pannable, and filterable</strong> — toggle by agent, verdict, or TRL level. This visualization makes Weave's cross-domain synthesis <strong>visible</strong> for the first time.</p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Tech Stack</div>
+          <div class="ce-tech">
+            <span class="ce-tech-tag">D3.js force simulation</span>
+            <span class="ce-tech-tag">SVG rendering</span>
+            <span class="ce-tech-tag">Canvas (1000+ nodes)</span>
+            <span class="ce-tech-tag">Zoom/pan controls</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCEPT 5: Scroll Storytelling -->
+      <div class="concept-card" data-concept="5">
+        <div class="cc-header">
+          <div class="cc-num">05</div>
+          <div class="cc-meta">
+            <div class="cc-tag">Scrollytelling</div>
+            <div class="cc-title">The Weekly Narrative</div>
+            <div class="cc-effort">Medium effort · Very high impact</div>
+          </div>
+        </div>
+        <div class="cc-body">Transform the Weekly Pulse from a text block into a Rose Island-style scroll narrative. Each scroll step reveals a finding with cinematic transitions — parallax layers, animated data points, contextual imagery. The week's intelligence unfolds like a story, not a report.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-5">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">The default landing experience becomes a <strong>scroll-driven narrative</strong>. As the user scrolls, each major finding from the week slides into view with <strong>parallax-layered visuals</strong> — abstract generative art backgrounds, animated TRL gauges, confidence meters that fill in real-time. Between findings, <strong>contextual bridges</strong> connect the dots: "Meanwhile, on the regulatory front..." The whole thing feels like scrolling through a beautifully designed editorial feature in Bloomberg or The Information — but generated automatically from your cron output every week. <strong>Rose Island meets data journalism.</strong></p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Key Features</div>
+          <div class="ce-features">
+            <div class="ce-feature"><span class="ce-feature-icon">📜</span><span class="ce-feature-text"><strong>IntersectionObserver-driven steps</strong> — Each finding triggers on scroll. Smooth fade-ins, slide-ups, and parallax layers create cinematic depth.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">📈</span><span class="ce-feature-text"><strong>Animated data viz inline</strong> — TRL gauges animate from 0 to value. Confidence dots light up sequentially. Region tags fly in from map positions.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🎨</span><span class="ce-feature-text"><strong>Generative art backgrounds</strong> — Each domain gets a unique generative pattern (Canvas-drawn). P&C gets angular geometries, Life gets organic curves, Climate gets fluid gradients.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCEPT 6: Infographics -->
+      <div class="concept-card" data-concept="6">
+        <div class="cc-header">
+          <div class="cc-num">06</div>
+          <div class="cc-meta">
+            <div class="cc-tag">Auto-Generated</div>
+            <div class="cc-title">Weekly Infographic & Report</div>
+            <div class="cc-effort">Medium effort · High impact</div>
+          </div>
+        </div>
+        <div class="cc-body">Auto-generate a shareable, beautifully designed infographic summarizing the week's intelligence. One-page visual showing signal distribution, top findings, TRL landscape, and regional breakdown. Downloadable as PNG/PDF. LinkedIn-ready.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-6">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">Every Monday, alongside the findings, YNOT.NOW auto-generates a <strong>publication-quality infographic</strong>. Think of it as an "Instagram Story for insurtech professionals." The infographic includes: a <strong>verdict donut chart</strong> (Signal/Watch/Unverified split), a <strong>TRL landscape bar</strong> showing where findings cluster on the readiness scale, <strong>top 3 headlines</strong> with verdict badges, a <strong>regional heat strip</strong>, and a <strong>Weave insight callout</strong>. The whole thing renders as a styled HTML page that can be <strong>screenshotted, downloaded as PNG, or exported as a one-page PDF</strong>. Users share it on LinkedIn, internal Slack channels, and board presentations.</p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Tech Stack</div>
+          <div class="ce-tech">
+            <span class="ce-tech-tag">html2canvas (PNG export)</span>
+            <span class="ce-tech-tag">jsPDF (PDF export)</span>
+            <span class="ce-tech-tag">SVG charts</span>
+            <span class="ce-tech-tag">Styled HTML template</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCEPT 7: The Data Table -->
+      <div class="concept-card" data-concept="7">
+        <div class="cc-header">
+          <div class="cc-num">07</div>
+          <div class="cc-meta">
+            <div class="cc-tag">Power User Mode</div>
+            <div class="cc-title">The Intelligence Table</div>
+            <div class="cc-effort">Low-medium effort · High impact</div>
+          </div>
+        </div>
+        <div class="cc-body">A sortable, filterable, searchable data table mode for power users. Every finding across all weeks in one dense, Airtable-like view. Sort by TRL, filter by agent, search by keyword. Export to CSV. The analyst's dream interface.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-7">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">For researchers and analysts who want <strong>raw power over the data</strong>, the Intelligence Table offers an Airtable-like grid view of every finding ever collected. Columns: <strong>Title, Verdict, Agent, Domain, TRL, Confidence, Regions, Signal Status, Week, Refs</strong>. Click any column header to sort. Use the search bar to find "parametric" across all weeks. Filter by agent to see only what Null has challenged. Toggle between compact (one-line) and expanded (with body text) views. <strong>Export filtered results to CSV</strong> for further analysis. This is the B2B enterprise view that gives YNOT.NOW credibility with CTOs and analysts.</p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Key Features</div>
+          <div class="ce-features">
+            <div class="ce-feature"><span class="ce-feature-icon">🔍</span><span class="ce-feature-text"><strong>Full-text search</strong> — Instantly search across all finding titles and bodies. Highlight matching terms.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">📊</span><span class="ce-feature-text"><strong>Multi-column sort</strong> — Sort by TRL descending, then by confidence. Keyboard-navigable for accessibility.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">📥</span><span class="ce-feature-text"><strong>CSV/JSON export</strong> — Download filtered datasets for analysis in Excel, Python, or BI tools.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🔗</span><span class="ce-feature-text"><strong>Deep links</strong> — Each finding row has a permalink. Share a specific finding's URL directly.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCEPT 8: The Immersive Homepage -->
+      <div class="concept-card" data-concept="8">
+        <div class="cc-header">
+          <div class="cc-num">08</div>
+          <div class="cc-meta">
+            <div class="cc-tag">Full Experience</div>
+            <div class="cc-title">The Dark Canvas — A New Homepage</div>
+            <div class="cc-effort">High effort · Transformative</div>
+          </div>
+        </div>
+        <div class="cc-body">A complete visual identity overhaul. Dark luxury aesthetic with gold accents. Animated hero with generative art. Smooth page transitions. Ambient background particles. The homepage becomes an immersive art piece that happens to contain the world's best insurance AI intelligence.</div>
+        <div class="cc-preview"><div class="cc-arrow">→</div></div>
+      </div>
+      <div class="concept-expanded" id="concept-8">
+        <button class="ce-close" onclick="this.parentElement.classList.remove('active')">×</button>
+        <div class="ce-section">
+          <div class="ce-label">The Vision</div>
+          <p class="ce-text">The entire YNOT.NOW experience shifts to a <strong>dark-on-dark luxury canvas</strong>. Think Lusion meets Bloomberg Terminal meets a high-end watch brand. The background is #050505 — near-black but warm. Gold (#c8a96e) replaces the monochrome accents. <strong>Generative particles drift</strong> across the background, subtly reacting to mouse movement. Page sections fade in with staggered animations as you scroll. <strong>Finding cards have depth</strong> — glassmorphism borders, subtle shadows, hover states that feel tactile. The typography stays DM Sans/Serif/Mono but the sizing becomes more dramatic — headlines at 120px+, body text with more breathing room. This isn't a redesign. It's a <strong>repositioning</strong> — from "useful dashboard" to "premium intelligence experience."</p>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Key Features</div>
+          <div class="ce-features">
+            <div class="ce-feature"><span class="ce-feature-icon">🌑</span><span class="ce-feature-text"><strong>Dark luxury palette</strong> — #050505 background, #0c0c0c surfaces, #c8a96e gold accents. Warm blacks, not cold. Feels expensive.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">✨</span><span class="ce-feature-text"><strong>Ambient particles</strong> — Subtle floating particles in the background, barely visible, that drift with a physics simulation. Reacts gently to mouse position.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🪟</span><span class="ce-feature-text"><strong>Glassmorphism cards</strong> — Finding cards have semi-transparent backgrounds with backdrop-filter blur. Borders glow on hover. Verdict badges pulse.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">📐</span><span class="ce-feature-text"><strong>Dramatic typography</strong> — Hero text at 120-170px. Section headers at 60-80px. Generous letter-spacing. The type alone commands attention.</span></div>
+            <div class="ce-feature"><span class="ce-feature-icon">🎭</span><span class="ce-feature-text"><strong>View mode switcher</strong> — Persistent nav lets users switch between: Narrative (scrollytelling), Constellation (3D), Table (data), and Classic (cards). One data source, four experiences.</span></div>
+          </div>
+        </div>
+        <div class="ce-section">
+          <div class="ce-label">Inspiration</div>
+          <p class="ce-inspiration">"Akari by Lusion shows that a website can feel like walking through an art gallery. Rose Island proves that storytelling trumps feature lists. YNOT.NOW should feel like opening a vault of premium intelligence — dark, quiet, powerful. The anti-dashboard."</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ VISION NUMBERS ═══════════════ -->
+<section class="section" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="section-inner">
+    <div class="section-tag">03 — The Numbers</div>
+    <h2 class="section-h2">Same architecture.<br><em>Five new modalities.</em></h2>
+    <p class="section-sub">Your 8-mind backend stays untouched. Every concept layers on top of existing API endpoints and Supabase data.</p>
+
+    <div class="vision-strip">
+      <div class="vs-item"><div class="vs-num">5</div><div class="vs-label">Ways to experience</div></div>
+      <div class="vs-item"><div class="vs-num">4</div><div class="vs-label">View modes</div></div>
+      <div class="vs-item"><div class="vs-num">0</div><div class="vs-label">Backend changes</div></div>
+      <div class="vs-item"><div class="vs-num">∞</div><div class="vs-label">Shareability</div></div>
+    </div>
+
+    <div class="section-tag" style="margin-top:48px">The View Mode System</div>
+    <p class="ce-text" style="margin-bottom:24px;color:var(--dim)">The cornerstone of this redesign is a <strong style="color:var(--text)">persistent view mode switcher</strong> in the nav. Users choose how they want to consume the same intelligence:</p>
+    <div class="ce-features">
+      <div class="ce-feature"><span class="ce-feature-icon">📜</span><span class="ce-feature-text"><strong>Narrative Mode</strong> — The scroll-driven storytelling experience. Best for first-time visitors and weekly catch-ups. (Concept 5)</span></div>
+      <div class="ce-feature"><span class="ce-feature-icon">🌌</span><span class="ce-feature-text"><strong>Constellation Mode</strong> — The 3D WebGL exploration. Best for visual thinkers and presentations. (Concept 1)</span></div>
+      <div class="ce-feature"><span class="ce-feature-icon">📊</span><span class="ce-feature-text"><strong>Table Mode</strong> — The power-user data grid. Best for analysts and researchers. (Concept 7)</span></div>
+      <div class="ce-feature"><span class="ce-feature-icon">🃏</span><span class="ce-feature-text"><strong>Learn Mode</strong> — Flashcards, quizzes, and mind maps. Best for retention and team training. (Concept 3 + 4)</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PHASING ═══════════════ -->
+<section class="section" id="phases">
+  <div class="section-inner">
+    <div class="section-tag">04 — Implementation Phases</div>
+    <h2 class="section-h2">Three phases.<br><em>Ship something radical every two weeks.</em></h2>
+    <p class="section-sub">Each phase is independently valuable. Phase 1 alone transforms the experience. Each subsequent phase compounds the impact.</p>
+
+    <div class="phase-timeline">
+      <div class="phase">
+        <div class="phase-marker">P1</div>
+        <div class="phase-content">
+          <div class="phase-name">The Dark Canvas + Scrollytelling</div>
+          <div class="phase-time">Week 1-2 · Foundational</div>
+          <div class="phase-desc">Full visual identity shift to dark luxury aesthetic. Animated hero with particles. Scroll-driven weekly narrative replaces the text-heavy Pulse. Infographic generation (PNG/PDF export). This alone makes YNOT.NOW feel like a completely different product.</div>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-marker">P2</div>
+        <div class="phase-content">
+          <div class="phase-name">Multi-Modal Intelligence</div>
+          <div class="phase-time">Week 3-4 · Engagement</div>
+          <div class="phase-desc">Audio briefing generation (The Weekly Ear). Flashcard and quiz system. Data table view for power users. Mind map visualization. The view mode switcher goes live. Users can now experience intelligence in five different ways.</div>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-marker">P3</div>
+        <div class="phase-content">
+          <div class="phase-name">The Signal Constellation</div>
+          <div class="phase-time">Week 5-6 · Iconic</div>
+          <div class="phase-desc">The full Three.js 3D constellation with semantic zoom, connection threads, and time scrubbing. This is the signature experience — the thing people screenshot and share. The thing that makes people say "I've never seen a tech site do this."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<div class="concept-footer">
+  <div class="cf-quote">"The best intelligence doesn't just inform.<br>It transforms how you see."</div>
+  <div class="cf-attr">YNOT.NOW · Redesign Vision · March 2026</div>
+</div>
+
+<script>
+// ── Progress bar ──
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progressBar').style.width=(window.scrollY/h*100)+'%';
+});
+
+// ── Hero particles ──
+(function(){
+  const c=document.getElementById('heroCanvas');
+  const ctx=c.getContext('2d');
+  let w,h,particles=[];
+  function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}
+  window.addEventListener('resize',resize);resize();
+  class P{
+    constructor(){this.reset()}
+    reset(){this.x=Math.random()*w;this.y=Math.random()*h;this.r=Math.random()*1.5+.5;this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;this.a=Math.random()*.3+.05;this.life=Math.random()*200+100}
+    update(){this.x+=this.vx;this.y+=this.vy;this.life--;if(this.life<0||this.x<0||this.x>w||this.y<0||this.y>h)this.reset()}
+    draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(200,169,110,${this.a})`;ctx.fill()}
+  }
+  for(let i=0;i<60;i++)particles.push(new P());
+  function loop(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.update();p.draw()});
+  // connection lines
+  for(let i=0;i<particles.length;i++){for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x;const dy=particles[i].y-particles[j].y;const d=Math.sqrt(dx*dx+dy*dy);if(d<120){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle=`rgba(200,169,110,${.06*(1-d/120)})`;ctx.stroke()}}}
+  requestAnimationFrame(loop)}loop();
+})();
+
+// ── Concept expand/collapse ──
+document.querySelectorAll('.concept-card').forEach(card=>{
+  card.addEventListener('click',()=>{
+    const id='concept-'+card.dataset.concept;
+    const el=document.getElementById(id);
+    const wasActive=el.classList.contains('active');
+    document.querySelectorAll('.concept-expanded').forEach(e=>e.classList.remove('active'));
+    if(!wasActive){el.classList.add('active');setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'nearest'}),50)}
+  });
+});
+
+// ── Scroll reveal ──
+const observer=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.1});
+document.querySelectorAll('.concept-card,.diag-card,.phase,.vs-item,.ce-feature').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(20px)';el.style.transition='opacity .6s ease, transform .6s ease';observer.observe(el)});
+</script>
+</body>
+</html>
