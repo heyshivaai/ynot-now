@@ -1010,6 +1010,457 @@
       }
     }
 
+    /* Section headers with eyebrow */
+    .section-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 64px;
+      font-weight: 400;
+      letter-spacing: -1px;
+      color: var(--text);
+      margin-bottom: 60px;
+    }
+
+    /* Pulse styling */
+    .pulse-wrapper {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .pulse-content {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .pulse-finding {
+      padding: 20px;
+      background: rgba(17,17,17,0.8);
+      border: 1px solid var(--border-light);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      animation: slideInLeft 0.6s ease-out forwards;
+      opacity: 0;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .pulse-finding p {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-dim);
+    }
+
+    .pulse-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .sidebar-section {
+      padding: 24px;
+      background: rgba(200,169,110,0.05);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+    }
+
+    .region-group {
+      margin-bottom: 16px;
+    }
+
+    .region-title {
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .region-findings {
+      display: none;
+      padding-left: 12px;
+      border-left: 2px solid var(--border);
+      margin-left: 6px;
+    }
+
+    .region-findings.expanded {
+      display: block;
+    }
+
+    .finding-item {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      padding: 4px 0;
+    }
+
+    .pulse-archive {
+      border-top: 1px solid var(--border-light);
+      padding-top: 40px;
+    }
+
+    .archive-card {
+      padding: 24px;
+      background: rgba(17,17,17,0.8);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .archive-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .archive-date {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--dim);
+      margin-bottom: 8px;
+    }
+
+    .archive-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Infographic styling */
+    .infographic-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      padding: 40px;
+      background: rgba(17,17,17,0.8);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      margin-bottom: 40px;
+    }
+
+    .chart-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .verdict-chart {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 200px;
+      height: 200px;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 2px;
+    }
+
+    .legend-color.signal {
+      background: #4ade80;
+    }
+
+    .legend-color.watch {
+      background: #f97316;
+    }
+
+    .legend-color.unverified {
+      background: #a855f7;
+    }
+
+    .legend-value {
+      margin-left: auto;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .infographic-info {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .download-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: flex-start;
+    }
+
+    .accent-btn {
+      padding: 12px 24px;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .accent-btn:hover {
+      background: #d4b896;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(200,169,110,0.3);
+    }
+
+    /* Timeline styling */
+    .timeline-container {
+      margin-bottom: 60px;
+      padding: 40px;
+      background: rgba(17,17,17,0.5);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+    }
+
+    .timeline-scrubber {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .scrubber-track {
+      display: flex;
+      width: 100%;
+    }
+
+    .scrubber-track input[type="range"] {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, #4ade80 0%, #f97316 25%, #a855f7 50%, #60a5fa 75%, #c8a96e 100%);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .scrubber-track input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(200,169,110,0.5);
+    }
+
+    .scrubber-track input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 8px rgba(200,169,110,0.5);
+    }
+
+    .timeline-eras {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .era-card {
+      padding: 16px;
+      background: rgba(200,169,110,0.05);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .era-card.active {
+      background: rgba(200,169,110,0.15);
+      border-color: var(--accent);
+    }
+
+    .era-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .era-years {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      margin-bottom: 6px;
+    }
+
+    .era-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .era-description {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* Trajectory cards */
+    .trajectory-card {
+      padding: 24px;
+      background: rgba(17,17,17,0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .trajectory-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(200,169,110,0.2);
+    }
+
+    .trajectory-card.high-signal {
+      border-color: var(--accent);
+      background: rgba(200,169,110,0.08);
+    }
+
+    .trajectory-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .trajectory-key {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--dim);
+    }
+
+    .trajectory-score {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      padding: 4px 8px;
+      background: rgba(200,169,110,0.1);
+      border-radius: 3px;
+    }
+
+    .trajectory-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .trajectory-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border-light);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .meta-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--dim);
+    }
+
+    .meta-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .velocity-indicator {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .velocity-positive {
+      background: rgba(74,222,128,0.2);
+      color: #4ade80;
+    }
+
+    .velocity-negative {
+      background: rgba(249,115,22,0.2);
+      color: #f97316;
+    }
+
+    .trajectory-verdict {
+      display: inline-block;
+      padding: 4px 8px;
+      background: rgba(200,169,110,0.1);
+      border-radius: 3px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
       .what-grid {
@@ -1174,9 +1625,22 @@
 
   <!-- Pulse -->
   <section id="pulse" class="light-surface reveal">
+    <div class="section-tag">EXECUTIVE BRIEFING</div>
     <h2>Weekly Pulse</h2>
-    <div class="pulse-container" id="pulseContainer">
-      <p style="color: var(--dim); text-align: center;">Loading briefing...</p>
+    <div class="pulse-wrapper">
+      <div class="pulse-content" id="pulseContainer">
+        <p style="color: var(--dim); text-align: center;">Loading briefing...</p>
+      </div>
+      <div class="pulse-sidebar" id="regionalSidebar">
+        <div class="sidebar-section">
+          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 12px; font-family: 'DM Mono', monospace;">Regions</h4>
+          <div id="regionsList" style="display: flex; flex-direction: column; gap: 16px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="pulse-archive" id="pulseArchive" style="margin-top: 60px;">
+      <h3 style="font-size: 18px; color: var(--text); margin-bottom: 24px; font-family: 'DM Serif Display', serif;">Past Weeks</h3>
+      <div id="archiveList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;"></div>
     </div>
   </section>
 
@@ -1200,21 +1664,33 @@
 
   <!-- Infographic -->
   <section id="infographic" class="dark-surface reveal">
+    <div class="section-tag">WEEKLY SUMMARY</div>
     <h2>Download This Week</h2>
-    <div class="infographic-preview">
+    <div class="infographic-card">
       <div class="chart-container">
         <div class="verdict-chart">
-          <svg id="verdictChart" width="200" height="200"></svg>
+          <canvas id="verdictChart" width="200" height="200" style="max-width: 100%;"></canvas>
         </div>
-        <div class="top-findings">
-          <h3 style="font-size: 18px; margin-bottom: 16px; color: var(--text);">Top Findings</h3>
-          <div id="topFindingsList"></div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-color signal"></span><span>Signals</span><span id="signalCount" class="legend-value">0</span></div>
+          <div class="legend-item"><span class="legend-color watch"></span><span>Watch</span><span id="watchCount" class="legend-value">0</span></div>
+          <div class="legend-item"><span class="legend-color unverified"></span><span>Unverified</span><span id="unverifiedCount2" class="legend-value">0</span></div>
+        </div>
+      </div>
+      <div class="infographic-info">
+        <div class="info-block">
+          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 12px; font-family: 'DM Mono', monospace;">TRL Distribution</h4>
+          <div id="trlBar" style="display: flex; gap: 2px; height: 8px; border-radius: 2px; overflow: hidden; background: rgba(0,0,0,0.3);"></div>
+        </div>
+        <div class="info-block">
+          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 12px; font-family: 'DM Mono', monospace;">Top 3 Findings</h4>
+          <div id="topFindingsList" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
       </div>
     </div>
-    <div class="download-btns">
-      <button class="download-btn" onclick="downloadPNG()">Download PNG</button>
-      <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
+    <div class="download-buttons">
+      <button class="accent-btn" onclick="downloadPNG()">↓ Download PNG</button>
+      <button class="accent-btn" onclick="downloadPDF()">↓ Download PDF</button>
     </div>
   </section>
 
@@ -1229,12 +1705,31 @@
     </div>
   </section>
 
+  <!-- Month in Review -->
+  <section id="monthReview" class="light-surface reveal">
+    <div class="section-tag">MONTHLY NARRATIVE</div>
+    <h2>Month in Review</h2>
+    <div id="monthReviewContainer" style="max-width: 1000px; margin: 0 auto;">
+      <div style="background: rgba(200,169,110,0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 40px; text-align: center; color: var(--dim);">
+        <p>Loading monthly narrative...</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Signal History -->
   <section id="history" class="dark-surface reveal">
+    <div class="section-tag">EVOLUTION & TRENDS</div>
     <h2>Signal Trajectories</h2>
     <h3 style="font-size: 18px; color: var(--dim); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 1px; font-family: 'DM Mono', monospace;">Timeline</h3>
-    <div class="timeline-scrubber" id="timeline"></div>
-    <div id="trajectoriesContainer" style="margin-top: 40px;"></div>
+    <div class="timeline-container">
+      <div class="timeline-scrubber" id="timeline">
+        <div class="scrubber-track">
+          <input type="range" id="timelineSlider" min="0" max="4" value="4" style="width: 100%;">
+        </div>
+        <div class="timeline-eras" id="timelineEras"></div>
+      </div>
+    </div>
+    <div id="trajectoriesContainer" style="margin-top: 60px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;"></div>
   </section>
 
   <!-- About -->
@@ -1467,8 +1962,49 @@
 
         // Build transcript
         audioState.transcript = lines.map((line, i) => `${line}`);
+
+        // Populate regional sidebar
+        populateRegionalSidebar();
       } catch (e) {
         console.error('Failed to load pulse:', e);
+      }
+    }
+
+    function populateRegionalSidebar() {
+      const regions = ['US', 'EU', 'UK', 'APAC', 'Global'];
+      const sidebar = document.getElementById('regionalSidebar');
+      if (!sidebar) return;
+
+      let html = '<div class="sidebar-section"><h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; font-family: \'DM Mono\', monospace;">Regions</h4>';
+
+      regions.forEach(region => {
+        const regionFindings = allFindings.filter(f => {
+          const regions = f.regions || inferRegion(f.body);
+          return regions.includes(region);
+        });
+
+        html += `
+          <div class="region-group">
+            <div class="region-title" onclick="toggleRegionFindings(this)">${region} (${regionFindings.length})</div>
+            <div class="region-findings">
+              ${regionFindings.slice(0, 3).map(f => `
+                <div class="finding-item">${f.title.substring(0, 40)}</div>
+              `).join('')}
+              ${regionFindings.length > 3 ? `<div class="finding-item" style="color: var(--dim); font-style: italic;">+${regionFindings.length - 3} more</div>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      sidebar.innerHTML = html;
+    }
+
+    function toggleRegionFindings(element) {
+      const findingsDiv = element.nextElementSibling;
+      if (findingsDiv) {
+        findingsDiv.classList.toggle('expanded');
+        element.style.opacity = findingsDiv.classList.contains('expanded') ? '1' : '0.6';
       }
     }
 
@@ -1502,6 +2038,185 @@
         audioState.utterances = ['Audio briefing endpoint not yet deployed.'];
         audioState.transcript = ['Audio briefing will be available after deployment.'];
       }
+    }
+
+    async function loadMonthReview() {
+      try {
+        const res = await fetch('/api/month-review');
+        const data = await res.json();
+        const container = document.getElementById('monthReviewContainer');
+
+        if (!data.narrative || !data.narrative.body) {
+          container.innerHTML = '<p style="color: var(--dim); text-align: center;">Monthly narrative not yet available.</p>';
+          return;
+        }
+
+        const narrative = data.narrative;
+        let html = `
+          <div style="text-align: left;">
+            <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border-light);">
+              <h3 style="font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); margin-bottom: 12px;">${narrative.month_key || 'This Month'}</h3>
+              <p style="font-size: 13px; color: var(--dim); font-family: 'DM Mono', monospace;">Synthesized from ${narrative.findings_count || 'N/A'} findings across 4 weeks</p>
+            </div>
+            <div style="font-size: 16px; line-height: 1.8; color: var(--text-dim);">
+              ${narrative.body.split('\n').map(p => p.trim() ? `<p style="margin-bottom: 16px;">${p}</p>` : '').join('')}
+            </div>
+            ${narrative.key_themes ? `
+              <div style="margin-top: 32px; padding-top: 32px; border-top: 1px solid var(--border-light);">
+                <h4 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; font-family: 'DM Mono', monospace;">Key Themes</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  ${narrative.key_themes.map(theme => `<span style="padding: 6px 12px; background: rgba(200,169,110,0.1); border-radius: 3px; font-size: 12px; color: var(--accent); font-family: 'DM Mono', monospace;">${theme}</span>`).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+        container.innerHTML = html;
+      } catch (e) {
+        console.error('Failed to load month review:', e);
+        document.getElementById('monthReviewContainer').innerHTML = '<p style="color: var(--dim); text-align: center;">Failed to load monthly narrative.</p>';
+      }
+    }
+
+    async function loadTrajectories() {
+      try {
+        const res = await fetch('/api/findings');
+        const data = await res.json();
+
+        if (!data.signal_trajectories || data.signal_trajectories.length === 0) {
+          document.getElementById('trajectoriesContainer').innerHTML = '<p style="color: var(--dim); text-align: center; grid-column: 1 / -1;">No trajectories available yet.</p>';
+          return;
+        }
+
+        let html = '';
+        data.signal_trajectories
+          .sort((a, b) => (b.compound_score || 0) - (a.compound_score || 0))
+          .forEach(traj => {
+            const isHighSignal = (traj.compound_score || 0) > 0.6;
+            const velocityUp = (traj.trl_velocity || 0) > 0;
+            const velocityClass = velocityUp ? 'velocity-positive' : 'velocity-negative';
+            const velocityLabel = velocityUp ? '↑ Rising' : '↓ Declining';
+
+            html += `
+              <div class="trajectory-card ${isHighSignal ? 'high-signal' : ''}">
+                <div class="trajectory-header">
+                  <div class="trajectory-key">${traj.topic_key || 'Unknown'}</div>
+                  <div class="trajectory-score">${(traj.compound_score || 0).toFixed(2)}</div>
+                </div>
+                <div class="trajectory-title">${traj.title || traj.topic_key || 'Signal Trajectory'}</div>
+                <div class="trajectory-meta">
+                  <div class="meta-row">
+                    <span class="meta-label">Current TRL</span>
+                    <span class="meta-value">${readinessLabel(traj.current_trl || 0)}</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">Seen</span>
+                    <span class="meta-value">${traj.weeks_seen || 1} week(s)</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">Velocity</span>
+                    <span class="${velocityClass}" style="padding: 2px 6px; border-radius: 2px;">${velocityLabel}</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">Verdict</span>
+                    <span class="trajectory-verdict">${traj.current_verdict || 'WATCH'}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+
+        document.getElementById('trajectoriesContainer').innerHTML = html;
+      } catch (e) {
+        console.error('Failed to load trajectories:', e);
+      }
+    }
+
+    const TIMELINE_ERAS = [
+      {
+        id: 0,
+        years: '2004-2010',
+        title: 'Statistical Dawn',
+        description: 'Insurance discovers statistical machine learning. Predictive models enter underwriting. First automated claim routing systems.'
+      },
+      {
+        id: 1,
+        years: '2011-2015',
+        title: 'ML Goes Mainstream',
+        description: 'Deep learning techniques mature. Computer vision enters claims assessment. Insurers scale ML to millions of policies.'
+      },
+      {
+        id: 2,
+        years: '2016-2019',
+        title: 'Deep Learning Disrupts',
+        description: 'Transformer models arrive. NLP revolutionizes policy processing. Real-time personalization becomes standard. Regulatory scrutiny begins.'
+      },
+      {
+        id: 3,
+        years: '2020-2023',
+        title: 'Pandemic Acceleration',
+        description: 'COVID forces digital-first operations. Automation scales rapidly. Work-from-anywhere models adopt AI ops. Climate risk modeling accelerates.'
+      },
+      {
+        id: 4,
+        years: '2024-2026',
+        title: 'The Agentic Era',
+        description: 'Autonomous agents manage underwriting workflows. Multimodal AI handles all data types. Foundation models drive decision support. Regulatory frameworks evolve.'
+      }
+    ];
+
+    function initTimeline() {
+      const erasContainer = document.getElementById('timelineEras');
+      const slider = document.getElementById('timelineSlider');
+
+      let html = '';
+      TIMELINE_ERAS.forEach(era => {
+        html += `
+          <div class="era-card" id="era-${era.id}" onclick="selectEra(${era.id})">
+            <div class="era-years">${era.years}</div>
+            <div class="era-title">${era.title}</div>
+            <div class="era-description">${era.description}</div>
+          </div>
+        `;
+      });
+      erasContainer.innerHTML = html;
+
+      // Set initial active era
+      document.getElementById('era-4').classList.add('active');
+
+      // Handle slider
+      slider.addEventListener('input', (e) => {
+        selectEra(parseInt(e.target.value));
+      });
+    }
+
+    function selectEra(id) {
+      document.querySelectorAll('.era-card').forEach(card => card.classList.remove('active'));
+      document.getElementById(`era-${id}`).classList.add('active');
+      document.getElementById('timelineSlider').value = id;
+    }
+
+    function updateInfographicTRL() {
+      if (allFindings.length === 0) return;
+
+      // Calculate TRL distribution
+      const trlLevels = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0};
+      allFindings.forEach(f => {
+        const trl = Math.min(9, Math.max(1, f.trl || 1));
+        trlLevels[trl]++;
+      });
+
+      const total = allFindings.length;
+      const trlBar = document.getElementById('trlBar');
+      if (!trlBar) return;
+
+      let html = '';
+      Object.entries(trlLevels).forEach(([level, count]) => {
+        const percentage = (count / total) * 100;
+        const colors = ['#666', '#888', '#aaa', '#ccc', '#eee', '#4ade80', '#22c55e', '#16a34a', '#15803d'];
+        html += `<div style="flex: ${percentage}%; background: ${colors[level - 1]}; height: 100%; border-radius: 2px;"></div>`;
+      });
+      trlBar.innerHTML = html;
     }
 
     // ========== STATS & FILTERING ==========
@@ -1725,7 +2440,7 @@
 
     // ========== INFOGRAPHIC ==========
     function updateInfographic() {
-      // Verdict donut
+      // Verdict donut and counts
       const verdicts = {
         'SIGNAL': allFindings.filter(f => normalizeVerdict(f.verdict) === 'SIGNAL').length,
         'WATCH': allFindings.filter(f => normalizeVerdict(f.verdict) === 'WATCH').length,
@@ -1734,11 +2449,23 @@
 
       drawDonutChart('verdictChart', verdicts);
 
-      // Top findings
-      const top = allFindings.slice(0, 5);
+      // Update verdict counts
+      document.getElementById('signalCount').textContent = verdicts['SIGNAL'];
+      document.getElementById('watchCount').textContent = verdicts['WATCH'];
+      document.getElementById('unverifiedCount2').textContent = verdicts['UNVERIFIED'];
+
+      // Update TRL bar
+      updateInfographicTRL();
+
+      // Top 3 findings
+      const top = allFindings.slice(0, 3);
       let html = '';
       top.forEach(f => {
-        html += `<div class="finding-item">${f.title.substring(0, 50)}...</div>`;
+        const verdict = normalizeVerdict(f.verdict);
+        html += `<div style="padding: 8px; background: rgba(200,169,110,0.05); border-left: 2px solid var(--accent); border-radius: 2px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text);">${f.title.substring(0, 45)}</div>
+          <div style="font-size: 11px; color: var(--dim); margin-top: 4px;">${verdict} · ${f.domain}</div>
+        </div>`;
       });
       document.getElementById('topFindingsList').innerHTML = html;
     }
@@ -1769,7 +2496,7 @@
     }
 
     async function downloadPNG() {
-      const element = document.querySelector('.infographic-preview');
+      const element = document.querySelector('.infographic-card');
       const canvas = await html2canvas(element);
       const link = document.createElement('a');
       link.href = canvas.toDataURL();
@@ -1778,7 +2505,7 @@
     }
 
     async function downloadPDF() {
-      const element = document.querySelector('.infographic-preview');
+      const element = document.querySelector('.infographic-card');
       const canvas = await html2canvas(element);
       const {jsPDF} = window.jspdf;
       const pdf = new jsPDF();
@@ -1831,8 +2558,11 @@
       initMorphingHeadline();
       renderMinds();
       setupScrollReveals();
+      initTimeline();
       loadFindings();
       loadPulse();
+      loadMonthReview();
+      loadTrajectories();
       loadVisitors();
       loadAudioBriefing();
     });
