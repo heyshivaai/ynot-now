@@ -2301,7 +2301,8 @@
         'APAC': body.includes('apac') || body.includes('asia') || body.includes('singapore') || body.includes('australia'),
         'Global': body.includes('global') || body.includes('worldwide')
       };
-      return Object.keys(regions).filter(k => regions[k]) || ['Global'];
+      const matched = Object.keys(regions).filter(k => regions[k]);
+      return matched.length > 0 ? matched : ['Global'];
     }
 
     // ========== PARTICLE CANVAS ==========
@@ -2388,15 +2389,16 @@
             title: f.title, verdict: f.verdict, body: f.body || '',
             domain: f.domain, subdomain: f.subdomain, confidence: f.confidence,
             trl: f.trl, regulatoryRisk: f.regulatory_risk, experiment: f.experiment,
-            refs: f.refs || [], regions: f.regions || [],
+            refs: f.refs || [], regions: (f.regions && f.regions.length > 0) ? f.regions : null,
             run_date: f.run_date, signal_status: f.signal_status
           }));
         }
-        updateStats();
-        renderFindings();
-        buildFilterPills();
-        updateInfographic();
-        if (data.total_runs) document.getElementById('runCount').textContent = data.total_runs;
+        try { updateStats(); } catch(e) { console.warn('updateStats:', e); }
+        try { renderFindings(); } catch(e) { console.warn('renderFindings:', e); }
+        try { buildFilterPills(); } catch(e) { console.warn('buildFilterPills:', e); }
+        try { updateInfographic(); } catch(e) { console.warn('updateInfographic:', e); }
+        const runEl = document.getElementById('runCount');
+        if (data.total_runs && runEl) runEl.textContent = data.total_runs;
       } catch (e) {
         console.error('Failed to load findings:', e);
       }
@@ -2505,8 +2507,8 @@
 
         container.innerHTML = html;
 
-        // Populate regional sidebar
-        populateRegionalSidebar();
+        // Populate regional sidebar with pulse top findings
+        populateRegionalSidebar(topFindings);
 
         // Load archive
         loadPulseArchive(archive);
@@ -2544,17 +2546,20 @@
       list.innerHTML = html;
     }
 
-    function populateRegionalSidebar() {
-      const regions = ['US', 'EU', 'UK', 'APAC', 'Global'];
+    function populateRegionalSidebar(findingsData) {
+      const regionNames = ['US', 'EU', 'UK', 'APAC', 'Global'];
       const sidebar = document.getElementById('regionalSidebar');
       if (!sidebar) return;
 
+      // Use passed findings, or fall back to allFindings
+      const source = (findingsData && findingsData.length > 0) ? findingsData : allFindings;
+
       let html = '<div class="sidebar-section"><h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; font-family: \'DM Mono\', monospace;">Regions</h4>';
 
-      regions.forEach(region => {
-        const regionFindings = allFindings.filter(f => {
-          const regions = f.regions || inferRegion(f.body);
-          return regions.includes(region);
+      regionNames.forEach(region => {
+        const regionFindings = source.filter(f => {
+          const fRegions = f.regions || inferRegion(f.body || '');
+          return fRegions.includes(region);
         });
 
         html += `
@@ -2871,27 +2876,29 @@
       const signals = allFindings.filter(f => normalizeVerdict(f.verdict) === 'SIGNAL').length;
       const unverified = allFindings.filter(f => normalizeVerdict(f.verdict) === 'UNVERIFIED').length;
 
-      document.getElementById('runCount').textContent = runCount;
-      document.getElementById('findingsCount').textContent = allFindings.length;
-      document.getElementById('signalsCount').textContent = signals;
-      document.getElementById('unverifiedCount').textContent = unverified;
-      document.getElementById('lastRun').textContent = allFindings.length > 0 ? 'This week' : 'Pending';
+      const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+      el('runCount', runCount);
+      el('findingsCount', allFindings.length);
+      el('signalsCount', signals);
+      el('unverifiedCount', unverified);
+      el('lastRun', allFindings.length > 0 ? 'This week' : 'Pending');
     }
 
     function buildFilterPills() {
       const domains = [...new Set(allFindings.map(f => f.domain).filter(Boolean))].sort();
       const verdicts = ['SIGNAL', 'WATCH', 'UNVERIFIED'];
-      const regions = ['US', 'EU', 'UK', 'APAC', 'Global'];
+      const regionsList = ['US', 'EU', 'UK', 'APAC', 'Global'];
       const readiness = ['Idea', 'Experiment', 'Pilot', 'Proven', 'Standard'];
 
       const buildPills = (values, filterKey) => {
         return values.map(v => `<button class="pill" onclick="setFilter('${filterKey}', '${v}')" data-filter="${filterKey}" data-value="${v}">${v}</button>`).join('');
       };
 
-      document.getElementById('domainPills').innerHTML = buildPills(domains, 'domain');
-      document.getElementById('verdictPills').innerHTML = buildPills(verdicts, 'verdict');
-      document.getElementById('regionPills').innerHTML = buildPills(regions, 'region');
-      document.getElementById('readinessPills').innerHTML = buildPills(readiness, 'readiness');
+      const setHTML = (id, content) => { const el = document.getElementById(id); if (el) el.innerHTML = content; };
+      setHTML('domainPills', buildPills(domains, 'domain'));
+      setHTML('verdictPills', buildPills(verdicts, 'verdict'));
+      setHTML('regionPills', buildPills(regionsList, 'region'));
+      setHTML('readinessPills', buildPills(readiness, 'readiness'));
     }
 
     function setFilter(key, value) {
