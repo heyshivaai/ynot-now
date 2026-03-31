@@ -4,6 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YNOT.NOW — Vendor-Neutral Insurance AI Intelligence</title>
+  <link rel="canonical" href="https://ynot-now.vercel.app/v2">
+  <meta name="description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Unverified — with evidence. Free, open, no vendor bias.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="YNOT.NOW">
+  <meta property="og:url" content="https://ynot-now.vercel.app/v2">
+  <meta property="og:title" content="YNOT.NOW — AI Intelligence for Insurance">
+  <meta property="og:description" content="Eight specialist AI minds track what's real in insurance AI. Every finding scored Signal, Watch, or Unverified — with evidence. Free, open, no vendor bias.">
+  <meta property="og:image" content="https://ynot-now.vercel.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="YNOT.NOW — AI Intelligence for Insurance">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="YNOT.NOW — AI Intelligence for Insurance">
+  <meta name="twitter:description" content="Eight specialist AI minds track what's real in insurance AI. Free, open, no vendor bias.">
+  <meta name="twitter:image" content="https://ynot-now.vercel.app/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&family=DM+Serif+Display:wght@400&display=swap" rel="stylesheet">
@@ -910,53 +929,427 @@
       color: var(--text-dim);
     }
 
-    /* Footer */
-    footer {
-      background: var(--surface);
-      border-top: 1px solid var(--border-light);
-      padding: 60px;
-      text-align: center;
-    }
-
-    .footer-content {
+    /* Orbital Animation */
+    .orbital-wrapper {
+      position: relative;
+      width: 100%;
       max-width: 600px;
-      margin: 0 auto;
+      aspect-ratio: 1;
+      margin: 0 auto 60px;
     }
 
-    .visitor-count {
-      font-size: 14px;
-      color: var(--dim);
-      margin-bottom: 20px;
-      font-family: 'DM Mono', monospace;
+    #orbitalCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
     }
 
-    .footer-links {
+    .orbital-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 2;
+    }
+
+    .orbital-center-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--accent), #a17d4a);
+      border-radius: 50%;
       display: flex;
-      gap: 20px;
+      align-items: center;
       justify-content: center;
-      margin-bottom: 20px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      color: var(--bg);
+      margin: 0 auto 8px;
+      box-shadow: 0 0 40px rgba(200,169,110,0.4);
+    }
+
+    .orbital-center-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .orbital-center-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--dim);
+      margin-top: 4px;
+    }
+
+    .orbital-node {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(17,17,17,0.9);
+      border: 2px solid rgba(200,169,110,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 3;
+      backdrop-filter: blur(4px);
+    }
+
+    .orbital-node:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(200,169,110,0.4);
+      transform: scale(1.15);
+    }
+
+    .orbital-node .node-label {
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--dim);
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+
+    .orbital-node:hover .node-label {
+      color: var(--accent);
+    }
+
+    /* Phase cards */
+    .phases-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 60px;
       flex-wrap: wrap;
     }
 
-    .footer-links a {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 13px;
+    .phase-card {
+      background: rgba(17,17,17,0.5);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 32px;
+      max-width: 380px;
+      flex: 1;
+      min-width: 280px;
+      backdrop-filter: blur(8px);
+    }
+
+    .phase-card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .phase-card p {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    .phase-number {
       font-family: 'DM Mono', monospace;
+      font-size: 48px;
+      font-weight: 500;
+      color: rgba(200,169,110,0.15);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .phase-1 {
+      border-top: 3px solid rgba(74,222,128,0.4);
+    }
+
+    .phase-2 {
+      border-top: 3px solid rgba(200,169,110,0.4);
+    }
+
+    .phase-agents {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .phase-agent {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .phase-agent:hover {
+      background: rgba(200,169,110,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .phase-connector {
+      display: flex;
+      align-items: center;
+    }
+
+    .phase-arrow {
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(74,222,128,0.4), rgba(200,169,110,0.4));
+      position: relative;
+    }
+
+    .phase-arrow::after {
+      content: '→';
+      position: absolute;
+      right: -8px;
+      top: -10px;
+      color: var(--accent);
+      font-size: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .orbital-wrapper {
+        max-width: 350px;
+      }
+      .orbital-node {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+      }
+      .phase-connector {
+        transform: rotate(90deg);
+      }
+    }
+
+    /* Footer */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 40px 32px;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-logo {
+      text-decoration: none;
+    }
+
+    .footer-mission {
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: 15px;
+      color: #777;
+    }
+
+    .footer-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: #888;
+      letter-spacing: 0.05em;
+    }
+
+    .visitor-counter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 6px 14px;
+      flex-wrap: wrap;
+    }
+
+    .vc-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .vc-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .vc-dot-live {
+      background: #4ade80;
+      box-shadow: 0 0 6px rgba(74,222,128,0.5);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    .vc-dot-total {
+      background: var(--accent);
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .vc-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      transition: color 0.3s ease;
+      color: rgba(255,255,255,0.4);
     }
 
-    .footer-links a:hover {
-      color: #d9b884;
+    .vc-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
     }
 
-    .disclaimer {
-      font-size: 12px;
-      color: var(--dim);
+    .vc-sep {
+      width: 1px;
+      height: 16px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .footer-legal {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer-legal a {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-legal a:hover {
+      color: rgba(255,255,255,0.7);
+    }
+
+    .footer-legal-sep {
+      color: rgba(255,255,255,0.12);
+      font-size: 10px;
+    }
+
+    .footer-legal-copy {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.18);
+    }
+
+    .footer-disclaimer {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
       line-height: 1.6;
-      margin-top: 20px;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    /* Scroll to top */
+    .scroll-top-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 44px;
+      height: 44px;
+      background: rgba(200,169,110,0.15);
+      border: 1px solid rgba(200,169,110,0.3);
+      border-radius: 50%;
+      color: var(--accent);
+      font-size: 20px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 120;
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+
+    .scroll-top-btn:hover {
+      background: rgba(200,169,110,0.3);
+      transform: translateY(-2px);
+    }
+
+    .scroll-top-btn.visible {
+      display: flex;
+    }
+
+    /* Cookie consent */
+    .cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(17,17,17,0.95);
+      border-top: 1px solid rgba(200,169,110,0.2);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 200;
+      backdrop-filter: blur(12px);
+      font-size: 13px;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+    }
+
+    .cookie-banner.hidden {
+      display: none;
+    }
+
+    .cookie-banner button {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 8px 24px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: background 0.2s;
+    }
+
+    .cookie-banner button:hover {
+      background: #d9b884;
     }
 
     /* Timeline */
@@ -1445,9 +1838,22 @@
       color: #4ade80;
     }
 
+    .velocity-stable {
+      background: rgba(200,169,110,0.15);
+      color: var(--accent);
+    }
+
     .velocity-negative {
-      background: rgba(249,115,22,0.2);
-      color: #f97316;
+      background: rgba(248,113,113,0.2);
+      color: #f87171;
+    }
+
+    .trajectory-card.rising {
+      border-color: rgba(74,222,128,0.25);
+    }
+
+    .trajectory-card.rising:hover {
+      box-shadow: 0 0 24px rgba(74,222,128,0.15);
     }
 
     .trajectory-verdict {
@@ -1459,6 +1865,31 @@
       font-size: 11px;
       color: var(--accent);
       text-transform: uppercase;
+    }
+
+    .traj-filter-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--dim);
+      padding: 8px 18px;
+      border-radius: 4px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .traj-filter-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+
+    .traj-filter-btn.active {
+      background: rgba(200,169,110,0.15);
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     /* Responsive */
@@ -1527,9 +1958,9 @@
 
   <!-- Navigation -->
   <nav>
-    <div class="logo-container">
+    <a href="/" class="logo-container" aria-label="YNOT.NOW — Go to main page" style="text-decoration:none;">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" height="48" class="logo-svg" role="img" aria-label="YNOT.NOW"><title>YNOT.NOW</title><path d="M 4 4 L 22 30 L 22 60 L 34 60 L 34 30 L 52 4 L 39 4 L 28 22 L 17 4 Z" fill="#ffffff"/><rect x="64" y="10" width="1.5" height="44" fill="rgba(255,255,255,0.15)"/><text x="76" y="28" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="#ffffff">YNOT</text><circle cx="76" cy="43" r="4.5" fill="#4ade80"/><text x="85" y="48" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="rgba(255,255,255,0.6)">NOW</text></svg>
-    </div>
+    </a>
     <div>
       <a href="#signals">Signals</a>
       <a href="#pulse">Weekly Pulse</a>
@@ -1662,47 +2093,57 @@
     <button class="transcript-toggle" onclick="toggleTranscript()">Transcript</button>
   </div>
 
-  <!-- Infographic -->
-  <section id="infographic" class="dark-surface reveal">
-    <div class="section-tag">WEEKLY SUMMARY</div>
-    <h2>Download This Week</h2>
-    <div class="infographic-card">
-      <div class="chart-container">
-        <div class="verdict-chart">
-          <canvas id="verdictChart" width="200" height="200" style="max-width: 100%;"></canvas>
-        </div>
-        <div class="chart-legend">
-          <div class="legend-item"><span class="legend-color signal"></span><span>Signals</span><span id="signalCount" class="legend-value">0</span></div>
-          <div class="legend-item"><span class="legend-color watch"></span><span>Watch</span><span id="watchCount" class="legend-value">0</span></div>
-          <div class="legend-item"><span class="legend-color unverified"></span><span>Unverified</span><span id="unverifiedCount2" class="legend-value">0</span></div>
-        </div>
-      </div>
-      <div class="infographic-info">
-        <div class="info-block">
-          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 12px; font-family: 'DM Mono', monospace;">TRL Distribution</h4>
-          <div id="trlBar" style="display: flex; gap: 2px; height: 8px; border-radius: 2px; overflow: hidden; background: rgba(0,0,0,0.3);"></div>
-        </div>
-        <div class="info-block">
-          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 12px; font-family: 'DM Mono', monospace;">Top 3 Findings</h4>
-          <div id="topFindingsList" style="display: flex; flex-direction: column; gap: 12px;"></div>
-        </div>
-      </div>
-    </div>
-    <div class="download-buttons">
-      <button class="accent-btn" onclick="downloadPNG()">↓ Download PNG</button>
-      <button class="accent-btn" onclick="downloadPDF()">↓ Download PDF</button>
-    </div>
-  </section>
+  <!-- Infographic section removed -->
 
   <!-- How It Works -->
   <section id="howitworks" class="light-surface reveal">
+    <div class="section-tag">INTELLIGENCE ENGINE</div>
     <h2>How It Works</h2>
-    <div class="minds-grid" id="mindsGrid"></div>
-    <div style="max-width: 900px; margin: 0 auto; padding: 40px; background: rgba(17,17,17,0.4); border-radius: 8px; border-left: 3px solid var(--accent);">
-      <h3 style="font-family: 'DM Serif Display', serif; font-size: 24px; margin-bottom: 20px; color: var(--text);">Two-Phase Intelligence</h3>
-      <p style="font-size: 15px; line-height: 1.8; color: var(--text-dim); margin-bottom: 16px;"><strong>Phase 1: Domain Specialists</strong> — Scout (P&C), Vita (Life), Atlas (Reinsurance), Horizon (Tech) scan their domains for evidence. Null challenges every claim.</p>
-      <p style="font-size: 15px; line-height: 1.8; color: var(--text-dim);"><strong>Phase 2: Synthesis</strong> — Weave maps cross-domain effects. Deploy surfaces proven implementations. Faro scans the 18–36 month horizon. The result: 27 findings per week, all verified, all public.</p>
+    <p style="text-align:center;color:var(--text-dim);font-size:15px;margin-bottom:48px;max-width:600px;margin-left:auto;margin-right:auto;">Eight specialist AI minds work in two phases each week. Click any agent to learn more.</p>
+
+    <!-- Orbital Animation -->
+    <div class="orbital-wrapper">
+      <canvas id="orbitalCanvas" width="700" height="700"></canvas>
+      <div class="orbital-center">
+        <div class="orbital-center-icon">Y</div>
+        <div class="orbital-center-label">YNOT.NOW</div>
+        <div class="orbital-center-sub">27 findings / week</div>
+      </div>
+      <!-- Agent nodes positioned by JS -->
+      <div id="orbitalNodes"></div>
     </div>
+
+    <!-- Phase explanation -->
+    <div class="phases-row">
+      <div class="phase-card phase-1">
+        <div class="phase-number">01</div>
+        <h3>Domain Scan</h3>
+        <p>Scout, Vita, Atlas, and Prism each scan their specialty domains. Null challenges every claim for evidence.</p>
+        <div class="phase-agents">
+          <span class="phase-agent" data-mind="scout">🔭 Scout</span>
+          <span class="phase-agent" data-mind="vita">🧬 Vita</span>
+          <span class="phase-agent" data-mind="lex">⚖️ Lex</span>
+          <span class="phase-agent" data-mind="terra">🌍 Terra</span>
+          <span class="phase-agent" data-mind="horizon">🌐 Prism</span>
+          <span class="phase-agent" data-mind="null">⚔️ Null</span>
+        </div>
+      </div>
+      <div class="phase-connector">
+        <div class="phase-arrow"></div>
+      </div>
+      <div class="phase-card phase-2">
+        <div class="phase-number">02</div>
+        <h3>Synthesis</h3>
+        <p>Weave maps cross-domain effects. Deploy surfaces proven implementations. Faro scans the 18–36 month horizon.</p>
+        <div class="phase-agents">
+          <span class="phase-agent" data-mind="weave">🕸️ Weave</span>
+          <span class="phase-agent" data-mind="faro">🔦 Faro</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent detail cards (grid) -->
+    <div class="minds-grid" id="mindsGrid"></div>
   </section>
 
   <!-- Month in Review -->
@@ -1749,19 +2190,44 @@
     </div>
   </section>
 
+  <!-- Scroll to top -->
+  <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top">&uarr;</button>
+
+  <!-- Cookie Consent -->
+  <div class="cookie-banner" id="cookieBanner">
+    <span>This site uses minimal analytics (visitor count only). No personal data is collected or shared.</span>
+    <button onclick="document.getElementById('cookieBanner').classList.add('hidden');localStorage.setItem('ynot_consent','1')">Got it</button>
+  </div>
+
   <!-- Footer -->
   <footer>
-    <div class="footer-content">
-      <div class="visitor-count">Visitors this week: <span id="visitorCount">0</span></div>
-      <div class="footer-links">
-        <a href="https://github.com/heyshivaai/ynot-now" target="_blank">GitHub</a>
-        <a href="#" onclick="alert('Privacy: We do not track you.')">Privacy</a>
-        <a href="#" onclick="alert('No ads, no sponsorships.')">Sponsorships</a>
+    <div class="footer-inner">
+      <a class="footer-logo" href="/" aria-label="YNOT.NOW"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" height="52" style="display:block;max-width:240px;opacity:0.9;" role="img" aria-label="YNOT.NOW"><title>YNOT.NOW</title><path d="M 4 4 L 22 30 L 22 60 L 34 60 L 34 30 L 52 4 L 39 4 L 28 22 L 17 4 Z" fill="#ffffff"/><rect x="64" y="10" width="1.5" height="44" fill="rgba(255,255,255,0.15)"/><text x="76" y="28" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="#ffffff">YNOT</text><circle cx="76" cy="43" r="4.5" fill="#4ade80"/><text x="85" y="48" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="rgba(255,255,255,0.6)">NOW</text></svg></a>
+      <div class="footer-mission">Because every assumption deserves the question.</div>
+      <div class="footer-meta" id="footerMeta">Intelligence compounds weekly</div>
+      <div class="visitor-counter" id="visitorCounter">
+        <div class="vc-item">
+          <div class="vc-dot vc-dot-live"></div>
+          <span class="vc-label">Live now</span>
+          <span class="vc-value" id="vcLive">&mdash;</span>
+        </div>
+        <div class="vc-sep"></div>
+        <div class="vc-item">
+          <div class="vc-dot vc-dot-total"></div>
+          <span class="vc-label">Total visits</span>
+          <span class="vc-value" id="vcTotal">&mdash;</span>
+        </div>
       </div>
-      <div class="disclaimer">
-        YNOT.NOW is vendor-neutral intelligence. Every finding links to public sources. Verdicts reflect evidence only. This is not investment advice.<br><br>
-        Updated weekly. Last run: <span id="lastRun">Loading...</span>
+      <div class="footer-legal">
+        <a href="/terms">Terms of Use</a>
+        <span class="footer-legal-sep">&middot;</span>
+        <a href="/privacy">Privacy Policy</a>
+        <span class="footer-legal-sep">&middot;</span>
+        <a href="https://github.com/heyshivaai/ynot-now" target="_blank" rel="noopener">GitHub</a>
+        <span class="footer-legal-sep">&middot;</span>
+        <span class="footer-legal-copy">&copy; 2025&ndash;2026 YNotNow LLC. All rights reserved. YNOT.NOW is an independent AI signal intelligence platform and is not affiliated with any insurance carrier, broker, or trade association.</span>
       </div>
+      <div class="footer-disclaimer">All findings are AI-generated summaries linking to original sources for educational purposes. Content is not legal, financial, or professional advice. Verify with original sources.</div>
     </div>
   </footer>
 
@@ -1940,34 +2406,142 @@
       try {
         const res = await fetch('/api/pulse');
         const data = await res.json();
-        const pulse = data.pulse || {};
+        const spotlight = data.spotlight;
+        const topFindings = data.top_findings || [];
+        const archive = data.archive || {};
         const container = document.getElementById('pulseContainer');
 
-        if (!pulse.body) {
-          container.innerHTML = '<p style="color: var(--dim);">Weekly briefing not yet available.</p>';
+        if (!spotlight || !spotlight.post_text) {
+          container.innerHTML = '<p style="color: var(--dim); text-align:center; padding:40px 0;">Weekly briefing not yet available. Check back after Monday.</p>';
           return;
         }
 
-        const lines = pulse.body.split('\n').filter(l => l.trim());
-        let html = '';
-        lines.forEach((line, i) => {
-          if (line.trim()) {
-            html += `<div class="pulse-finding" style="animation-delay: ${i * 0.1}s;"><p>${line}</p></div>`;
+        // Parse the spotlight post_text into sections
+        const raw = spotlight.post_text.trim();
+        const lines = raw.split('\n').filter(l => l.trim());
+
+        // Separate into hook, bullets, and close
+        let hook = [], bullets = [], close = [];
+        let state = 'hook';
+        lines.forEach(line => {
+          const trimmed = line.trim()
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+          if (trimmed.startsWith('→ ') || trimmed.startsWith('-> ')) {
+            state = 'bullets';
+            bullets.push(trimmed.replace(/^(→|->) /, ''));
+          } else if (trimmed.startsWith('#')) {
+            // hashtags — skip
+          } else if (state === 'bullets' && !trimmed.startsWith('→') && !trimmed.startsWith('->')) {
+            state = 'close';
+            close.push(trimmed);
+          } else if (state === 'close') {
+            close.push(trimmed);
+          } else {
+            hook.push(trimmed);
           }
         });
+
+        // Build scrollytelling HTML
+        let html = '';
+
+        // Hook section
+        if (hook.length) {
+          html += `<div class="pulse-finding" style="animation-delay:0s">
+            <div style="font-family:'DM Serif Display',serif; font-size:22px; line-height:1.5; color:var(--text); margin-bottom:12px;">${hook[0]}</div>
+            ${hook.slice(1).map(h => `<p style="font-size:15px; line-height:1.8; color:var(--dim); margin-top:8px;">${h}</p>`).join('')}
+          </div>`;
+        }
+
+        // Bullet findings
+        bullets.forEach((b, i) => {
+          const parts = b.split(/—|--/);
+          const title = parts[0] ? parts[0].trim() : '';
+          const body = parts.slice(1).join('—').trim();
+
+          // Try to match to a top finding
+          const match = topFindings.find(f => {
+            const ft = (f.title || '').toLowerCase();
+            const words = title.toLowerCase().replace(/<[^>]+>/g,'').split(' ').filter(w => w.length > 3);
+            const hits = words.filter(w => ft.includes(w)).length;
+            return words.length > 0 && (hits / words.length) >= 0.3;
+          });
+
+          const verdictBadge = match ? `<span style="display:inline-block; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.08em; padding:3px 10px; border-radius:100px; margin-right:8px; ${
+            normalizeVerdict(match.verdict) === 'SIGNAL' ? 'background:#c8a96e; color:#050505;' :
+            normalizeVerdict(match.verdict) === 'WATCH' ? 'background:rgba(255,255,255,0.1); color:var(--dim);' :
+            'background:rgba(255,255,255,0.05); color:var(--dim); border:1px solid var(--border);'
+          }">${normalizeVerdict(match.verdict)}</span>` : '';
+
+          const trlBadge = match && match.trl ? `<span style="font-family:'DM Mono',monospace; font-size:10px; color:var(--dim); margin-left:8px;">TRL ${match.trl}</span>` : '';
+
+          html += `<div class="pulse-finding" style="animation-delay:${(i+1)*0.15}s">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              ${verdictBadge}
+              <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; color:var(--accent);">→</span>
+            </div>
+            <div style="font-family:'DM Serif Display',serif; font-size:18px; line-height:1.35; color:var(--text); margin-bottom:6px;">${title}</div>
+            ${body ? `<p style="font-size:14px; line-height:1.75; color:var(--dim);">${body}</p>` : ''}
+            ${trlBadge}
+            ${match && match.body ? `<details style="margin-top:10px;"><summary style="font-family:'DM Mono',monospace; font-size:11px; color:var(--accent); cursor:pointer; letter-spacing:.06em;">Learn more</summary><div style="margin-top:10px; padding:14px; background:rgba(0,0,0,0.3); border-radius:8px; border-left:2px solid var(--accent); font-size:13px; line-height:1.7; color:var(--dim);">${match.body}${match.refs && match.refs.length ? '<div style="margin-top:10px; display:flex; flex-direction:column; gap:4px;">' + match.refs.slice(0,3).map(r => r.url && !r.url.includes('example.com') ? `<a href="${r.url}" target="_blank" rel="noopener" style="font-size:12px; color:var(--accent); text-decoration:none;">↗ ${r.label || r.url}</a>` : `<span style="font-size:12px; color:var(--dim);">— ${r.label || 'Source'}</span>`).join('') + '</div>' : ''}</div></details>` : ''}
+          </div>`;
+        });
+
+        // Close section
+        if (close.length) {
+          html += `<div class="pulse-finding" style="animation-delay:${(bullets.length+1)*0.15}s; font-style:italic; color:var(--dim); border-top:1px solid var(--border); padding-top:20px; margin-top:12px;">
+            ${close.join(' ')}
+          </div>`;
+        }
+
+        // Week date
+        const weekDate = spotlight.week_of || spotlight.run_date;
+        if (weekDate) {
+          const d = new Date(weekDate + 'T12:00:00Z');
+          const fmt = d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+          html = `<div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); margin-bottom:24px;">Week of ${fmt}</div>` + html;
+          document.getElementById('audioDate').textContent = 'Week of ' + fmt;
+        }
+
         container.innerHTML = html;
-
-        // Set audio date
-        document.getElementById('audioDate').textContent = pulse.created_at ? new Date(pulse.created_at).toLocaleDateString() : 'Latest';
-
-        // Build transcript
-        audioState.transcript = lines.map((line, i) => `${line}`);
 
         // Populate regional sidebar
         populateRegionalSidebar();
+
+        // Load archive
+        loadPulseArchive(archive);
+
       } catch (e) {
         console.error('Failed to load pulse:', e);
+        const container = document.getElementById('pulseContainer');
+        if (container) container.innerHTML = '<p style="color:var(--dim); text-align:center; padding:40px 0;">Could not load briefing. Try refreshing.</p>';
       }
+    }
+
+    function loadPulseArchive(archive) {
+      const list = document.getElementById('archiveList');
+      if (!list || !archive.posts || !archive.posts.length) {
+        const el = document.getElementById('pulseArchive');
+        if (el) el.style.display = 'none';
+        return;
+      }
+      let html = '';
+      archive.posts.forEach(post => {
+        const weekDate = post.week_of || post.run_date;
+        const d = new Date(weekDate + 'T12:00:00Z');
+        const fmt = d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+        const preview = (post.post_text || '').substring(0, 150).replace(/\*\*/g,'').replace(/\*/g,'');
+        html += `<div style="background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; cursor:pointer; transition:all .25s;"
+          onmouseenter="this.style.borderColor='rgba(200,169,110,0.3)'" onmouseleave="this.style.borderColor='var(--border)'"
+          onclick="this.querySelector('.archive-body').style.display = this.querySelector('.archive-body').style.display === 'block' ? 'none' : 'block'">
+          <div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.12em; color:var(--accent); margin-bottom:8px;">Week of ${fmt}</div>
+          <p style="font-size:13px; color:var(--dim); line-height:1.6;">${preview}...</p>
+          <div class="archive-body" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border); font-size:14px; line-height:1.8; color:var(--text);">
+            ${(post.post_text || '').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}
+          </div>
+        </div>`;
+      });
+      list.innerHTML = html;
     }
 
     function populateRegionalSidebar() {
@@ -2012,7 +2586,13 @@
       try {
         const res = await fetch('/api/visitors');
         const data = await res.json();
-        document.getElementById('visitorCount').textContent = data.count || 0;
+        const liveEl = document.getElementById('vcLive');
+        const totalEl = document.getElementById('vcTotal');
+        if (liveEl && data.live != null) liveEl.textContent = data.live;
+        if (totalEl && data.total != null) totalEl.textContent = data.total.toLocaleString();
+        // Update footer meta with run info
+        const metaEl = document.getElementById('footerMeta');
+        if (metaEl && data.total) metaEl.textContent = `${data.total.toLocaleString()} total visits · Intelligence compounds weekly`;
       } catch (e) {
         console.log('Visitors not available');
       }
@@ -2024,8 +2604,9 @@
         const data = await res.json();
         if (data.success && data.briefing && data.briefing.script) {
           // Script is an array of {speaker, text} objects
+          audioState.script = data.briefing.script; // Store full script for voice selection
           audioState.utterances = data.briefing.script.map(s => s.text);
-          audioState.transcript = data.briefing.script.map(s => `<strong style="color:${s.speaker === 'Signal' ? '#4ade80' : '#c8a96e'}">${s.speaker}:</strong> ${s.text}`);
+          audioState.transcript = data.briefing.script.map(s => `<div class="transcript-line"><strong style="color:${s.speaker === 'Signal' ? '#4ade80' : '#c8a96e'}">${s.speaker}:</strong> ${s.text}</div>`);
           if (data.briefing.week) {
             document.getElementById('audioDate').textContent = 'Week of ' + data.briefing.week;
           }
@@ -2078,6 +2659,9 @@
       }
     }
 
+    let allTrajectories = [];
+    let trajectoryFilter = 'all'; // 'all' | 'rising' | 'declining' | 'stable'
+
     async function loadTrajectories() {
       try {
         const res = await fetch('/api/findings');
@@ -2088,48 +2672,110 @@
           return;
         }
 
-        let html = '';
-        data.signal_trajectories
-          .sort((a, b) => (b.compound_score || 0) - (a.compound_score || 0))
-          .forEach(traj => {
-            const isHighSignal = (traj.compound_score || 0) > 0.6;
-            const velocityUp = (traj.trl_velocity || 0) > 0;
-            const velocityClass = velocityUp ? 'velocity-positive' : 'velocity-negative';
-            const velocityLabel = velocityUp ? '↑ Rising' : '↓ Declining';
-
-            html += `
-              <div class="trajectory-card ${isHighSignal ? 'high-signal' : ''}">
-                <div class="trajectory-header">
-                  <div class="trajectory-key">${traj.topic_key || 'Unknown'}</div>
-                  <div class="trajectory-score">${(traj.compound_score || 0).toFixed(2)}</div>
-                </div>
-                <div class="trajectory-title">${traj.title || traj.topic_key || 'Signal Trajectory'}</div>
-                <div class="trajectory-meta">
-                  <div class="meta-row">
-                    <span class="meta-label">Current TRL</span>
-                    <span class="meta-value">${readinessLabel(traj.current_trl || 0)}</span>
-                  </div>
-                  <div class="meta-row">
-                    <span class="meta-label">Seen</span>
-                    <span class="meta-value">${traj.weeks_seen || 1} week(s)</span>
-                  </div>
-                  <div class="meta-row">
-                    <span class="meta-label">Velocity</span>
-                    <span class="${velocityClass}" style="padding: 2px 6px; border-radius: 2px;">${velocityLabel}</span>
-                  </div>
-                  <div class="meta-row">
-                    <span class="meta-label">Verdict</span>
-                    <span class="trajectory-verdict">${traj.current_verdict || 'WATCH'}</span>
-                  </div>
-                </div>
-              </div>
-            `;
-          });
-
-        document.getElementById('trajectoriesContainer').innerHTML = html;
+        allTrajectories = data.signal_trajectories;
+        renderTrajectoryFilters();
+        renderTrajectories();
       } catch (e) {
         console.error('Failed to load trajectories:', e);
       }
+    }
+
+    function renderTrajectoryFilters() {
+      const rising = allTrajectories.filter(t => (t.trl_velocity || 0) > 0).length;
+      const declining = allTrajectories.filter(t => (t.trl_velocity || 0) < 0).length;
+      const stable = allTrajectories.filter(t => (t.trl_velocity || 0) === 0).length;
+
+      const filterHtml = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;justify-content:center;">
+          <button class="traj-filter-btn ${trajectoryFilter==='all'?'active':''}" onclick="setTrajFilter('all')">All (${allTrajectories.length})</button>
+          <button class="traj-filter-btn ${trajectoryFilter==='rising'?'active':''}" onclick="setTrajFilter('rising')">↑ Rising (${rising})</button>
+          <button class="traj-filter-btn ${trajectoryFilter==='stable'?'active':''}" onclick="setTrajFilter('stable')">→ Stable (${stable})</button>
+          <button class="traj-filter-btn ${trajectoryFilter==='declining'?'active':''}" onclick="setTrajFilter('declining')">↓ Declining (${declining})</button>
+        </div>
+      `;
+      let el = document.getElementById('trajFilterBar');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'trajFilterBar';
+        const container = document.getElementById('trajectoriesContainer');
+        container.parentNode.insertBefore(el, container);
+      }
+      el.innerHTML = filterHtml;
+    }
+
+    function setTrajFilter(f) {
+      trajectoryFilter = f;
+      renderTrajectoryFilters();
+      renderTrajectories();
+    }
+
+    function renderTrajectories() {
+      let filtered = [...allTrajectories];
+
+      if (trajectoryFilter === 'rising') {
+        filtered = filtered.filter(t => (t.trl_velocity || 0) > 0);
+      } else if (trajectoryFilter === 'declining') {
+        filtered = filtered.filter(t => (t.trl_velocity || 0) < 0);
+      } else if (trajectoryFilter === 'stable') {
+        filtered = filtered.filter(t => (t.trl_velocity || 0) === 0);
+      }
+
+      // Sort: rising first (by velocity desc), then by compound_score desc
+      filtered.sort((a, b) => {
+        const velDiff = (b.trl_velocity || 0) - (a.trl_velocity || 0);
+        if (velDiff !== 0) return velDiff;
+        return (b.compound_score || 0) - (a.compound_score || 0);
+      });
+
+      if (filtered.length === 0) {
+        document.getElementById('trajectoriesContainer').innerHTML = '<p style="color: var(--dim); text-align: center; grid-column: 1 / -1;">No trajectories match this filter.</p>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(traj => {
+        const isHighSignal = (traj.compound_score || 0) > 0.6;
+        const vel = traj.trl_velocity || 0;
+        const velocityUp = vel > 0;
+        const velocityStable = vel === 0;
+        const velocityClass = velocityUp ? 'velocity-positive' : velocityStable ? 'velocity-stable' : 'velocity-negative';
+        const velocityLabel = velocityUp ? '↑ Rising' : velocityStable ? '→ Stable' : '↓ Declining';
+        const weeksSeen = traj.weeks_seen || 1;
+        const scoreBar = Math.round((traj.compound_score || 0) * 100);
+
+        html += `
+          <div class="trajectory-card ${isHighSignal ? 'high-signal' : ''} ${velocityUp ? 'rising' : ''}">
+            <div class="trajectory-header">
+              <div class="trajectory-key">${traj.topic_key || 'Unknown'}</div>
+              <span class="${velocityClass}" style="padding: 3px 8px; border-radius: 3px; font-size: 11px; font-family: 'DM Mono', monospace;">${velocityLabel}</span>
+            </div>
+            <div class="trajectory-title">${traj.title || traj.topic_key || 'Signal Trajectory'}</div>
+            <div style="margin: 12px 0 8px; background: rgba(255,255,255,0.05); border-radius: 3px; height: 4px; overflow: hidden;">
+              <div style="width: ${scoreBar}%; height: 100%; background: ${velocityUp ? '#4ade80' : velocityStable ? 'var(--accent)' : '#f87171'}; border-radius: 3px; transition: width 0.6s ease;"></div>
+            </div>
+            <div class="trajectory-meta">
+              <div class="meta-row">
+                <span class="meta-label">Score</span>
+                <span class="meta-value" style="color: ${velocityUp ? '#4ade80' : 'var(--text)'}">${(traj.compound_score || 0).toFixed(2)}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Current TRL</span>
+                <span class="meta-value">${readinessLabel(traj.current_trl || 0)}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Tracked</span>
+                <span class="meta-value">${weeksSeen} week${weeksSeen > 1 ? 's' : ''}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Verdict</span>
+                <span class="trajectory-verdict">${traj.current_verdict || 'WATCH'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById('trajectoriesContainer').innerHTML = html;
     }
 
     const TIMELINE_ERAS = [
@@ -2404,17 +3050,67 @@
       }
     }
 
+    // Pick high-quality male + female voices
+    function getBriefingVoices() {
+      const voices = speechSynthesis.getVoices();
+      if (!voices.length) return [null, null];
+
+      // Prefer English voices, prioritize natural/premium ones
+      const enVoices = voices.filter(v => v.lang.startsWith('en'));
+      const pool = enVoices.length > 2 ? enVoices : voices;
+
+      // Known high-quality voice names (varies by OS)
+      const femalePrefs = ['Samantha', 'Karen', 'Zira', 'Aria', 'Jenny', 'Google UK English Female', 'Microsoft Aria', 'Microsoft Zira', 'Fiona', 'Moira'];
+      const malePrefs = ['Daniel', 'Aaron', 'David', 'Guy', 'Google UK English Male', 'Microsoft David', 'Microsoft Mark', 'James', 'Tom'];
+
+      function findVoice(prefList) {
+        for (const name of prefList) {
+          const match = pool.find(v => v.name.includes(name));
+          if (match) return match;
+        }
+        return null;
+      }
+
+      let female = findVoice(femalePrefs);
+      let male = findVoice(malePrefs);
+
+      // Fallback: pick any two different voices
+      if (!female) female = pool[0] || voices[0];
+      if (!male) male = pool.find(v => v !== female) || pool[1] || voices[1] || female;
+
+      return [female, male]; // index 0 = Signal voice (female), index 1 = Context voice (male)
+    }
+
     function speakBriefing() {
       if (audioState.currentUtteranceIndex >= audioState.utterances.length) {
         audioState.isPlaying = false;
+        audioState.currentUtteranceIndex = 0;
         document.getElementById('playBtn').textContent = '▶';
         return;
       }
 
+      const [femaleVoice, maleVoice] = getBriefingVoices();
+      const scriptItem = audioState.script ? audioState.script[audioState.currentUtteranceIndex] : null;
       const text = audioState.utterances[audioState.currentUtteranceIndex];
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = audioState.currentSpeed;
-      utterance.voice = speechSynthesis.getVoices()[audioState.currentUtteranceIndex % 2];
+
+      // Assign voice based on speaker role
+      const isFemale = scriptItem && scriptItem.speaker === 'Signal';
+      utterance.voice = isFemale ? femaleVoice : maleVoice;
+      utterance.rate = audioState.currentSpeed * 0.95; // Slightly slower = more natural
+      utterance.pitch = isFemale ? 1.05 : 0.9; // Subtle pitch difference
+      utterance.volume = 1;
+
+      // Highlight current line in transcript
+      const transcriptEl = document.getElementById('transcript');
+      if (transcriptEl && transcriptEl.style.display !== 'none') {
+        const lines = transcriptEl.querySelectorAll('.transcript-line');
+        lines.forEach((l, i) => {
+          l.style.opacity = i === audioState.currentUtteranceIndex ? '1' : '0.4';
+          l.style.borderLeft = i === audioState.currentUtteranceIndex ? '2px solid var(--accent)' : '2px solid transparent';
+          l.style.paddingLeft = '8px';
+        });
+      }
 
       utterance.onend = () => {
         audioState.currentUtteranceIndex++;
@@ -2440,6 +3136,8 @@
 
     // ========== INFOGRAPHIC ==========
     function updateInfographic() {
+      // Infographic section removed — bail if no canvas
+      if (!document.getElementById('verdictChart')) return;
       // Verdict donut and counts
       const verdicts = {
         'SIGNAL': allFindings.filter(f => normalizeVerdict(f.verdict) === 'SIGNAL').length,
@@ -2514,20 +3212,185 @@
       pdf.save('ynot-weekly.pdf');
     }
 
-    // ========== MINDS GRID ==========
+    // ========== MINDS GRID + ORBITAL ANIMATION ==========
     function renderMinds() {
+      // Grid cards
       let html = '';
       MINDS.forEach(mind => {
         html += `
-          <div class="mind-card">
+          <div class="mind-card" id="mind-card-${mind.id}">
             <div class="mind-icon">${mind.icon}</div>
             <h3 class="mind-name">${mind.name}</h3>
             <div class="mind-role">${mind.role}</div>
             <p class="mind-desc">${mind.desc}</p>
+            <div style="margin-top:12px;font-family:'DM Serif Display',serif;font-style:italic;font-size:13px;color:var(--accent);opacity:0.7;">${mind.persona}</div>
           </div>
         `;
       });
       document.getElementById('mindsGrid').innerHTML = html;
+
+      // Orbital nodes
+      initOrbitalAnimation();
+    }
+
+    function initOrbitalAnimation() {
+      const canvas = document.getElementById('orbitalCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const wrapper = canvas.parentElement;
+      const nodesContainer = document.getElementById('orbitalNodes');
+
+      // Responsive sizing
+      function resize() {
+        const rect = wrapper.getBoundingClientRect();
+        canvas.width = rect.width * (window.devicePixelRatio || 1);
+        canvas.height = rect.height * (window.devicePixelRatio || 1);
+        ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+      }
+      resize();
+
+      const centerX = () => wrapper.clientWidth / 2;
+      const centerY = () => wrapper.clientHeight / 2;
+      const radius = () => Math.min(wrapper.clientWidth, wrapper.clientHeight) * 0.36;
+
+      // Create DOM nodes for each mind
+      nodesContainer.innerHTML = '';
+      MINDS.forEach((mind, i) => {
+        const node = document.createElement('div');
+        node.className = 'orbital-node';
+        node.innerHTML = `${mind.icon}<span class="node-label">${mind.name}</span>`;
+        node.onclick = () => {
+          const card = document.getElementById('mind-card-' + mind.id);
+          if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+        nodesContainer.appendChild(node);
+      });
+
+      // Data flow particles
+      const particles = [];
+      const maxParticles = 20;
+
+      function spawnParticle() {
+        if (particles.length >= maxParticles) return;
+        const sourceIdx = Math.floor(Math.random() * MINDS.length);
+        const angle = (sourceIdx / MINDS.length) * Math.PI * 2 - Math.PI / 2;
+        const r = radius();
+        const cx = centerX();
+        const cy = centerY();
+        particles.push({
+          x: cx + Math.cos(angle) * r,
+          y: cy + Math.sin(angle) * r,
+          targetX: cx,
+          targetY: cy,
+          progress: 0,
+          speed: 0.008 + Math.random() * 0.012,
+          size: 2 + Math.random() * 2,
+          alpha: 0.6 + Math.random() * 0.4,
+          phase: sourceIdx < 5 ? 1 : 2
+        });
+      }
+
+      let animAngle = 0;
+      let isVisible = false;
+
+      // Intersection observer for performance
+      const obs = new IntersectionObserver(entries => {
+        isVisible = entries[0].isIntersecting;
+      }, { threshold: 0.1 });
+      obs.observe(wrapper);
+
+      function animate() {
+        if (!isVisible) {
+          requestAnimationFrame(animate);
+          return;
+        }
+
+        const w = wrapper.clientWidth;
+        const h = wrapper.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+
+        const cx = centerX();
+        const cy = centerY();
+        const r = radius();
+        animAngle += 0.003;
+
+        // Draw orbit rings
+        ctx.strokeStyle = 'rgba(200,169,110,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner ring
+        ctx.strokeStyle = 'rgba(200,169,110,0.04)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Draw connection lines from nodes to center
+        const nodes = nodesContainer.children;
+        MINDS.forEach((mind, i) => {
+          const baseAngle = (i / MINDS.length) * Math.PI * 2 - Math.PI / 2;
+          const wobble = Math.sin(animAngle * 2 + i) * 0.03;
+          const angle = baseAngle + animAngle * 0.15 + wobble;
+          const nx = cx + Math.cos(angle) * r;
+          const ny = cy + Math.sin(angle) * r;
+
+          // Position DOM node
+          if (nodes[i]) {
+            const nodeW = nodes[i].offsetWidth;
+            const nodeH = nodes[i].offsetHeight;
+            nodes[i].style.left = (nx - nodeW/2) + 'px';
+            nodes[i].style.top = (ny - nodeH/2) + 'px';
+          }
+
+          // Connection line
+          const gradient = ctx.createLinearGradient(nx, ny, cx, cy);
+          gradient.addColorStop(0, i < 5 ? 'rgba(74,222,128,0.12)' : 'rgba(200,169,110,0.12)');
+          gradient.addColorStop(1, 'rgba(200,169,110,0.02)');
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(nx, ny);
+          ctx.lineTo(cx, cy);
+          ctx.stroke();
+        });
+
+        // Data flow particles
+        if (Math.random() < 0.15) spawnParticle();
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.progress += p.speed;
+          if (p.progress >= 1) {
+            particles.splice(i, 1);
+            continue;
+          }
+          const t = p.progress;
+          const ease = t < 0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+          const px = p.x + (p.targetX - p.x) * ease;
+          const py = p.y + (p.targetY - p.y) * ease;
+          const alpha = p.alpha * (t < 0.2 ? t/0.2 : t > 0.8 ? (1-t)/0.2 : 1);
+          const color = p.phase === 1 ? `rgba(74,222,128,${alpha})` : `rgba(200,169,110,${alpha})`;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(px, py, p.size, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Glow
+          ctx.fillStyle = p.phase === 1 ? `rgba(74,222,128,${alpha*0.3})` : `rgba(200,169,110,${alpha*0.3})`;
+          ctx.beginPath();
+          ctx.arc(px, py, p.size * 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      // Resize handler
+      window.addEventListener('resize', () => {
+        resize();
+      });
     }
 
     // ========== SCROLL REVEALS ==========
@@ -2544,13 +3407,42 @@
       document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     }
 
-    // ========== PROGRESS BAR ==========
+    // ========== PROGRESS BAR + SCROLL TO TOP ==========
     window.addEventListener('scroll', () => {
       const height = document.documentElement.scrollHeight - window.innerHeight;
       const scrolled = window.scrollY;
       const progress = (scrolled / height) * 100;
       document.getElementById('progressBar').style.width = progress + '%';
+      // Show/hide scroll-to-top button
+      const btn = document.getElementById('scrollTopBtn');
+      if (btn) btn.classList.toggle('visible', scrolled > 600);
     });
+
+    // ========== COOKIE CONSENT ==========
+    function initCookieConsent() {
+      if (localStorage.getItem('ynot_consent') === '1') {
+        const banner = document.getElementById('cookieBanner');
+        if (banner) banner.classList.add('hidden');
+      }
+    }
+
+    // ========== KEYBOARD SHORTCUTS ==========
+    function initKeyboardShortcuts() {
+      window.addEventListener('keydown', e => {
+        // T = scroll to top
+        if (e.key === 't' && !e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement.tagName !== 'INPUT') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        // S = jump to signals
+        if (e.key === 's' && !e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement.tagName !== 'INPUT') {
+          document.getElementById('signals')?.scrollIntoView({ behavior: 'smooth' });
+        }
+        // P = jump to pulse
+        if (e.key === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement.tagName !== 'INPUT') {
+          document.getElementById('pulse')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
 
     // ========== INIT ==========
     window.addEventListener('DOMContentLoaded', () => {
@@ -2565,6 +3457,30 @@
       loadTrajectories();
       loadVisitors();
       loadAudioBriefing();
+      initCookieConsent();
+      initKeyboardShortcuts();
+      // Pre-load speech synthesis voices (async on some browsers)
+      if ('speechSynthesis' in window) {
+        speechSynthesis.getVoices();
+        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+      }
+
+      // Phase agent click → scroll to mind card
+      document.querySelectorAll('.phase-agent').forEach(el => {
+        el.addEventListener('click', () => {
+          const mindId = el.dataset.mind;
+          const card = document.getElementById('mind-card-' + mindId);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.borderColor = 'var(--accent)';
+            card.style.boxShadow = '0 0 30px rgba(200,169,110,0.3)';
+            setTimeout(() => {
+              card.style.borderColor = '';
+              card.style.boxShadow = '';
+            }, 2000);
+          }
+        });
+      });
     });
 
     // Close modal on escape
