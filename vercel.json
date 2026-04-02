@@ -7,8 +7,8 @@
   "rewrites": [
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/v2", "destination": "/index-v2.html" },
-    { "source": "/((?!api|v2).*)", "destination": "/index.html" }
+    { "source": "/v1", "destination": "/index.html" },
+    { "source": "/((?!api|v1).*)", "destination": "/index-v2.html" }
   ],
   "headers": [
     {
