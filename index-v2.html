@@ -758,10 +758,30 @@
       background: rgba(200,169,110,0.1);
     }
 
-    #waveformCanvas {
-      width: 100px;
-      height: 40px;
-      flex-shrink: 0;
+    .audio-progress-wrap {
+      flex: 0 0 120px;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .audio-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #d9b884);
+      border-radius: 2px;
+      transition: width 0.1s linear;
+    }
+
+    .audio-time {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--dim);
+      min-width: 40px;
+      text-align: center;
     }
 
     .audio-info {
@@ -927,6 +947,184 @@
       font-size: 14px;
       line-height: 1.6;
       color: var(--text-dim);
+    }
+
+    /* About section — V1 parity */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(40px, 6vw, 90px);
+      align-items: start;
+    }
+
+    @media (max-width: 760px) {
+      .about-grid { grid-template-columns: 1fr; }
+    }
+
+    .about-h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(30px, 4vw, 50px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    .about-h2 em {
+      font-style: italic;
+      color: #999;
+    }
+
+    .about-prose {
+      font-size: 16px;
+      line-height: 1.85;
+      color: #bbb;
+    }
+
+    .about-prose p {
+      margin-bottom: 16px;
+    }
+
+    .about-prose strong {
+      color: #ddd;
+      font-weight: 600;
+    }
+
+    .about-photo-wrap {
+      background: #111;
+      border-radius: 8px;
+      padding: 28px;
+      border: 1px solid #2a2a28;
+    }
+
+    .about-bio {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .ab-photo {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid #222;
+    }
+
+    .ab-info {
+      flex: 1;
+    }
+
+    .ab-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 24px;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .ab-title {
+      font-size: 14px;
+      color: #888;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .ab-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .ab-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      padding: 4px 12px;
+      border: 1px solid #333;
+      border-radius: 100px;
+      color: #777;
+    }
+
+    .ab-linkedin {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: #0a66c2;
+      text-decoration: none;
+      padding: 6px 12px;
+      border: 1px solid #0a66c2;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .ab-linkedin:hover {
+      background: #0a66c2;
+      color: #fff;
+    }
+
+    .about-quote {
+      border-left: 2px solid #333;
+      padding-left: 20px;
+      margin-bottom: 22px;
+    }
+
+    .aq-text {
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: 17px;
+      line-height: 1.65;
+      color: #bbb;
+      margin-bottom: 8px;
+    }
+
+    .aq-attr {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      color: #888;
+      letter-spacing: 0.1em;
+    }
+
+    .about-mission-text {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #aaa;
+    }
+
+    /* Disclaimer */
+    .disclaimer-section {
+      background: #080808;
+      border-top: 1px solid #111;
+      padding: 24px 32px;
+    }
+
+    .disclaimer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      line-height: 1.85;
+      color: #777;
+      letter-spacing: 0.01em;
+    }
+
+    .disclaimer-inner strong {
+      color: #999;
+    }
+
+    .disclaimer-inner a {
+      color: #aaa;
+      text-decoration: none;
+    }
+
+    .disclaimer-inner a:hover {
+      color: var(--text);
     }
 
     /* Orbital Animation */
@@ -2077,14 +2275,18 @@
 
   <!-- Audio Player -->
   <div id="audioPlayer">
+    <audio id="briefingAudio" preload="none"></audio>
     <div class="audio-controls">
       <button class="play-btn" id="playBtn" onclick="toggleAudio()">▶</button>
-      <canvas id="waveformCanvas"></canvas>
+    </div>
+    <div class="audio-progress-wrap" onclick="seekAudio(event)">
+      <div class="audio-progress-bar" id="audioProgressBar"></div>
     </div>
     <div class="audio-info">
       <div class="audio-title">Weekly Intelligence Briefing</div>
       <div class="audio-date" id="audioDate">Loading...</div>
     </div>
+    <div class="audio-time" id="audioTime">0:00</div>
     <div class="audio-speed">
       <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1x</button>
       <button class="speed-btn" data-speed="1.5" onclick="setSpeed(1.5)">1.5x</button>
@@ -2174,21 +2376,51 @@
   </section>
 
   <!-- About -->
-  <section id="about" class="light-surface reveal">
-    <h2>About YNOT.NOW</h2>
-    <div class="what-grid" style="align-items: center;">
-      <div>
-        <h3 style="font-family: 'DM Serif Display', serif; font-size: 42px; margin-bottom: 20px; color: var(--text);">Built by Shiva</h3>
-        <p style="font-size: 16px; line-height: 1.8; color: var(--text-dim); margin-bottom: 20px;">YNOT.NOW exists because insurance intelligence should be vendor-neutral. No ads, no paywalls, no sponsors pushing products. Just signal.</p>
-        <p style="font-size: 16px; line-height: 1.8; color: var(--text-dim); margin-bottom: 30px;"><em>"Insurance moves slowly because it has to. But AI is moving fast. We need to watch, question, and verify what's actually working — not what vendors claim."</em></p>
-        <a href="https://linkedin.com/in/shiva" target="_blank" style="color: var(--accent); text-decoration: none; font-family: 'DM Mono', monospace; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Connect on LinkedIn →</a>
-      </div>
-      <div style="text-align: center; padding: 40px; background: rgba(200,169,110,0.05); border: 1px solid var(--border-light); border-radius: 8px;">
-        <div style="font-size: 60px; margin-bottom: 20px;">🔬</div>
-        <p style="font-size: 14px; color: var(--dim); font-family: 'DM Mono', monospace;">Research-driven intelligence for insurance leaders</p>
+  <section id="about" class="light-surface reveal" style="background: var(--bg);">
+    <div style="max-width: 1200px; margin: 0 auto;">
+      <div class="about-grid">
+        <div>
+          <div class="section-tag" style="color: #2a2a28;">About</div>
+          <h2 class="about-h2">Built by someone who<br><em>questions what's possible.</em></h2>
+          <div class="about-prose">
+            <p>Shiva Balasubramaniyan has spent his career <strong>at the edge of what technology can do for insurance</strong> — drawn by curiosity about what comes next, and a genuine belief that the industry has far more potential than it often gives itself credit for.</p>
+            <p>YNOT.NOW started as a simple act of giving back: making the intelligence that Shiva had spent years building — across technology, insurance, and innovation — <strong>freely available to everyone who could use it.</strong> Students writing their first paper. Practitioners making difficult decisions. Boards and executive leadership teams staying abreast of the latest signals.</p>
+            <p>It is also the beginning of something larger: a long-term venture in innovation for social good, where insight is a shared resource and <strong>knowledge compounds for everyone who seeks it.</strong></p>
+          </div>
+        </div>
+        <div>
+          <div class="about-photo-wrap">
+            <div class="about-bio">
+              <img class="ab-photo" src="/shiva.jpg" alt="Shiva Balasubramaniyan">
+              <div class="ab-info">
+                <div class="ab-name">Shiva B.</div>
+                <div class="ab-title">Insurance &times; Technology &times; Innovation<br>Curious about what's genuinely possible.</div>
+                <div class="ab-tags">
+                  <span class="ab-tag">Insurance</span>
+                  <span class="ab-tag">AI</span>
+                  <span class="ab-tag">Innovation</span>
+                  <span class="ab-tag">Social Good</span>
+                </div>
+                <a class="ab-linkedin" href="https://www.linkedin.com/in/shivab26/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Connect on LinkedIn</a>
+              </div>
+            </div>
+            <div class="about-quote">
+              <div class="aq-text">"The question isn't whether technology will reshape insurance. It's whether the industry will understand the change deeply enough to make it count."</div>
+              <div class="aq-attr">&mdash; Shiva, founder of YNOT.NOW</div>
+            </div>
+            <div class="about-mission-text">YNOT.NOW is independent and non-commercial. No advertising. No vendor relationships. No sponsored findings. Everything here is offered freely — because good intelligence should be accessible to everyone.</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer-section">
+    <div class="disclaimer-inner">
+      <strong>Disclaimer:</strong> YNOT.NOW provides general intelligence and commentary on emerging technology developments in the insurance industry for <strong>informational and educational purposes only</strong>. Nothing on this site constitutes financial, legal, actuarial, regulatory, or professional advice of any kind, and no use of this site creates any professional&ndash;client relationship. All findings are generated by automated AI research agents based on publicly available open-access sources cited within each finding. <strong>AI-generated content may contain errors, inaccuracies, or omissions.</strong> Verdicts (Signal, Watch, Unverified) and scores represent analytical output of an automated system and <strong>must not be relied upon as the sole basis for any business, investment, regulatory, or strategic decision.</strong> Readers are strongly encouraged to verify all references independently and seek qualified professional advice before acting on any information found here. YNOT.NOW has no commercial relationships with any technology vendors, insurers, or investment entities. Third-party links are for reference only &mdash; we do not endorse or take responsibility for external content. All views are independent. &nbsp;<a href="/terms" style="color:#aaa;">Terms of Use</a> &nbsp;&middot;&nbsp; <a href="/privacy" style="color:#aaa;">Privacy Policy</a>
+    </div>
+  </div>
 
   <!-- Scroll to top -->
   <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top">&uarr;</button>
@@ -2202,7 +2434,7 @@
   <!-- Footer -->
   <footer>
     <div class="footer-inner">
-      <a class="footer-logo" href="/" aria-label="YNOT.NOW"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" height="52" style="display:block;max-width:240px;opacity:0.9;" role="img" aria-label="YNOT.NOW"><title>YNOT.NOW</title><path d="M 4 4 L 22 30 L 22 60 L 34 60 L 34 30 L 52 4 L 39 4 L 28 22 L 17 4 Z" fill="#ffffff"/><rect x="64" y="10" width="1.5" height="44" fill="rgba(255,255,255,0.15)"/><text x="76" y="28" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="#ffffff">YNOT</text><circle cx="76" cy="43" r="4.5" fill="#4ade80"/><text x="85" y="48" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="rgba(255,255,255,0.6)">NOW</text></svg></a>
+      <a class="footer-logo" href="#hero" aria-label="YNOT.NOW"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" height="52" style="display:block;max-width:240px;opacity:0.9;" role="img" aria-label="YNOT.NOW"><title>YNOT.NOW</title><path d="M 4 4 L 22 30 L 22 60 L 34 60 L 34 30 L 52 4 L 39 4 L 28 22 L 17 4 Z" fill="#ffffff"/><rect x="64" y="10" width="1.5" height="44" fill="rgba(255,255,255,0.15)"/><text x="76" y="28" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="#ffffff">YNOT</text><circle cx="76" cy="43" r="4.5" fill="#4ade80"/><text x="85" y="48" font-family="'DM Mono','Courier New',monospace" font-size="15" font-weight="500" letter-spacing="2" fill="rgba(255,255,255,0.6)">NOW</text></svg></a>
       <div class="footer-mission">Because every assumption deserves the question.</div>
       <div class="footer-meta" id="footerMeta">Intelligence compounds weekly</div>
       <div class="visitor-counter" id="visitorCounter">
@@ -2607,22 +2839,42 @@
       try {
         const res = await fetch('/api/audio-briefing');
         const data = await res.json();
-        if (data.success && data.briefing && data.briefing.script) {
-          // Script is an array of {speaker, text} objects
-          audioState.script = data.briefing.script; // Store full script for voice selection
-          audioState.utterances = data.briefing.script.map(s => s.text);
-          audioState.transcript = data.briefing.script.map(s => `<div class="transcript-line"><strong style="color:${s.speaker === 'Signal' ? '#4ade80' : '#c8a96e'}">${s.speaker}:</strong> ${s.text}</div>`);
+        if (data.success && data.briefing) {
+          // Store script for transcript
+          if (data.briefing.script) {
+            audioState.script = data.briefing.script;
+            audioState.transcript = data.briefing.script.map(s =>
+              `<div class="transcript-line"><strong style="color:${s.speaker === 'Signal' ? '#4ade80' : '#c8a96e'}">${s.speaker}:</strong> ${s.text}</div>`
+            );
+          }
           if (data.briefing.week) {
             document.getElementById('audioDate').textContent = 'Week of ' + data.briefing.week;
           }
+          if (data.briefing.duration_estimate) {
+            const dateEl = document.getElementById('audioDate');
+            if (dateEl) dateEl.textContent += ' · ' + data.briefing.duration_estimate;
+          }
+          // Load ElevenLabs MP3 if available
+          if (data.briefing.has_audio && data.briefing.audio_url) {
+            audioState.hasNativeAudio = true;
+            const audio = document.getElementById('briefingAudio');
+            audio.src = data.briefing.audio_url;
+            audio.preload = 'auto';
+            console.log('[audio] ElevenLabs MP3 loaded');
+          } else {
+            // Fallback: use Web Speech API with the script text
+            audioState.hasNativeAudio = false;
+            audioState.utterances = (data.briefing.script || []).map(s => s.text);
+            console.log('[audio] No MP3 — falling back to Web Speech API');
+          }
         } else {
-          audioState.utterances = ['Weekly audio briefing is being generated. Check back soon.'];
-          audioState.transcript = ['Briefing not yet available.'];
+          audioState.hasNativeAudio = false;
+          audioState.transcript = ['<div class="transcript-line">Briefing not yet available.</div>'];
         }
       } catch (e) {
-        console.log('Audio briefing not available');
-        audioState.utterances = ['Audio briefing endpoint not yet deployed.'];
-        audioState.transcript = ['Audio briefing will be available after deployment.'];
+        console.log('Audio briefing not available:', e);
+        audioState.hasNativeAudio = false;
+        audioState.transcript = ['<div class="transcript-line">Audio briefing will be available after deployment.</div>'];
       }
     }
 
@@ -3045,99 +3297,116 @@
     }
 
     // ========== AUDIO PLAYER ==========
+    // Native audio element + progress bar
+    (function setupAudioPlayer() {
+      const audio = document.getElementById('briefingAudio');
+      if (!audio) return;
+
+      audio.addEventListener('timeupdate', () => {
+        if (audio.duration) {
+          const pct = (audio.currentTime / audio.duration) * 100;
+          const bar = document.getElementById('audioProgressBar');
+          if (bar) bar.style.width = pct + '%';
+          const timeEl = document.getElementById('audioTime');
+          if (timeEl) {
+            const m = Math.floor(audio.currentTime / 60);
+            const s = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
+            const tm = Math.floor(audio.duration / 60);
+            const ts = Math.floor(audio.duration % 60).toString().padStart(2, '0');
+            timeEl.textContent = `${m}:${s} / ${tm}:${ts}`;
+          }
+        }
+      });
+
+      audio.addEventListener('ended', () => {
+        audioState.isPlaying = false;
+        document.getElementById('playBtn').textContent = '▶';
+        const bar = document.getElementById('audioProgressBar');
+        if (bar) bar.style.width = '0%';
+      });
+
+      audio.addEventListener('play', () => {
+        audioState.isPlaying = true;
+        document.getElementById('playBtn').textContent = '⏸';
+      });
+
+      audio.addEventListener('pause', () => {
+        audioState.isPlaying = false;
+        document.getElementById('playBtn').textContent = '▶';
+      });
+    })();
+
     function toggleAudio() {
+      const audio = document.getElementById('briefingAudio');
+
+      // If we have ElevenLabs MP3, use native <audio>
+      if (audioState.hasNativeAudio && audio && audio.src) {
+        if (audioState.isPlaying) {
+          audio.pause();
+        } else {
+          audio.play().catch(e => console.warn('Audio play failed:', e));
+        }
+        return;
+      }
+
+      // Fallback: Web Speech API
       if (audioState.isPlaying) {
-        speechSynthesis.cancel();
+        if ('speechSynthesis' in window) speechSynthesis.cancel();
         audioState.isPlaying = false;
         document.getElementById('playBtn').textContent = '▶';
       } else {
         audioState.isPlaying = true;
+        audioState.currentUtteranceIndex = 0;
         document.getElementById('playBtn').textContent = '⏸';
-        speakBriefing();
+        speakFallback();
       }
     }
 
-    // Pick high-quality male + female voices
-    function getBriefingVoices() {
-      const voices = speechSynthesis.getVoices();
-      if (!voices.length) return [null, null];
-
-      // Prefer English voices, prioritize natural/premium ones
-      const enVoices = voices.filter(v => v.lang.startsWith('en'));
-      const pool = enVoices.length > 2 ? enVoices : voices;
-
-      // Known high-quality voice names (varies by OS)
-      const femalePrefs = ['Samantha', 'Karen', 'Zira', 'Aria', 'Jenny', 'Google UK English Female', 'Microsoft Aria', 'Microsoft Zira', 'Fiona', 'Moira'];
-      const malePrefs = ['Daniel', 'Aaron', 'David', 'Guy', 'Google UK English Male', 'Microsoft David', 'Microsoft Mark', 'James', 'Tom'];
-
-      function findVoice(prefList) {
-        for (const name of prefList) {
-          const match = pool.find(v => v.name.includes(name));
-          if (match) return match;
-        }
-        return null;
-      }
-
-      let female = findVoice(femalePrefs);
-      let male = findVoice(malePrefs);
-
-      // Fallback: pick any two different voices
-      if (!female) female = pool[0] || voices[0];
-      if (!male) male = pool.find(v => v !== female) || pool[1] || voices[1] || female;
-
-      return [female, male]; // index 0 = Signal voice (female), index 1 = Context voice (male)
+    function seekAudio(event) {
+      const audio = document.getElementById('briefingAudio');
+      if (!audioState.hasNativeAudio || !audio || !audio.duration) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const pct = (event.clientX - rect.left) / rect.width;
+      audio.currentTime = pct * audio.duration;
     }
 
-    function speakBriefing() {
-      if (audioState.currentUtteranceIndex >= audioState.utterances.length) {
+    // Web Speech API fallback (only if no ElevenLabs audio)
+    function speakFallback() {
+      if (!audioState.utterances || audioState.currentUtteranceIndex >= audioState.utterances.length) {
         audioState.isPlaying = false;
         audioState.currentUtteranceIndex = 0;
         document.getElementById('playBtn').textContent = '▶';
         return;
       }
-
-      const [femaleVoice, maleVoice] = getBriefingVoices();
-      const scriptItem = audioState.script ? audioState.script[audioState.currentUtteranceIndex] : null;
       const text = audioState.utterances[audioState.currentUtteranceIndex];
       const utterance = new SpeechSynthesisUtterance(text);
-
-      // Assign voice based on speaker role
-      const isFemale = scriptItem && scriptItem.speaker === 'Signal';
-      utterance.voice = isFemale ? femaleVoice : maleVoice;
-      utterance.rate = audioState.currentSpeed * 0.95; // Slightly slower = more natural
-      utterance.pitch = isFemale ? 1.05 : 0.9; // Subtle pitch difference
-      utterance.volume = 1;
-
-      // Highlight current line in transcript
-      const transcriptEl = document.getElementById('transcript');
-      if (transcriptEl && transcriptEl.style.display !== 'none') {
-        const lines = transcriptEl.querySelectorAll('.transcript-line');
-        lines.forEach((l, i) => {
-          l.style.opacity = i === audioState.currentUtteranceIndex ? '1' : '0.4';
-          l.style.borderLeft = i === audioState.currentUtteranceIndex ? '2px solid var(--accent)' : '2px solid transparent';
-          l.style.paddingLeft = '8px';
-        });
-      }
-
+      utterance.rate = audioState.currentSpeed;
+      const voices = speechSynthesis.getVoices();
+      if (voices.length > 1) utterance.voice = voices[audioState.currentUtteranceIndex % 2];
       utterance.onend = () => {
         audioState.currentUtteranceIndex++;
-        speakBriefing();
+        speakFallback();
       };
-
       speechSynthesis.speak(utterance);
     }
 
     function setSpeed(speed) {
       audioState.currentSpeed = speed;
+      const audio = document.getElementById('briefingAudio');
+      if (audioState.hasNativeAudio && audio) {
+        audio.playbackRate = speed;
+      }
       document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector(`[data-speed="${speed}"]`).classList.add('active');
+      const active = document.querySelector(`[data-speed="${speed}"]`);
+      if (active) active.classList.add('active');
     }
 
     function toggleTranscript() {
       const panel = document.getElementById('transcript');
+      if (!panel) return;
       panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-      if (panel.style.display === 'flex') {
-        panel.innerHTML = audioState.transcript.map(line => `<div>${line}</div>`).join('');
+      if (panel.style.display === 'flex' && audioState.transcript) {
+        panel.innerHTML = audioState.transcript.join('');
       }
     }
 
@@ -3466,10 +3735,9 @@
       loadAudioBriefing();
       initCookieConsent();
       initKeyboardShortcuts();
-      // Pre-load speech synthesis voices (async on some browsers)
+      // Pre-load speech synthesis voices as fallback (async on some browsers)
       if ('speechSynthesis' in window) {
-        speechSynthesis.getVoices();
-        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+        try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch(e) {}
       }
 
       // Phase agent click → scroll to mind card

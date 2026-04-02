@@ -1,38 +1,37 @@
 // api/audio-briefing.js
-// Generates a weekly AI audio briefing script from findings.
+// Generates a weekly AI audio briefing with ElevenLabs natural voices.
 //
-// GET /api/audio-briefing                 → latest week's briefing
+// GET /api/audio-briefing                 → latest week's briefing (script + audio_url)
 // GET /api/audio-briefing?week=YYYY-MM-DD → specific week's briefing
 // GET /api/audio-briefing?force=true      → bypass cache and regenerate
-//
-// Response: { success: true, briefing: { week, script: [{speaker, text}], summary, duration_estimate } }
+// GET /api/audio-briefing?audio=true&week=YYYY-MM-DD → serve raw MP3 audio
 //
 // Script features:
-// - Two AI hosts: "Signal" (optimist) and "Null" (skeptic)
-// - Opening: Signal introduces the week
-// - Body: Top 3-4 findings discussed back-and-forth
-// - Closing: Null gives final skeptic take
-// - Total: 3-5 minutes of dialogue (~600-900 words)
+// - Two AI hosts: "Signal" (Rachel, optimist) and "Null" (Drew, skeptic)
+// - Natural voices via ElevenLabs API
+// - Audio cached in Supabase `audio_briefings` table (audio_data column, base64)
 //
-// Caches results in Supabase table `audio_briefings` (created via SQL if needed):
-// CREATE TABLE audio_briefings (
-//   id bigserial PRIMARY KEY,
-//   week date NOT NULL UNIQUE,
-//   script jsonb NOT NULL,
-//   summary text,
-//   duration_estimate text,
-//   created_at timestamp DEFAULT now(),
-//   updated_at timestamp DEFAULT now()
-// );
+// Supabase table (add audio_data column if missing):
+// ALTER TABLE audio_briefings ADD COLUMN IF NOT EXISTS audio_data text;
+// ALTER TABLE audio_briefings ADD COLUMN IF NOT EXISTS audio_url text;
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ELEVENLABS_KEY = process.env.ELEVENLABS_API_KEY;
 
-// Return the ISO Monday date string (YYYY-MM-DD) for any given date string
+// ElevenLabs voice IDs — premade voices optimized for podcast dialogue
+const VOICES = {
+  Signal: 'XrExE9yKIg1WjnnlVkGX', // Matilda — warm, friendly, American female (podcast-optimized)
+  Null:   'iP95p4xoKVk53GoZ742B'  // Chris — casual, natural, American male (conversational)
+};
+
+// ElevenLabs model — v3 for most expressive and natural output
+const ELEVENLABS_MODEL = 'eleven_multilingual_v2';
+
 function toMonday(dateStr) {
   const d = new Date(dateStr + 'T12:00:00Z');
-  const day = d.getUTCDay(); // 0=Sun, 1=Mon ... 6=Sat
+  const day = d.getUTCDay();
   const diff = (day === 0) ? -6 : 1 - day;
   d.setUTCDate(d.getUTCDate() + diff);
   return d.toISOString().split('T')[0];
@@ -77,20 +76,60 @@ async function sbUpdate(table, whereClause, updates) {
   if (!res.ok) throw new Error('Supabase update ' + res.status);
 }
 
+// ── ElevenLabs TTS ──────────────────────────────────────────
+async function synthesizeLine(text, voiceId) {
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: 'POST',
+    headers: {
+      'xi-api-key': ELEVENLABS_KEY,
+      'Content-Type': 'application/json',
+      'Accept': 'audio/mpeg'
+    },
+    body: JSON.stringify({
+      text: text,
+      model_id: ELEVENLABS_MODEL,
+      voice_settings: {
+        stability: 0.35,         // Lower = more expressive/dynamic
+        similarity_boost: 0.8,   // High = stays true to voice character
+        style: 0.55,             // Higher = more stylistic/podcast-like
+        use_speaker_boost: true
+      }
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => 'unknown');
+    throw new Error(`ElevenLabs ${res.status}: ${errText}`);
+  }
+  const arrayBuffer = await res.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+async function generateAudio(script) {
+  // Synthesize each line and collect MP3 buffers
+  const buffers = [];
+  for (const line of script) {
+    const voiceId = VOICES[line.speaker] || VOICES.Signal;
+    const audioBuffer = await synthesizeLine(line.text, voiceId);
+    buffers.push(audioBuffer);
+    // Small silence between lines (ElevenLabs adds natural pauses, but we add a tiny gap)
+    // MP3 frame of silence (~100ms) — a minimal valid MP3 frame
+  }
+  // Concatenate all MP3 buffers (MP3 is a streaming format, concatenation works)
+  return Buffer.concat(buffers);
+}
+
+// ── Claude Script Generation ────────────────────────────────
 async function generateAudioBriefing(findings, runDate) {
-  // Separate findings by verdict
   const signals = findings.filter(f => f.verdict === 'SIGNAL');
   const watches = findings.filter(f => f.verdict === 'WATCH');
   const unverified = findings.filter(f => f.verdict === 'UNVERIFIED');
 
-  // Rank top 4 findings: prioritize SIGNAL, then WATCH, sorted by confidence
   const ranked = [
     ...signals.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
     ...watches.sort((a, b) => (b.confidence || 0) - (a.confidence || 0)),
     ...unverified.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
   ].slice(0, 4);
 
-  // Prepare context for Claude
   const topFindings = ranked.map((f, i) => {
     const trlLabel = { 9:'Proven',8:'Proven',7:'Standard',6:'Standard',5:'Pilot',4:'Pilot',3:'Experiment',2:'Experiment',1:'Idea' }[f.trl] || 'Watch';
     return `${i + 1}. [${f.verdict} · TRL ${f.trl}/${trlLabel}] "${f.title}" (${f.domain}/${f.subdomain || f.domain}, confidence: ${f.confidence}/5)\n   ${f.body || 'No description'}\n   Regions: ${(f.regions || []).join(', ') || 'Not specified'}`;
@@ -101,22 +140,24 @@ async function generateAudioBriefing(findings, runDate) {
   const prompt =
     `You are writing an audio briefing script for YNOT.NOW — a free, independent AI signal tracker for the insurance industry.\n\n` +
     `Two AI hosts will discuss this week's findings in a conversational, engaging dialogue:\n` +
-    `- SIGNAL: An optimist who highlights the most important findings and their implications\n` +
-    `- NULL: A skeptic who challenges hype, points out risks, and questions unverified claims\n\n` +
+    `- SIGNAL: A warm, confident female host who highlights the most important findings and their implications\n` +
+    `- NULL: A sharp, thoughtful male host who challenges hype, points out risks, and questions unverified claims\n\n` +
     `Week of ${runDate}. Summary: ${stats}\n\n` +
     `TOP 4 FINDINGS TO DISCUSS:\n${topFindings}\n\n` +
     `Write a dialogue script with this structure:\n\n` +
-    `1. OPENING (Signal): 40-60 words. Signal welcomes listeners and sets up the week's theme with one compelling observation.\n\n` +
+    `1. OPENING (Signal): 40-60 words. Signal welcomes listeners to YNOT.NOW Weekly and sets up the week's theme.\n\n` +
     `2. FINDING 1-4 DISCUSSIONS (alternating): Each finding gets 2-3 exchanges (80-120 words total per finding).\n   - Signal presents the finding, explains why it matters for insurance.\n   - Null responds with skepticism: Is this real? What's the catch? How proven is it?\n   - Signal (optional) counters with evidence or context.\n\n` +
-    `3. CLOSING (Null): 40-60 words. Null gives a final skeptical take on what listeners should watch out for this week.\n\n` +
+    `3. CLOSING (Null): 40-60 words. Null gives a final skeptical take on what listeners should watch out for.\n\n` +
     `Rules:\n` +
-    `- Natural, conversational tone. These are two intelligent people chatting, not robots.\n` +
-    `- Reference specific finding titles, verdicts (SIGNAL/WATCH/UNVERIFIED), and confidence levels.\n` +
+    `- Natural, conversational tone. Like two smart podcast hosts chatting.\n` +
+    `- Use contractions (we're, that's, isn't). Speak naturally.\n` +
+    `- Reference specific finding titles, verdicts, and confidence levels.\n` +
     `- Avoid jargon. Explain insurance concepts plainly.\n` +
-    `- No markdown. Plain text only.\n` +
-    `- Total script: 600-900 words (3-5 minute read at 150 words/minute).\n` +
-    `- Output ONLY the script. No explanations or metadata.\n\n` +
-    `Format each speaker's line exactly as:\n` +
+    `- No markdown. No asterisks. Plain spoken text only.\n` +
+    `- Include brief pauses where natural: use "..." or short sentences.\n` +
+    `- Total script: 500-800 words (3-5 minute listen).\n` +
+    `- Output ONLY the script lines. No explanations or metadata.\n\n` +
+    `Format each line exactly as:\n` +
     `SIGNAL: [text]\n` +
     `NULL: [text]\n\n` +
     `Begin now:`;
@@ -131,7 +172,7 @@ async function generateAudioBriefing(findings, runDate) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
-      system: 'You write audio briefing scripts for YNOT.NOW, a free independent intelligence resource for anyone curious about AI in insurance. Your scripts feature two hosts: Signal (optimist) and Null (skeptic) discussing findings in natural, engaging dialogue. Be specific, grounded, and educational. Avoid hype and platitudes. Help listeners understand what findings mean and why they matter.',
+      system: 'You write audio briefing scripts for YNOT.NOW, a free independent intelligence resource for anyone curious about AI in insurance. Your scripts feature two hosts: Signal (warm, optimistic female) and Null (sharp, skeptical male) discussing findings like a professional podcast. Be specific, grounded, and educational. Write for the ear, not the eye — use natural speech patterns, contractions, and conversational rhythm.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
@@ -139,7 +180,6 @@ async function generateAudioBriefing(findings, runDate) {
   const d = await res.json();
   const scriptText = d.content[0].text.trim();
 
-  // Parse script into speaker/text pairs
   const lines = scriptText.split('\n').filter(l => l.trim());
   const script = [];
   for (const line of lines) {
@@ -150,78 +190,86 @@ async function generateAudioBriefing(findings, runDate) {
     }
   }
 
-  // Estimate duration
   const wordCount = script.reduce((sum, s) => sum + s.text.split(/\s+/).length, 0);
   const durationMinutes = Math.round((wordCount / 150) * 10) / 10;
   const durationEstimate = `${durationMinutes} minutes (approx ${wordCount} words)`;
-
-  // Create summary
   const summary = `${signals.length} signals, ${watches.length} watch items, ${unverified.length} unverified from ${findings.length} total findings. Top 4 discussed.`;
 
   return { script, summary, durationEstimate, wordCount };
 }
 
+// ── Main Handler ────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const weekParam = req.query.week; // Optional: YYYY-MM-DD format
-  const force = req.query.force === 'true'; // bypass cache
+  const weekParam = req.query.week;
+  const force = req.query.force === 'true';
+  const serveAudio = req.query.audio === 'true';
 
   try {
-    // Determine which week to fetch
+    // Determine target week
     let targetWeek = null;
     let runId = null;
 
     if (weekParam) {
       targetWeek = toMonday(weekParam);
     } else {
-      // Get the latest run
       const latestRun = await sbGet('findings?select=run_id,run_date&order=created_at.desc&limit=1');
       if (!latestRun || !latestRun.length) {
-        return res.status(200).json({
-          success: false,
-          message: 'No findings available yet'
-        });
+        return res.status(200).json({ success: false, message: 'No findings available yet' });
       }
       targetWeek = toMonday(latestRun[0].run_date);
       runId = latestRun[0].run_id;
     }
 
-    // Try cache first (unless force=true)
+    // ── Serve raw MP3 audio ──
+    if (serveAudio) {
+      try {
+        const cached = await sbGet(`audio_briefings?week=eq.${encodeURIComponent(targetWeek)}&select=audio_data`);
+        if (cached && cached.length > 0 && cached[0].audio_data) {
+          const audioBuffer = Buffer.from(cached[0].audio_data, 'base64');
+          res.setHeader('Content-Type', 'audio/mpeg');
+          res.setHeader('Content-Length', audioBuffer.length);
+          res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
+          return res.status(200).end(audioBuffer);
+        }
+      } catch (e) {
+        console.warn('[audio-briefing] Audio fetch failed:', e.message);
+      }
+      return res.status(404).json({ success: false, message: 'Audio not yet generated for this week' });
+    }
+
+    // ── Try cache first ──
     if (!force) {
       try {
-        const cached = await sbGet(`audio_briefings?week=eq.${encodeURIComponent(targetWeek)}`);
+        const cached = await sbGet(`audio_briefings?week=eq.${encodeURIComponent(targetWeek)}&select=week,script,summary,duration_estimate,audio_data`);
         if (cached && cached.length > 0) {
+          const hasAudio = !!cached[0].audio_data;
           return res.status(200).json({
             success: true,
             briefing: {
               week: cached[0].week,
               script: cached[0].script,
               summary: cached[0].summary,
-              duration_estimate: cached[0].duration_estimate
+              duration_estimate: cached[0].duration_estimate,
+              has_audio: hasAudio,
+              audio_url: hasAudio ? `/api/audio-briefing?audio=true&week=${encodeURIComponent(targetWeek)}` : null
             }
           });
         }
       } catch (e) {
         console.warn('[audio-briefing] Cache lookup failed:', e.message);
-        // Fall through to generation
       }
     }
 
-    // No cache hit, or cache disabled — fetch findings for this week
+    // ── No cache — fetch findings ──
     if (!runId) {
-      // Find the run for this week
-      const runs = await sbGet(`findings?select=run_id,run_date&order=created_at.desc&limit=10`);
+      const runs = await sbGet('findings?select=run_id,run_date&order=created_at.desc&limit=10');
       if (!runs || !runs.length) {
-        return res.status(200).json({
-          success: false,
-          message: 'No findings available'
-        });
+        return res.status(200).json({ success: false, message: 'No findings available' });
       }
-      // Find the run that maps to our target week
       for (const run of runs) {
         if (toMonday(run.run_date) === targetWeek) {
           runId = run.run_id;
@@ -229,37 +277,48 @@ module.exports = async function handler(req, res) {
         }
       }
       if (!runId) {
-        return res.status(404).json({
-          success: false,
-          message: `No findings found for week ${targetWeek}`
-        });
+        return res.status(404).json({ success: false, message: `No findings found for week ${targetWeek}` });
       }
     }
 
-    // Fetch all findings for this run
     const findings = await sbGet(`findings?run_id=eq.${encodeURIComponent(runId)}&order=verdict.asc,confidence.desc`);
     if (!findings || !findings.length) {
-      return res.status(404).json({
-        success: false,
-        message: `No findings found for run ${runId}`
-      });
+      return res.status(404).json({ success: false, message: `No findings for run ${runId}` });
     }
 
-    // Generate briefing script
+    // ── Generate script via Claude ──
     const { script, summary, durationEstimate } = await generateAudioBriefing(findings, targetWeek);
 
-    // Cache the result
+    // ── Generate audio via ElevenLabs ──
+    let audioBase64 = null;
+    let audioUrl = null;
+    if (ELEVENLABS_KEY) {
+      try {
+        console.log('[audio-briefing] Generating ElevenLabs audio for', script.length, 'lines...');
+        const audioBuffer = await generateAudio(script);
+        audioBase64 = audioBuffer.toString('base64');
+        audioUrl = `/api/audio-briefing?audio=true&week=${encodeURIComponent(targetWeek)}`;
+        console.log('[audio-briefing] Audio generated:', Math.round(audioBuffer.length / 1024), 'KB');
+      } catch (e) {
+        console.warn('[audio-briefing] ElevenLabs generation failed:', e.message);
+        // Continue without audio — script still works
+      }
+    } else {
+      console.log('[audio-briefing] No ELEVENLABS_API_KEY — skipping audio generation');
+    }
+
+    // ── Cache result ──
     const briefingRow = {
       week: targetWeek,
       script: script,
       summary: summary,
-      duration_estimate: durationEstimate
+      duration_estimate: durationEstimate,
+      ...(audioBase64 ? { audio_data: audioBase64 } : {})
     };
 
     try {
       await sbPost('audio_briefings', [briefingRow]);
     } catch (e) {
-      // Table may not exist yet, or duplicate key — try update
       try {
         await sbUpdate('audio_briefings', `week=eq.${encodeURIComponent(targetWeek)}`, briefingRow);
       } catch (updateErr) {
@@ -273,15 +332,14 @@ module.exports = async function handler(req, res) {
         week: targetWeek,
         script: script,
         summary: summary,
-        duration_estimate: durationEstimate
+        duration_estimate: durationEstimate,
+        has_audio: !!audioBase64,
+        audio_url: audioUrl
       }
     });
 
   } catch (err) {
     console.error('[audio-briefing] Error:', err.message);
-    return res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    return res.status(500).json({ success: false, error: err.message });
   }
 };
