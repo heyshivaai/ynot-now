@@ -138,7 +138,7 @@ async function generateAudioBriefing(findings, runDate) {
   const stats = `${signals.length} Signal · ${watches.length} Watch · ${unverified.length} Unverified out of ${findings.length} total findings`;
 
   const prompt =
-    `You are writing an audio briefing script for YNOT.NOW — a free, independent AI signal tracker for the insurance industry.\n\n` +
+    `You are writing an audio briefing script for YNOT.NOW — a free, independent emerging technology signal tracker for the insurance industry. YNOT.NOW covers AI, automation, data analytics, IoT, blockchain, cybersecurity, and all emerging technologies reshaping insurance — not just AI.\n\n` +
     `Two AI hosts will discuss this week's findings in a conversational, engaging dialogue:\n` +
     `- SIGNAL: A warm, confident female host who highlights the most important findings and their implications\n` +
     `- NULL: A sharp, thoughtful male host who challenges hype, points out risks, and questions unverified claims\n\n` +
@@ -172,7 +172,7 @@ async function generateAudioBriefing(findings, runDate) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
-      system: 'You write audio briefing scripts for YNOT.NOW, a free independent intelligence resource for anyone curious about AI in insurance. Your scripts feature two hosts: Signal (warm, optimistic female) and Null (sharp, skeptical male) discussing findings like a professional podcast. Be specific, grounded, and educational. Write for the ear, not the eye — use natural speech patterns, contractions, and conversational rhythm.',
+      system: 'You write audio briefing scripts for YNOT.NOW, a free independent intelligence resource tracking emerging technologies transforming the insurance industry — including AI, automation, data analytics, IoT, blockchain, cybersecurity, and more. Your scripts feature two hosts: Signal (warm, optimistic female) and Null (sharp, skeptical male) discussing findings like a professional podcast. Be specific, grounded, and educational. Write for the ear, not the eye — use natural speech patterns, contractions, and conversational rhythm. Never say this is just about AI — it covers all emerging tech in insurance.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
@@ -329,17 +329,4 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       success: true,
       briefing: {
-        week: targetWeek,
-        script: script,
-        summary: summary,
-        duration_estimate: durationEstimate,
-        has_audio: !!audioBase64,
-        audio_url: audioUrl
-      }
-    });
-
-  } catch (err) {
-    console.error('[audio-briefing] Error:', err.message);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-};
+        week: targetWeek,

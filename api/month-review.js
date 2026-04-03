@@ -155,7 +155,7 @@ module.exports = async function handler(req, res) {
     };
 
     // Generate month review with Claude
-    var system = 'You write monthly intelligence reviews for YNOT.NOW, an independent AI signal tracker for the insurance industry. ' +
+    var system = 'You write monthly intelligence reviews for YNOT.NOW, an independent emerging technology signal tracker for the insurance industry — covering AI, automation, data analytics, IoT, blockchain, cybersecurity, and all emerging technologies reshaping insurance. ' +
       'Your tone is that of a well-read, curious observer — like a research analyst writing for peers. ' +
       'You inform and educate. You never advise or recommend. You use specific numbers and named technologies. ' +
       'Plain text only — no markdown, no bold, no asterisks.';

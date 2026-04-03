@@ -3173,30 +3173,46 @@
 
     async function loadMonthReview() {
       try {
-        const res = await fetch('/api/month-review');
-        const data = await res.json();
+        // Try current month first; if no data, fall back to previous month
+        let res = await fetch('/api/month-review');
+        let data = await res.json();
         const container = document.getElementById('monthReviewContainer');
 
-        if (!data.narrative || !data.narrative.body) {
-          container.innerHTML = '<p style="color: var(--dim); text-align: center;">Monthly narrative not yet available.</p>';
+        if (!data.review && !data.error) {
+          // Current month has no findings yet — try previous month
+          const now = new Date();
+          const prevMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+          const prevKey = prevMonth.getUTCFullYear() + '-' + String(prevMonth.getUTCMonth() + 1).padStart(2, '0');
+          res = await fetch('/api/month-review?month=' + prevKey);
+          data = await res.json();
+        }
+
+        if (!data.review) {
+          container.innerHTML = '<div style="background: rgba(200,169,110,0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 32px; text-align: center;"><p style="color: var(--dim); font-size: 14px;">Monthly narrative not yet available. Check back after the first full week of this month.</p></div>';
           return;
         }
 
-        const narrative = data.narrative;
+        const stats = data.stats || {};
+        const trajectories = data.trajectories || [];
+
         let html = `
           <div style="text-align: left;">
             <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border-light);">
-              <h3 style="font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); margin-bottom: 12px;">${narrative.month_key || 'This Month'}</h3>
-              <p style="font-size: 13px; color: var(--dim); font-family: 'DM Mono', monospace;">Synthesized from ${narrative.findings_count || 'N/A'} findings across 4 weeks</p>
+              <h3 style="font-family: 'DM Serif Display', serif; font-size: clamp(22px, 4vw, 28px); color: var(--text); margin-bottom: 12px;">${data.month || 'This Month'}</h3>
+              <p style="font-size: 13px; color: var(--dim); font-family: 'DM Mono', monospace;">
+                Synthesized from ${stats.total_findings || 'N/A'} findings across ${stats.weeks || 'N/A'} week${stats.weeks !== 1 ? 's' : ''}
+                ${stats.signals ? ' · ' + stats.signals + ' Signal' + (stats.signals !== 1 ? 's' : '') : ''}
+                ${stats.watches ? ' · ' + stats.watches + ' Watch' : ''}
+              </p>
             </div>
-            <div style="font-size: 16px; line-height: 1.8; color: var(--text-dim);">
-              ${narrative.body.split('\n').map(p => p.trim() ? `<p style="margin-bottom: 16px;">${p}</p>` : '').join('')}
+            <div style="font-size: 15px; line-height: 1.85; color: var(--text-dim);">
+              ${data.review.split('\n').map(p => p.trim() ? '<p style="margin-bottom: 16px;">' + p + '</p>' : '').join('')}
             </div>
-            ${narrative.key_themes ? `
+            ${trajectories.length > 0 ? `
               <div style="margin-top: 32px; padding-top: 32px; border-top: 1px solid var(--border-light);">
-                <h4 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; font-family: 'DM Mono', monospace;">Key Themes</h4>
+                <h4 style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; font-family: 'DM Mono', monospace;">Recurring Signals</h4>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                  ${narrative.key_themes.map(theme => `<span style="padding: 6px 12px; background: rgba(200,169,110,0.1); border-radius: 3px; font-size: 12px; color: var(--accent); font-family: 'DM Mono', monospace;">${theme}</span>`).join('')}
+                  ${trajectories.map(t => '<span style="padding: 6px 12px; background: rgba(200,169,110,0.1); border: 1px solid rgba(200,169,110,0.2); border-radius: 3px; font-size: 12px; color: var(--accent); font-family: \'DM Mono\', monospace;">' + t.title + ' (' + t.appearances + 'w)</span>').join('')}
                 </div>
               </div>
             ` : ''}
@@ -3205,7 +3221,7 @@
         container.innerHTML = html;
       } catch (e) {
         console.error('Failed to load month review:', e);
-        document.getElementById('monthReviewContainer').innerHTML = '<p style="color: var(--dim); text-align: center;">Failed to load monthly narrative.</p>';
+        document.getElementById('monthReviewContainer').innerHTML = '<div style="background: rgba(200,169,110,0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 32px; text-align: center;"><p style="color: var(--dim); font-size: 14px;">Monthly narrative temporarily unavailable.</p></div>';
       }
     }
 
@@ -4056,5 +4072,6 @@
       if (e.key === 'Escape') closeModal();
     });
   </script>
+  <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
