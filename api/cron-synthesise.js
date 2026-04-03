@@ -1,431 +1,53 @@
 'use strict';
-// ─── YNOT.NOW — Multi-Agent Cron Phase 2 (Synthesis) ─────────────────────────
+// api/cron-synthesise.js — Phase 2: Synthesis agents (Null, Weave, Faro)
 // Runs at 06:02 UTC every Monday, 2 minutes after Phase 1 (cron.js).
-// Null, Weave, and Faro read ALL Phase 1 findings, then each produces its own
-// synthesis findings using Tavily search + cross-agent context.
-// Null and Weave use Claude extended thinking for deeper reasoning.
-// URL verification, signal_status tracking, and search_queries storage included.
-// ─────────────────────────────────────────────────────────────────────────────
+// Refactored to use shared /lib/ modules (Atomic Decomposition pattern).
 
-var ANTHROPIC_KEY = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY || '';
-var SUPABASE_URL  = process.env.SUPABASE_URL  || '';
-var SUPABASE_KEY  = process.env.SUPABASE_KEY  || process.env.SUPABASE_SERVICE_KEY || '';
-var CRON_SECRET   = process.env.CRON_SECRET   || 'ynot-secret-2025';
-var TAVILY_KEY    = process.env.TAVILY_API_KEY || '';
-var CLAUDE_MODEL  = 'claude-sonnet-4-20250514';
+var CRON_SECRET = process.env.CRON_SECRET || 'ynot-secret-2025';
+var TAVILY_KEY  = process.env.TAVILY_API_KEY || '';
 
-// ─── SYNTHESIS AGENT DEFINITIONS ─────────────────────────────────────────────
-var SYNTHESIS_MINDS = [
-  {
-    id: 'null', name: 'Null', icon: 'Null',
-    domain: 'All',
-    brief: 'You are Null, the verification analyst. You have read all findings from the other agents this week. Your job: identify claims that lack independent third-party verification, distinguish vendor marketing from independent evidence, and flag where quantified claims have no external benchmarks. You provide factual analysis of verification status, not quality judgments.',
-    role: 'verification',
-    extendedThinking: true,
-    querySeeds: ['AI insurance claims verification independent study', 'insurtech vendor claims third-party validation', 'AI insurance pilot results peer review', 'insurance AI deployment independent audit']
-  },
-  {
-    id: 'weave', name: 'Weave', icon: 'Weave',
-    domain: 'All',
-    brief: 'You are Weave, the second-order effects analyst. You have read all findings from the other agents this week. Your job: identify unexpected cross-domain consequences — workforce displacement, new liability classes, competitive dynamics shifts, regulatory arbitrage, and supply chain effects that the primary agents missed.',
-    role: 'synthesiser',
-    extendedThinking: true,
-    querySeeds: ['AI insurance workforce displacement jobs 2026', 'new liability class AI autonomous insurance', 'insurtech competitive disruption incumbent carrier', 'AI insurance distribution channel disruption embedded']
-  },
-  {
-    id: 'faro', name: 'Faro', icon: 'Faro',
-    domain: 'All',
-    brief: 'You are Faro, the horizon scanner. You have read all findings from the other agents this week. Your job: identify the early-stage signals buried in the noise — emerging research, early pilots, regulatory consultations, startup activity, and technology readiness milestones that will become significant for insurance in 18-36 months.',
-    role: 'horizon',
-    extendedThinking: false,
-    querySeeds: ['insurance AI research emerging 2026 early stage', 'insurtech startup funding seed AI 2026', 'insurance AI pilot proof of concept early', 'actuarial AI research paper preprint 2026']
-  }
-];
+// ── Shared modules ──────────────────────────────────────────────────────────
+var supabase      = require('../lib/services/supabase');
+var anthropic     = require('../lib/services/anthropic');
+var tavily        = require('../lib/services/tavily');
+var normalizers   = require('../lib/utils/normalizers');
+var vendorFilter  = require('../lib/utils/vendor-filter');
+var freshness     = require('../lib/utils/freshness');
+var urlUtils      = require('../lib/utils/url-utils');
+var definitions   = require('../lib/agents/definitions');
+var signals       = require('../lib/agents/signals');
+var prompts       = require('../lib/agents/prompts');
+var logger        = require('../lib/errors/logger');
+var baseline      = require('../lib/metrics/baseline');
+var agentMetrics  = require('../lib/metrics/agent-metrics');
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
-function normalizeVerdict(v) {
-  var u = String(v || '').toUpperCase();
-  if (u === 'SIGNAL') return 'SIGNAL';
-  if (u === 'UNVERIFIED') return 'UNVERIFIED';
-  if (u === 'NOISE')  return 'UNVERIFIED'; // Legacy support: map old NOISE to UNVERIFIED
-  return 'WATCH';
-}
-function normalizeRisk(r) {
-  var l = String(r || '').toLowerCase();
-  if (l === 'low')  return 'low';
-  if (l === 'high') return 'high';
-  return 'medium';
-}
+var SYNTHESIS_MINDS = definitions.SYNTHESIS_MINDS;
+var log = logger.createLogger('phase2');
 
-// ── VENDOR-NEUTRAL FILTER (hard programmatic safety net) ─────────────────
-var VENDOR_NAMES = [
-  'accenture','deloitte','mckinsey','ey ','ernst young','ernst & young','pwc','pricewaterhousecoopers','kpmg',
-  'bain ','bcg','boston consulting','capgemini','cognizant','infosys','wipro','tcs','tata consultancy',
-  'guidewire','duck creek','majesco','sapiens','unqork','socotra','earnix','shift technology',
-  'verisk','lexisnexis','moody','cape analytics','tractable','lemonade','hippo insurance','root insurance',
-  'microsoft','google','amazon','aws','ibm','oracle','salesforce','palantir','snowflake','databricks',
-  'openai','anthropic','meta ','nvidia','tesla'
-];
-function isVendorCentricTitle(title) {
-  var lower = String(title || '').toLowerCase();
-  for (var i = 0; i < VENDOR_NAMES.length; i++) {
-    var v = VENDOR_NAMES[i].trim();
-    if (lower.indexOf(v) === 0) return v;
-    var actions = ['launches','announces','unveils','releases','partners','introduces',
-      'expands','acquires','rolls out','deploys','reports','predicts','projects'];
-    for (var j = 0; j < actions.length; j++) {
-      if (lower.indexOf(v + ' ' + actions[j]) !== -1) return v;
-    }
-    if (lower.indexOf(v + "'s ") !== -1 && lower.indexOf(v + "'s ") < 3) return v;
-  }
-  return null;
-}
-function applyVendorFilter(findings) {
-  return findings.filter(function(f) {
-    var vendor = isVendorCentricTitle(f.title);
-    if (vendor) {
-      console.warn('[YNOT] VENDOR FILTER: blocked finding "' + f.title + '" (vendor-centric: ' + vendor + ')');
-      return false;
-    }
-    return true;
-  });
-}
-
-// Extract date from URL patterns like /2026/03/23/ or /2026-03-23/ or /20260323/
-function extractDateFromUrl(url) {
-  if (!url) return null;
-  try {
-    // Pattern 1: /YYYY/MM/DD/ or /YYYY-MM-DD/
-    var match = url.match(/\/(\d{4})[\/-](\d{2})[\/-](\d{2})/);
-    if (match) {
-      var dateStr = match[1] + '-' + match[2] + '-' + match[3];
-      var d = new Date(dateStr);
-      if (!isNaN(d.getTime())) return dateStr;
-    }
-    // Pattern 2: /YYYYMMDD/ (8 digits together)
-    match = url.match(/\/(\d{4})(\d{2})(\d{2})\//);
-    if (match) {
-      var dateStr = match[1] + '-' + match[2] + '-' + match[3];
-      var d = new Date(dateStr);
-      if (!isNaN(d.getTime())) return dateStr;
-    }
-    // Pattern 3: month names like /march-2026/ or /2026/march/
-    var months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
-    match = url.toLowerCase().match(/\/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\/-](\d{4})/);
-    if (match) return match[2] + '-' + months[match[1]] + '-01';
-    match = url.toLowerCase().match(/\/(\d{4})[\/-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
-    if (match) return match[1] + '-' + months[match[2]] + '-01';
-  } catch(e) {}
-  return null;
-}
-
-// ─── SUPABASE ─────────────────────────────────────────────────────────────────
-async function supabaseCall(method, table, body, query) {
-  var url = SUPABASE_URL + '/rest/v1/' + table + (query || '');
-  var opts = {
-    method: method,
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Prefer': method === 'POST' ? 'return=minimal' : ''
-    }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  var r = await fetch(url, opts);
-  if (!r.ok) {
-    var t = await r.text().catch(function() { return ''; });
-    throw new Error('Supabase ' + method + ' ' + table + ' ' + r.status + ': ' + t);
-  }
-  if (method === 'GET') return r.json();
-  return null;
-}
-
-// ─── FETCH TODAY'S PHASE 1 FINDINGS ──────────────────────────────────────────
+// ── FETCH TODAY'S PHASE 1 FINDINGS ──────────────────────────────────────────
 async function fetchTodaysFindings(runDate) {
   try {
-    var data = await supabaseCall('GET', 'findings', null,
+    var data = await supabase.supabaseCall('GET', 'findings', null,
       '?run_date=eq.' + runDate + '&order=confidence.desc&limit=40');
     return data || [];
   } catch(e) {
-    console.error('[YNOT-S] Could not fetch Phase 1 findings: ' + e.message);
+    log.error('-', 'fetch_phase1_failed', { error: e.message });
     return [];
   }
 }
 
-// ─── TAVILY SEARCH ────────────────────────────────────────────────────────────
-async function tavilySearch(query, maxResults) {
-  try {
-    var r = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TAVILY_KEY },
-      body: JSON.stringify({
-        query: query,
-        search_depth: 'basic',
-        max_results: maxResults || 4,
-        days: 7,  // LAYER 1: Only fetch results from last 7 days
-        include_answer: false,
-        include_raw_content: false
-      })
-    });
-    if (!r.ok) { console.warn('[YNOT-S] Tavily ' + r.status + ' for: ' + query); return []; }
-    var data = await r.json();
-    return (data.results || []).map(function(item) {
-      // Try to extract date from URL if Tavily didn't provide one
-      var pubDate = item.published_date || extractDateFromUrl(item.url);
-      return { title: item.title || '', url: item.url || '', content: String(item.content || item.snippet || '').substring(0, 400), published_date: pubDate };
-    });
-  } catch(e) {
-    console.warn('[YNOT-S] Tavily error: ' + e.message);
-    return [];
-  }
-}
-
-// ─── CLAUDE CALL (standard) ─────────────────────────────────────────────────
-async function claudeCall(system, user, maxTokens) {
-  var r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: maxTokens || 1200, system: system, messages: [{ role: 'user', content: user }] })
-  });
-  if (!r.ok) { var t = await r.text().catch(function() { return ''; }); throw new Error('Claude ' + r.status + ': ' + t); }
-  var data = await r.json();
-  return data.content[0].text.trim();
-}
-
-// ─── CLAUDE CALL WITH EXTENDED THINKING (Null and Weave) ───────────────────────
-async function claudeCallWithThinking(system, user, maxTokens, thinkingBudget) {
-  var budget = thinkingBudget || 4000;
-  var totalTokens = budget + (maxTokens || 1200);
-  try {
-    var r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'interleaved-thinking-2025-05-14'
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: totalTokens,
-        thinking: { type: 'enabled', budget_tokens: budget },
-        system: system,
-        messages: [{ role: 'user', content: user }]
-      })
-    });
-    if (!r.ok) {
-      var t = await r.text().catch(function() { return ''; });
-      console.warn('[YNOT-S] Extended thinking failed (' + r.status + '), falling back: ' + t.substring(0, 200));
-      return claudeCall(system, user, maxTokens);
-    }
-    var data = await r.json();
-    var textBlock = (data.content || []).find(function(b) { return b.type === 'text'; });
-    if (!textBlock) throw new Error('no text block in extended thinking response');
-    return textBlock.text.trim();
-  } catch(e) {
-    console.warn('[YNOT-S] Extended thinking error: ' + e.message + ' — falling back');
-    return claudeCall(system, user, maxTokens);
-  }
-}
-
-// ─── URL VERIFICATION ─────────────────────────────────────────────────────────
-async function verifyRefs(refs) {
-  if (!refs || refs.length === 0) return refs;
-  var verified = await Promise.all(refs.map(async function(ref) {
-    if (!ref.url || !ref.url.startsWith('http')) return null;
-    try {
-      var controller = new AbortController();
-      var tid = setTimeout(function() { controller.abort(); }, 4000);
-      var r = await fetch(ref.url, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
-      clearTimeout(tid);
-      if (r.ok) return ref;
-      var c2 = new AbortController();
-      var tid2 = setTimeout(function() { c2.abort(); }, 4000);
-      var r2 = await fetch(ref.url, { method: 'GET', signal: c2.signal, redirect: 'follow' });
-      clearTimeout(tid2);
-      return r2.ok ? ref : null;
-    } catch(e) { return null; }
-  }));
-  var live = verified.filter(Boolean);
-  return live.length > 0 ? live : refs;
-}
-
-// ─── RAW INTELLIGENCE STORAGE ────────────────────────────────────────────────
-async function storeRawIntelligence(mindId, queries, results, runId, runDate) {
-  try {
-    var row = {
-      run_id: runId,
-      run_date: runDate,
-      mind_id: mindId,
-      search_queries: queries,
-      result_count: results.length,
-      results: results.slice(0, 15).map(function(r) {
-        return { title: r.title, url: r.url, content: r.content, published_date: r.published_date };
-      })
-    };
-    await supabaseCall('POST', 'intelligence_raw', [row]).catch(function(e) {
-      console.warn('[YNOT-S] intelligence_raw table not ready: ' + e.message);
-    });
-  } catch(e) {
-    console.warn('[YNOT-S] Raw intel storage failed: ' + e.message);
-  }
-}
-
-// ─── NORMALIZE TOPIC KEY FOR TRAJECTORY TRACKING ──────────────────────────────
-function normalizeTopicKey(title) {
-  return String(title || '').toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\b(the|a|an|in|on|at|for|to|of|and|or|is|are|was|were|with|by|from|as|its|this|that)\b/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/^-|-$/g, '')
-    .substring(0, 80);
-}
-
-// ─── UPDATE SIGNAL TRAJECTORIES + CROSS-AGENT AGREEMENT ──────────────────────
-async function updateSignalTrajectories(findings, runDate) {
-  try {
-    var topics = {};
-    findings.forEach(function(f) {
-      var key = normalizeTopicKey(f.title);
-      if (!topics[key]) {
-        topics[key] = { title: f.title, key: key, trl: f.trl, verdict: f.verdict, confidence: f.confidence, minds: [f.mind_id], domain: f.domain, regions: f.regions || ['Global'] };
-      } else {
-        if (topics[key].minds.indexOf(f.mind_id) === -1) topics[key].minds.push(f.mind_id);
-        if (f.confidence > topics[key].confidence) {
-          topics[key].confidence = f.confidence;
-          topics[key].trl = f.trl;
-          topics[key].verdict = f.verdict;
-        }
-      }
-    });
-
-    var existingData = [];
-    try {
-      existingData = await supabaseCall('GET', 'signal_trajectories', null, '?select=id,topic_key,appearances,trajectory_data,current_trl,first_seen&limit=500');
-    } catch(e) { return; }
-    var existingMap = {};
-    existingData.forEach(function(row) { existingMap[row.topic_key] = row; });
-
-    var upserts = [];
-    Object.keys(topics).forEach(function(key) {
-      var t = topics[key];
-      var existing = existingMap[key];
-      var snapshot = { date: runDate, trl: t.trl, verdict: t.verdict, confidence: t.confidence, minds: t.minds };
-
-      if (existing) {
-        var trajData = existing.trajectory_data || [];
-        trajData.push(snapshot);
-        var appearances = (existing.appearances || 0) + 1;
-        var trlVelocity = trajData.length >= 2 ? (t.trl - trajData[0].trl) / trajData.length : 0;
-        var crossAgentCount = t.minds.length;
-        var compoundScore = Math.round(((Math.min(appearances, 10) / 10) * 0.3 + (t.confidence / 5) * 0.2 + (Math.min(crossAgentCount, 4) / 4) * 0.25 + (Math.max(0, Math.min(trlVelocity + 0.5, 1))) * 0.25) * 100);
-
-        upserts.push({
-          id: existing.id, topic_key: key, title: t.title, domain: t.domain, regions: t.regions,
-          current_trl: t.trl, current_verdict: t.verdict, current_confidence: t.confidence,
-          last_seen: runDate, first_seen: existing.first_seen, appearances: appearances,
-          cross_agent_count: crossAgentCount, compound_score: compoundScore,
-          trl_velocity: Math.round(trlVelocity * 100) / 100, trajectory_data: trajData
-        });
-      } else {
-        upserts.push({
-          topic_key: key, title: t.title, domain: t.domain, regions: t.regions,
-          current_trl: t.trl, current_verdict: t.verdict, current_confidence: t.confidence,
-          first_seen: runDate, last_seen: runDate, appearances: 1,
-          cross_agent_count: t.minds.length,
-          compound_score: Math.round(((1/10) * 0.3 + (t.confidence / 5) * 0.2 + (Math.min(t.minds.length, 4) / 4) * 0.25 + 0.5 * 0.25) * 100),
-          trl_velocity: 0, trajectory_data: [snapshot]
-        });
-      }
-    });
-
-    if (upserts.length > 0) {
-      var url = SUPABASE_URL + '/rest/v1/signal_trajectories';
-      var r = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify(upserts)
-      });
-      if (r.ok) console.log('[YNOT-S] Signal trajectories updated: ' + upserts.length + ' topics');
-    }
-  } catch(e) {
-    console.warn('[YNOT-S] Signal trajectories update failed: ' + e.message);
-  }
-}
-
-// ─── LAYER 3: PROGRAMMATIC FRESHNESS VALIDATION ──────────────────────────────
-function validateSourceFreshness(findings) {
-  var sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-  
-  return findings.map(function(f) {
-    var freshRefs = [];
-    var staleRefs = [];
-    var undatedRefs = [];
-    var newestDate = null;
-    
-    (f.refs || []).forEach(function(ref) {
-      if (ref.published_date) {
-        try {
-          var pubTime = new Date(ref.published_date).getTime();
-          if (pubTime >= sevenDaysAgo) {
-            freshRefs.push(ref);
-            if (!newestDate || pubTime > new Date(newestDate).getTime()) {
-              newestDate = ref.published_date;
-            }
-          } else {
-            staleRefs.push(ref);
-            console.warn('[YNOT-S] Removed stale ref (' + ref.published_date + '): ' + ref.url);
-          }
-        } catch(e) {
-          undatedRefs.push(ref);
-        }
-      } else {
-        undatedRefs.push(ref);
-      }
-    });
-    
-    var priority = 3;
-    var flag = 'stale';
-    
-    if (freshRefs.length > 0) {
-      priority = 1;
-      flag = 'fresh';
-    } else if (undatedRefs.length > 0 && staleRefs.length === 0) {
-      priority = 2;
-      flag = 'undated';
-    }
-    
-    var keptRefs = freshRefs.concat(undatedRefs);
-    
-    return Object.assign({}, f, {
-      refs: keptRefs,
-      source_published_date: newestDate,
-      freshness_flag: flag,
-      freshness_priority: priority
-    });
-  }).filter(function(f) {
-    if (f.refs.length === 0) {
-      console.warn('[YNOT-S] Removed finding (no fresh refs): ' + f.title);
-      return false;
-    }
-    return true;
-  });
-}
-
-// ─── SYNTHESIS AGENT RUN ──────────────────────────────────────────────────────
+// ── RUN SYNTHESIS AGENT ─────────────────────────────────────────────────────
 async function runSynthesisAgent(mind, phase1Findings, runId, runDate) {
-  // Build a summary of Phase 1 findings for context
+  var agentStart = Date.now();
+  log.info(mind.id, 'start', { role: mind.role, extendedThinking: mind.extendedThinking });
+
+  // Build summary of Phase 1 findings for context
   var findingsSummary = phase1Findings.slice(0, 20).map(function(f, i) {
     return (i+1) + '. [' + f.mind_name + ' / ' + f.verdict + ' / TRL' + (f.trl||'?') + '] ' +
       f.title + ': ' + String(f.body || '').substring(0, 150);
   }).join('\n');
 
-  // Generate targeted search queries informed by Phase 1 context
+  // Generate targeted search queries
   var querySystem = 'You are ' + mind.name + '. ' + mind.brief +
     ' Based on what the other agents found this week (provided below), generate 3 targeted web search queries to deepen your specific analysis. ' +
     'Return ONLY a JSON array of 3 strings.';
@@ -434,100 +56,66 @@ async function runSynthesisAgent(mind, phase1Findings, runId, runDate) {
 
   var queries = mind.querySeeds.slice(0, 3); // fallback
   try {
-    var raw = await claudeCall(querySystem, queryUser, 250);
+    var raw = await anthropic.claudeCall(querySystem, queryUser, 250);
     var match = raw.match(/\[[\s\S]*?\]/);
     if (match) {
       var parsed = JSON.parse(match[0]);
       if (Array.isArray(parsed) && parsed.length > 0) queries = parsed.slice(0, 3).map(function(q) { return String(q); });
     }
   } catch(e) {
-    console.warn('[YNOT-S] ' + mind.name + ' query gen failed: ' + e.message);
+    log.warn(mind.id, 'query_gen_fallback', { error: e.message });
   }
-  console.log('[YNOT-S] ' + mind.name + ' queries: ' + queries.join(' | '));
+  log.info(mind.id, 'queries', { count: queries.length, queries: queries });
 
   // Fetch Tavily results
-  var allResults = await Promise.all(queries.map(function(q) { return tavilySearch(q, 4); }));
-  var seen = {}; var deduped = [];
-  allResults.forEach(function(results) {
-    results.forEach(function(item) {
-      if (item.url && !seen[item.url]) { seen[item.url] = true; deduped.push(item); }
-    });
-  });
-  console.log('[YNOT-S] ' + mind.name + ': ' + deduped.length + ' Tavily results');
+  var deduped = await tavily.fetchAndDedupeResults(queries, 4);
+  log.info(mind.id, 'tavily_results', { count: deduped.length });
 
-  // Store raw intelligence for this mind
-  await storeRawIntelligence(mind.id, queries, deduped, runId, runDate).catch(function(){});
+  // Store raw intelligence
+  await logger.softFail('raw_intel_' + mind.id, function() {
+    return signals.storeRawIntelligence(mind.id, queries, deduped, runId, runDate);
+  }, log);
 
   var resultsText = deduped.slice(0, 10).map(function(r, i) {
     var pub = r.published_date ? ' [published: ' + r.published_date + ']' : ' [NO DATE]';
     return '[' + (i+1) + '] ' + r.title + pub + '\nURL: ' + r.url + '\n' + r.content;
   }).join('\n\n');
 
-  // Synthesis analysis with full Phase 1 context
-  var analysisSystem = 'You are ' + mind.name + '. ' + mind.brief +
-    ' You have read all findings from the other agents AND searched the web for additional context. ' +
-    'CRITICAL DATE REQUIREMENT: This is a WEEKLY briefing for LAST WEEK only. ONLY use sources published within the last 7 days. ' +
-    'If you see [published: YYYY-MM-DD], verify it is within the last 7 days from today. Reject any source older than 7 days. ' +
-    'Sources marked [NO DATE] can be used but are lower priority than dated sources. ' +
-    '\n\nLEGAL SAFETY REQUIREMENT (NON-NEGOTIABLE): You are an EDUCATIONAL intelligence platform, not an investigative journalist. ' +
-    'OBSERVE, DON\'T ACCUSE. State facts, not judgments. Document verification status, don\'t imply fraud. ' +
-    '\n\nBANNED WORDS (never use): suspicious, dubious, questionable, exposed, revealed, hype, washing, fake, fabricated, hiding, refusing, coordinated, collusion, misleading, deceptive, dishonest. ' +
-    '\n\nSAFE FRAMING: "[Entity] reports [claim]; independent validation not published" NOT "Suspicious pattern suggests coordinated marketing". ' +
-    'Use: reports, states, claims, announces, not published, not disclosed, not documented, independent validation, third-party verification. ' +
-    'TONE: University researcher writing peer-reviewed paper, not tabloid exposé. ' +
-    '\n\nVENDOR-NEUTRAL RULE (NON-NEGOTIABLE): This is a MARKET-LEVEL intelligence platform, not a vendor tracker. ' +
-    'NEVER center a finding around a single company, consultancy, or vendor (e.g. "Accenture launches...", "McKinsey reports...", "Guidewire releases..."). ' +
-    'Instead, identify the MARKET PATTERN or TECHNOLOGY TREND the vendor activity represents. ' +
-    'Vendor names may appear as supporting evidence INSIDE a finding body, but must NEVER be the subject of the title. ' +
-    'If the only source is a vendor press release or product announcement with no independent validation, verdict must be UNVERIFIED. ' +
-    '\n\nProduce synthesis findings that go beyond what the primary agents found — your value is in ' +
-    (mind.role === 'verification' ? 'analyzing verification status and distinguishing independently verified claims from unverified ones' :
-     mind.role === 'synthesiser' ? 'connecting dots across domains and finding second-order effects' :
-     'identifying early-stage signals others missed') + '. ' +
-    'Use real URLs from the search results as refs — never invent URLs. ' +
-    'Return ONLY a valid JSON array of 2-4 findings. Each must have: ' +
-    'title, verdict ("SIGNAL"|"WATCH"|"UNVERIFIED"), body (2-3 sentences: describe what is found and what is understood — factual and observational, not prescriptive), confidence (1-5), ' +
-    'domain, subdomain, trl (1-9), regulatoryRisk ("low"|"medium"|"high"), experiment (a research question or learning hypothesis worth exploring — frame as curiosity, not a recommendation), ' +
-    'signal_status ("NEW"|"EMERGING"|"CONFIRMED"|"RECURRING"), ' +
-    'regions (array of strings — tag regions: "US", "EU", "UK", "APAC", "Global"), ' +
-    'refs (array of {label, url} from real search results). ' +
-    '\n\nVERDICT CRITERIA (use these objective rules): ' +
-    '\n• SIGNAL: (1) Multiple independent sources (2+ refs from different organizations), (2) Quantified claims with specific numbers/data, (3) Named deployments or peer-reviewed research, (4) Confidence ≥ 4. ' +
-    '\n• WATCH: (1) Single source OR early-stage development, (2) Qualitative claims or limited data, (3) Worth monitoring as evidence develops, (4) Confidence 2-3. ' +
-    '\n• UNVERIFIED: (1) Claims lack independent third-party validation, (2) Single vendor/promotional source only, (3) Quantified claims with no external benchmarks, (4) Not necessarily false, but verification status unclear. Use UNVERIFIED for factual accuracy — this means "we cannot independently verify" not "this is false." Confidence 1-2. ' +
-    '\n\nIMPORTANT: UNVERIFIED is a factual statement about verification status, not a quality judgment. Frame objectively. ' +
-    'LEGAL SAFETY: Never imply fraud, collusion, or intent to deceive. State verification gaps factually.';
-
+  // Synthesis analysis
+  var analysisSystem = prompts.buildPhase2AnalysisSystem(mind);
   var analysisUser = 'Phase 1 findings from other agents:\n' + findingsSummary +
     '\n\nYour additional web search results:\n\n' + (resultsText || '(no results)') +
     '\n\nProduce your synthesis findings. Return only the JSON array.';
 
   try {
-    var callFn = mind.extendedThinking ? claudeCallWithThinking : claudeCall;
+    var callFn = mind.extendedThinking ? anthropic.claudeCallWithThinking : anthropic.claudeCall;
     var raw2 = await callFn(analysisSystem, analysisUser, 1400, 4000);
     var match2 = raw2.match(/\[[\s\S]*\]/);
     if (!match2) throw new Error('no JSON array');
     var findings = JSON.parse(match2[0]);
     if (!Array.isArray(findings)) throw new Error('not array');
     var enriched = await Promise.all(findings.map(async function(f) {
-      var verifiedRefs = await verifyRefs(f.refs || []);
+      var verifiedRefs = await urlUtils.verifyRefs(f.refs || []);
       return Object.assign({}, f, {
         mind_id: mind.id, mind_name: mind.name, mind_icon: mind.icon,
-        refs: verifiedRefs,
-        search_queries: queries,
+        refs: verifiedRefs, search_queries: queries,
         signal_status: f.signal_status || 'NEW'
       });
     }));
-    console.log('[YNOT-S] ' + mind.name + ': ' + enriched.length + ' synthesis findings' + (mind.extendedThinking ? ' (extended thinking)' : ''));
-    return enriched;
+    log.info(mind.id, 'findings', { count: enriched.length, extendedThinking: mind.extendedThinking });
+    return {
+      findings: enriched,
+      metrics: { durationMs: Date.now() - agentStart, tavilyResults: deduped.length, findings: enriched.length, queries: queries.length }
+    };
   } catch(e) {
-    console.error('[YNOT-S] ' + mind.name + ' analysis failed: ' + e.message);
-    return [];
+    log.error(mind.id, 'analysis_failed', { error: e.message });
+    return { findings: [], metrics: { durationMs: Date.now() - agentStart, tavilyResults: deduped.length, findings: 0 } };
   }
 }
 
-// ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
-module.exports = async function handler(req, res) {
+// ── HANDLER ─────────────────────────────────────────────────────────────────
+module.exports = logger.withErrorHandler('cron-synthesise', async function handler(req, res) {
+  var runStart = Date.now();
   var auth = req.headers['authorization'] || '';
   var isExternalCall = auth.length > 0;
   if (isExternalCall && auth !== 'Bearer ' + CRON_SECRET) {
@@ -539,141 +127,95 @@ module.exports = async function handler(req, res) {
 
   var runDate = new Date().toISOString().split('T')[0];
 
-  // Fetch Phase 1 findings to pass as context to synthesis agents
-  console.log('[YNOT-S] Phase 2: fetching Phase 1 findings for ' + runDate + '...');
+  log.info('-', 'phase2_start', { run_date: runDate });
   var phase1Findings = await fetchTodaysFindings(runDate);
 
   if (phase1Findings.length === 0) {
     return res.status(200).json({
-      success: false,
-      phase: 2,
+      success: false, phase: 2,
       message: 'No Phase 1 findings found for ' + runDate + ' — Phase 2 skipped. Phase 1 may still be running.',
       run_date: runDate
     });
   }
 
-  console.log('[YNOT-S] Phase 2: ' + phase1Findings.length + ' Phase 1 findings loaded. Running Null, Weave, Faro...');
-
-  // Use the same run_id as Phase 1 (find it from the findings)
+  log.info('-', 'phase1_loaded', { count: phase1Findings.length });
   var runId = phase1Findings[0].run_id || ('run_synth_' + Date.now());
-
-  var allSynthFindings = [];
-  var errors = [];
+  var allSynthFindings = []; var errors = []; var perAgent = {};
 
   var outcomes = await Promise.allSettled(
     SYNTHESIS_MINDS.map(function(m) { return runSynthesisAgent(m, phase1Findings, runId, runDate); })
   );
 
   outcomes.forEach(function(o, i) {
-    if (o.status === 'fulfilled') allSynthFindings = allSynthFindings.concat(o.value);
-    else errors.push({ mind: SYNTHESIS_MINDS[i].id, error: o.reason && o.reason.message });
+    if (o.status === 'fulfilled') {
+      allSynthFindings = allSynthFindings.concat(o.value.findings);
+      perAgent[SYNTHESIS_MINDS[i].id] = o.value.metrics;
+    } else {
+      errors.push({ mind: SYNTHESIS_MINDS[i].id, error: o.reason && o.reason.message });
+    }
   });
 
   if (allSynthFindings.length === 0) {
     return res.status(500).json({ error: 'All synthesis agents failed', errors: errors });
   }
 
-  // LAYER 3: Apply programmatic freshness validation
-  console.log('[YNOT-S] Applying freshness validation (7-day window)...');
+  // Freshness validation
   var preValidationCount = allSynthFindings.length;
-  allSynthFindings = validateSourceFreshness(allSynthFindings);
-  console.log('[YNOT-S] Freshness validation: ' + preValidationCount + ' → ' + allSynthFindings.length + ' findings retained');
+  allSynthFindings = freshness.validateSourceFreshness(allSynthFindings, '[YNOT-S]');
+  log.info('-', 'freshness_validation', { before: preValidationCount, after: allSynthFindings.length });
 
-  // VENDOR-NEUTRAL FILTER: programmatically block vendor-centric titles
+  // Vendor-neutral filter
   var preVendorCount = allSynthFindings.length;
-  allSynthFindings = applyVendorFilter(allSynthFindings);
+  allSynthFindings = vendorFilter.applyVendorFilter(allSynthFindings, '[YNOT-S]');
   if (preVendorCount !== allSynthFindings.length) {
-    console.log('[YNOT-S] Vendor filter: ' + preVendorCount + ' → ' + allSynthFindings.length + ' findings retained');
+    log.info('-', 'vendor_filter', { before: preVendorCount, after: allSynthFindings.length });
   }
 
-  var rows = allSynthFindings.map(function(f) {
-    return {
-      run_id: runId,
-      run_date: runDate,
-      mind_id: f.mind_id,
-      mind_name: f.mind_name,
-      mind_icon: f.mind_icon,
-      title: f.title,
-      verdict: normalizeVerdict(f.verdict),
-      body: f.body || f.description || 'No body provided',
-      domain: f.domain,
-      subdomain: f.subdomain || null,
-      confidence: Math.min(5, Math.max(1, parseInt(f.confidence) || 3)),
-      trl: f.trl || 5,
-      regulatory_risk: normalizeRisk(f.regulatoryRisk || f.regulatory_risk),
-      experiment: f.experiment || null,
-      refs: f.refs || [],
-      search_queries: f.search_queries || [],
-      signal_status: f.signal_status || 'NEW',
-      source_published_date: f.source_published_date || null,
-      freshness_flag: f.freshness_flag || 'undated',
-      freshness_priority: f.freshness_priority || 2,
-      regions: f.regions || ['Global']
-    };
-  });
-
+  // Build rows and store
+  var rows = allSynthFindings.map(function(f) { return normalizers.buildFindingRow(f, runId, runDate); });
   try {
-    await supabaseCall('POST', 'findings', rows);
-    console.log('[YNOT-S] Phase 2 complete: ' + allSynthFindings.length + ' synthesis findings stored.');
+    await supabase.supabaseCall('POST', 'findings', rows);
+    log.info('-', 'findings_stored', { count: allSynthFindings.length });
   } catch(err) {
     return res.status(500).json({ error: 'Storage failed', details: err.message });
   }
 
-  // Regenerate the weekly digest now that ALL 8 agents have contributed
-  var allFindings = phase1Findings.concat(allSynthFindings);
+  // Non-blocking: update signal trajectories
+  await logger.softFail('signal_trajectories', function() {
+    return signals.updateSignalTrajectories(allSynthFindings, runDate);
+  }, log);
 
-  // Update signal trajectories for ALL findings (Phase 1 + Phase 2 combined)
-  await updateSignalTrajectories(allFindings, runDate).catch(function(e) {
-    console.warn('[YNOT-S] Trajectory update error: ' + e.message);
+  // ── Baseline Management ────────────────────────────────────────────────────
+  var runDuration = Date.now() - runStart;
+  var metrics = baseline.collectRunMetrics({
+    runId: runId, runDate: runDate, phase: 2,
+    findings: allSynthFindings, errors: errors,
+    durationMs: runDuration, perAgent: perAgent
   });
-  try {
-    var signals = allFindings.filter(function(f){ return f.verdict === 'SIGNAL'; });
-    var watches  = allFindings.filter(function(f){ return f.verdict === 'WATCH'; });
-    var unverified = allFindings.filter(function(f){ return f.verdict === 'UNVERIFIED' || f.verdict === 'NOISE'; }); // Include legacy NOISE
-    var top = signals.slice(0, 5).concat(watches.slice(0, 3));
-    var findingsText = top.map(function(f) {
-      return f.title + ' [' + f.verdict + ', TRL ' + (f.trl||'?') + ', ' + f.domain + ']: ' + String(f.body||'').substring(0, 200);
-    }).join('\n');
 
-    var prompt = 'Week of ' + runDate + '. Eight autonomous agents independently searched the web this week using self-generated queries. ' +
-      'Five primary agents (Scout, Vita, Lex, Terra, Horizon) ran first. ' +
-      'Three synthesis agents (Null, Weave, Faro) then read all primary findings and produced cross-agent insights. ' +
-      'Total findings: ' + allFindings.length + ' (' + signals.length + ' Signals, ' + watches.length + ' Watch, ' + unverified.length + ' Unverified).\n\n' +
-      'Top findings:\n' + findingsText + '\n\n' +
-      'Write an educational intelligence briefing for anyone curious about AI in insurance — practitioners, students, researchers, and leaders alike. Format EXACTLY:\n\n' +
-      '[HOOK] One specific, concrete, slightly surprising sentence from a real finding. No cliches.\n\n' +
-      '[CONTEXT] 1-2 sentences on what the agents found and what it reveals about how AI in insurance is evolving. Mention 8 agents and finding counts naturally.\n\n' +
-      '-> [Finding title] - [One sharp sentence: what was found and what it reveals about the state of AI in insurance]\n' +
-      '-> [Finding title] - [One sharp sentence]\n' +
-      '-> [Finding title] - [One sharp sentence]\n\n' +
-      '[CLOSE] One observational sentence on what is worth following or learning more about. No "In conclusion". No "The future is...".\n\n' +
-      'All findings this week -> ynot.now\n\n' +
-      '#InsurTech #AIinInsurance #Insurance #Innovation\n\n' +
-      'Banned words: leverage, landscape, transformative, game-changer, revolutionise, unlock, harness, delve, cutting-edge, unprecedented, seamless. ' +
-      'Vary sentence length. Inform, do not advise.';
+  await logger.softFail('store_metrics', function() {
+    return baseline.storeRunMetrics(metrics);
+  }, log);
 
-    var postText = await claudeCall(
-      'You write evidence-grounded intelligence briefings for anyone curious about AI in insurance — practitioners, students, and researchers. Your job is to inform and spark curiosity, not to advise or recommend. Sound like a well-read, curious observer. Use specific numbers and named technologies. Never use corporate filler.',
-      prompt, 600
+  // ── Per-agent metrics: track each synthesis mind individually ──────────────
+  var agentBaselineWarnings = [];
+  await logger.softFail('agent_metrics', async function() {
+    var agentRows = agentMetrics.collectAllAgentMetrics(
+      allSynthFindings, perAgent, errors, runId, runDate, 2
     );
-
-    // Replace the Phase 1 digest with the complete 8-agent digest
-    await supabaseCall('DELETE', 'weekly_posts', null, '?run_date=eq.' + runDate).catch(function(){});
-    await supabaseCall('POST', 'weekly_posts', [{ run_id: runId, run_date: runDate, post_text: postText, status: 'ready' }]);
-    console.log('[YNOT-S] Full 8-agent digest regenerated and saved.');
-  } catch(dErr) {
-    console.error('[YNOT-S] Digest regeneration failed:', dErr.message);
-  }
+    await agentMetrics.storeAgentMetrics(agentRows);
+    agentBaselineWarnings = await agentMetrics.checkAgentBaselines(agentRows);
+    if (agentBaselineWarnings.length > 0) {
+      log.warn('-', 'agent_baseline_deviation', { agents: agentBaselineWarnings });
+    }
+  }, log);
 
   return res.status(200).json({
-    success: true,
-    phase: 2,
-    run_id: runId,
-    run_date: runDate,
-    phase1_findings: phase1Findings.length,
-    synthesis_findings: allSynthFindings.length,
-    total_findings: allFindings.length,
-    trajectories_updated: true,
-    errors: errors
+    success: true, phase: 2, run_id: runId, run_date: runDate,
+    findings_count: allSynthFindings.length, errors: errors,
+    phase1_context: phase1Findings.length + ' findings used',
+    metrics: { duration_ms: runDuration, fresh_rate: metrics.fresh_rate, avg_confidence: metrics.avg_confidence },
+    agent_warnings: agentBaselineWarnings,
+    note: 'Synthesis complete. All findings stored.'
   });
-};
+});

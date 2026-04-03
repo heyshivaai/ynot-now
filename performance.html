@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YNOT.NOW — Mind Performance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --text: #e8e8ed;
+    --text-muted: #8888a0;
+    --accent: #7c6df0;
+    --accent-glow: rgba(124, 109, 240, 0.15);
+    --signal: #4ade80;
+    --watch: #fbbf24;
+    --unverified: #f87171;
+    --up: #4ade80;
+    --down: #f87171;
+    --stable: #8888a0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
+  }
+  .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem; }
+  .subtitle span { color: var(--accent); font-family: 'DM Mono', monospace; }
+
+  /* Leaderboard */
+  .leaderboard {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .mind-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: grid;
+    grid-template-columns: 2.5rem 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .mind-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .mind-card.selected {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+  .rank {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+  }
+  .mind-info h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .mind-info .phase-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-left: 0.5rem;
+  }
+  .mind-stats {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+  }
+  .stat {
+    text-align: center;
+    min-width: 3.5rem;
+  }
+  .stat .val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .stat .label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .verdict-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    width: 80px;
+  }
+  .verdict-bar .seg-signal { background: var(--signal); }
+  .verdict-bar .seg-watch { background: var(--watch); }
+  .verdict-bar .seg-unverified { background: var(--unverified); }
+
+  /* Detail Panel */
+  .detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: none;
+  }
+  .detail-panel.visible { display: block; }
+  .detail-panel h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 768px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .mind-stats { flex-wrap: wrap; gap: 0.5rem; }
+    .mind-card { grid-template-columns: 2rem 1fr; }
+    .mind-stats { grid-column: 1 / -1; }
+  }
+  .chart-box {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .chart-box h4 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+  .sparkline-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 50px;
+  }
+  .spark-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    position: relative;
+    transition: opacity 0.2s;
+  }
+  .spark-bar:hover { opacity: 0.8; }
+  .spark-bar .tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+  .spark-bar:hover .tip { display: block; }
+  .trend-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+  }
+  .trend-up { color: var(--up); background: rgba(74,222,128,0.1); }
+  .trend-down { color: var(--down); background: rgba(248,113,113,0.1); }
+  .trend-stable { color: var(--stable); background: rgba(136,136,160,0.1); }
+
+  .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
+  .error-msg { color: var(--unverified); text-align: center; padding: 2rem; }
+  .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+  .empty-state p { margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+  <h1>Mind Performance</h1>
+  <p class="subtitle">Eight minds tracked over time · <span id="run-info">Loading...</span></p>
+
+  <div id="leaderboard" class="leaderboard">
+    <div class="loading">Loading agent metrics...</div>
+  </div>
+
+  <div id="detail-panel" class="detail-panel">
+    <h2 id="detail-title">Agent Detail</h2>
+    <div class="chart-grid" id="detail-charts"></div>
+  </div>
+
+<script>
+(function() {
+  var API_BASE = '/api/agent-performance';
+  var selectedMind = null;
+
+  async function fetchData(params) {
+    var qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    var r = await fetch(API_BASE + qs);
+    if (!r.ok) throw new Error('API ' + r.status);
+    return r.json();
+  }
+
+  function pct(n, total) { return total > 0 ? Math.round((n / total) * 100) : 0; }
+
+  function renderLeaderboard(data) {
+    var el = document.getElementById('leaderboard');
+    var info = document.getElementById('run-info');
+
+    if (!data.leaderboard || data.leaderboard.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No agent metrics yet.</p><p style="font-size:0.85rem">Metrics will appear after your next weekly cron run.</p></div>';
+      info.textContent = 'No data';
+      return;
+    }
+
+    info.textContent = 'Run: ' + data.run_date + ' · ' + data.mind_count + ' minds';
+
+    el.innerHTML = data.leaderboard.map(function(m, i) {
+      var total = m.signal_count + (m.finding_count - m.signal_count);
+      var sigPct = pct(m.signal_count, m.finding_count);
+      var watchPct = pct(m.finding_count - m.signal_count - (m.finding_count - m.signal_count > 0 ? 0 : 0), m.finding_count);
+
+      return '<div class="mind-card" data-mind="' + m.mind_id + '">' +
+        '<div class="rank">#' + (i + 1) + '</div>' +
+        '<div class="mind-info">' +
+          '<h3>' + m.mind_name + '<span class="phase-tag">Phase ' + m.phase + '</span></h3>' +
+          '<div class="verdict-bar">' +
+            '<div class="seg-signal" style="width:' + pct(m.signal_count, m.finding_count) + '%"></div>' +
+            '<div class="seg-watch" style="width:' + pct(m.finding_count - m.signal_count, m.finding_count) + '%"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mind-stats">' +
+          '<div class="stat"><div class="val">' + m.finding_count + '</div><div class="label">Findings</div></div>' +
+          '<div class="stat"><div class="val" style="color:var(--signal)">' + m.signal_count + '</div><div class="label">Signals</div></div>' +
+          '<div class="stat"><div class="val">' + m.avg_confidence.toFixed(1) + '</div><div class="label">Confidence</div></div>' +
+          '<div class="stat"><div class="val">' + (m.fresh_rate * 100).toFixed(0) + '%</div><div class="label">Fresh</div></div>' +
+          '<div class="stat"><div class="val">' + (m.duration_ms / 1000).toFixed(1) + 's</div><div class="label">Speed</div></div>' +
+          '<div class="stat"><div class="val" style="color:var(--accent)">' + m.quality_score + '</div><div class="label">Score</div></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // Click handlers
+    el.querySelectorAll('.mind-card').forEach(function(card) {
+      card.addEventListener('click', function() {
+        var mindId = card.getAttribute('data-mind');
+        el.querySelectorAll('.mind-card').forEach(function(c) { c.classList.remove('selected'); });
+        card.classList.add('selected');
+        loadMindDetail(mindId);
+      });
+    });
+  }
+
+  function renderSparkline(data, key, color, label) {
+    if (!data || data.length === 0) return '<div class="chart-box"><h4>' + label + '</h4><p style="color:var(--text-muted);font-size:0.8rem">No history</p></div>';
+
+    var values = data.map(function(d) { return d[key] || 0; }).reverse();
+    var max = Math.max.apply(null, values.concat([1]));
+    var dates = data.map(function(d) { return d.run_date; }).reverse();
+
+    var bars = values.map(function(v, i) {
+      var h = Math.max(2, (v / max) * 50);
+      return '<div class="spark-bar" style="height:' + h + 'px;background:' + color + '">' +
+        '<div class="tip">' + dates[i] + ': ' + (typeof v === 'number' && v % 1 !== 0 ? v.toFixed(2) : v) + '</div></div>';
+    }).join('');
+
+    // Trend
+    var trend = '';
+    if (values.length >= 2) {
+      var last = values[values.length - 1];
+      var prev = values[values.length - 2];
+      if (prev > 0) {
+        var change = ((last - prev) / prev) * 100;
+        if (change > 10) trend = '<span class="trend-badge trend-up">+' + change.toFixed(0) + '%</span>';
+        else if (change < -10) trend = '<span class="trend-badge trend-down">' + change.toFixed(0) + '%</span>';
+        else trend = '<span class="trend-badge trend-stable">stable</span>';
+      }
+    }
+
+    return '<div class="chart-box"><h4>' + label + trend + '</h4><div class="sparkline-row">' + bars + '</div></div>';
+  }
+
+  async function loadMindDetail(mindId) {
+    var panel = document.getElementById('detail-panel');
+    var title = document.getElementById('detail-title');
+    var charts = document.getElementById('detail-charts');
+
+    panel.classList.add('visible');
+    title.textContent = 'Loading ' + mindId + '...';
+    charts.innerHTML = '';
+
+    try {
+      var data = await fetchData({ mind: mindId, limit: 12 });
+      title.textContent = (data.mind_name || mindId) + ' — Performance History';
+
+      var history = data.history || [];
+
+      charts.innerHTML =
+        renderSparkline(history, 'finding_count', 'var(--accent)', 'Findings per run') +
+        renderSparkline(history, 'avg_confidence', 'var(--watch)', 'Avg confidence') +
+        renderSparkline(history, 'fresh_rate', 'var(--signal)', 'Freshness rate') +
+        renderSparkline(history, 'tavily_efficiency', '#60a5fa', 'Tavily efficiency') +
+        renderSparkline(history, 'signal_count', 'var(--signal)', 'Signals produced') +
+        renderSparkline(history, 'duration_ms', 'var(--text-muted)', 'Duration (ms)');
+
+    } catch(e) {
+      charts.innerHTML = '<div class="error-msg">Failed to load: ' + e.message + '</div>';
+    }
+  }
+
+  // Initial load
+  fetchData()
+    .then(renderLeaderboard)
+    .catch(function(e) {
+      document.getElementById('leaderboard').innerHTML = '<div class="error-msg">Failed to load metrics: ' + e.message + '<br><br><span style="color:var(--text-muted);font-size:0.85rem">Make sure the agent_metrics table exists and at least one cron run has completed.</span></div>';
+    });
+})();
+</script>
+</body>
+</html>

@@ -52,6 +52,7 @@ git push                   # Vercel auto-deploys in ~30 seconds
 | `api/digest.js` | `/api/digest` | Digest endpoint |
 | `api/month-review.js` | `/api/month-review` | Monthly narrative synthesis from 4 weeks of findings + trajectories |
 | `api/visitors.js` | `/api/visitors` | Visitor counter |
+| `api/agent-performance.js` | `/api/agent-performance` | Per-mind performance metrics + leaderboard. Query: `?mind=scout`, `?compare=true` |
 
 ---
 
@@ -66,6 +67,8 @@ git push                   # Vercel auto-deploys in ~30 seconds
 | `intelligence_raw` | Raw Tavily results per agent per run | Enables re-analysis and source tracking |
 | `cross_agent_agreements` | Cross-agent topic agreement | When 2+ agents surface same topic |
 | `monthly_reviews` | Cached monthly narrative reviews | Keyed by `month_key` (e.g. "2026-03") |
+| `run_metrics` | Agent performance baselines per run | Migration: `scripts/add_run_metrics_table.sql` |
+| `agent_metrics` | Per-mind performance over time | Migration: `scripts/add_agent_metrics_table.sql` |
 
 ---
 
@@ -124,6 +127,34 @@ Takes ~30–60 seconds. Returns `{"success":true,"run_id":"...","findings_count"
 
 ---
 
+## Project Structure (Atomic Decomposition)
+
+Shared logic lives in `/lib/` — API handlers in `/api/` are thin orchestrators.
+
+| Directory | Purpose |
+|-----------|---------|
+| `lib/services/` | External API clients: `supabase.js`, `anthropic.js`, `tavily.js` |
+| `lib/utils/` | Pure functions: `normalizers.js`, `vendor-filter.js`, `url-utils.js`, `freshness.js` |
+| `lib/agents/` | Agent definitions, signal tracking, prompt templates |
+| `lib/errors/` | Structured logging (`logger.js`) and error handler |
+| `lib/metrics/` | Baseline management (`baseline.js`) — performance tracking |
+| `tests/` | Vitest test suite — run with `npm test` |
+
+**Rule:** Never duplicate logic between `cron.js` and `cron-synthesise.js`. If both files need a function, it belongs in `/lib/`.
+
+---
+
+## Testing
+
+```bash
+npm test           # Run all tests (vitest)
+npm run test:watch # Watch mode
+```
+
+Tests cover: normalizers, vendor filter, URL utils, freshness validation, baseline metrics, structured logger.
+
+---
+
 ## Ambiguity Rule
 
 If an instruction is ambiguous — stop and ask one clarifying question before writing any code. If context files conflict with the session prompt, flag the conflict.
@@ -144,4 +175,4 @@ After making changes, update `YNOT-CONTEXT.md` if you:
 
 ---
 
-*Last updated: 2026-03-06*
+*Last updated: 2026-04-03*
