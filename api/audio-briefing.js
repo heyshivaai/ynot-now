@@ -242,11 +242,12 @@ module.exports = async function handler(req, res) {
     }
 
     // ── Try cache first ──
+    // Only serve from cache if audio exists. If audio is missing, fall through
+    // to regenerate it so a failed ElevenLabs call doesn't lock out the week.
     if (!force) {
       try {
         const cached = await sbGet(`audio_briefings?week=eq.${encodeURIComponent(targetWeek)}&select=week,script,summary,duration_estimate,audio_data`);
-        if (cached && cached.length > 0) {
-          const hasAudio = !!cached[0].audio_data;
+        if (cached && cached.length > 0 && cached[0].audio_data) {
           return res.status(200).json({
             success: true,
             briefing: {
@@ -254,10 +255,14 @@ module.exports = async function handler(req, res) {
               script: cached[0].script,
               summary: cached[0].summary,
               duration_estimate: cached[0].duration_estimate,
-              has_audio: hasAudio,
-              audio_url: hasAudio ? `/api/audio-briefing?audio=true&week=${encodeURIComponent(targetWeek)}` : null
+              has_audio: true,
+              audio_url: `/api/audio-briefing?audio=true&week=${encodeURIComponent(targetWeek)}`
             }
           });
+        }
+        // Cache exists but has no audio — fall through to regenerate
+        if (cached && cached.length > 0) {
+          console.log('[audio-briefing] Cached briefing missing audio — regenerating');
         }
       } catch (e) {
         console.warn('[audio-briefing] Cache lookup failed:', e.message);

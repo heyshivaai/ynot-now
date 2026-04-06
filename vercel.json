@@ -2,7 +2,8 @@
   "version": 2,
   "crons": [
     {"path": "/api/cron", "schedule": "0 6 * * 1"},
-    {"path": "/api/cron-synthesise", "schedule": "2 6 * * 1"}
+    {"path": "/api/cron-synthesise", "schedule": "2 6 * * 1"},
+    {"path": "/api/cron-audio", "schedule": "5 6 * * 1"}
   ],
   "rewrites": [
     { "source": "/privacy", "destination": "/privacy.html" },
