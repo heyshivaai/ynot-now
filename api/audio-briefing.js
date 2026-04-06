@@ -292,6 +292,7 @@ module.exports = async function handler(req, res) {
     // ── Generate audio via ElevenLabs ──
     let audioBase64 = null;
     let audioUrl = null;
+    let audioError = null;
     if (ELEVENLABS_KEY) {
       try {
         console.log('[audio-briefing] Generating ElevenLabs audio for', script.length, 'lines...');
@@ -300,10 +301,12 @@ module.exports = async function handler(req, res) {
         audioUrl = `/api/audio-briefing?audio=true&week=${encodeURIComponent(targetWeek)}`;
         console.log('[audio-briefing] Audio generated:', Math.round(audioBuffer.length / 1024), 'KB');
       } catch (e) {
+        audioError = e.message;
         console.warn('[audio-briefing] ElevenLabs generation failed:', e.message);
         // Continue without audio — script still works
       }
     } else {
+      audioError = 'ELEVENLABS_API_KEY not configured';
       console.log('[audio-briefing] No ELEVENLABS_API_KEY — skipping audio generation');
     }
 
@@ -334,7 +337,8 @@ module.exports = async function handler(req, res) {
         summary: summary,
         duration_estimate: durationEstimate,
         has_audio: !!audioBase64,
-        audio_url: audioUrl
+        audio_url: audioUrl,
+        ...(audioError ? { audio_error: audioError } : {})
       }
     });
 
@@ -342,4 +346,7 @@ module.exports = async function handler(req, res) {
     console.error('[audio-briefing] Error:', err.message);
     return res.status(500).json({ success: false, error: err.message });
   }
-};
+};
+
+// Vercel serverless config — audio generation makes 15-20 sequential TTS calls
+module.exports.config = { maxDuration: 120 };
