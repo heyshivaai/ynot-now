@@ -329,4 +329,17 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       success: true,
       briefing: {
-        week: targetWeek,
+        week: targetWeek,
+        script: script,
+        summary: summary,
+        duration_estimate: durationEstimate,
+        has_audio: !!audioBase64,
+        audio_url: audioUrl
+      }
+    });
+
+  } catch (err) {
+    console.error('[audio-briefing] Error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
