@@ -1,0 +1,103 @@
+name: Weekly Cron Backup
+
+# Layer 2 of the weekly pipeline reliability stack.
+# Primary schedule is Vercel Cron (Mon 06:00/06:02/06:05 UTC). This workflow
+# fires 30 minutes later as a backup dispatcher on independent infrastructure.
+#
+# Relies on the idempotency guards in /api/cron, /api/cron-synthesise, and
+# /api/cron-audio — if Vercel already fired, each phase returns
+# {success:true, skipped:true} and this workflow exits green without
+# producing duplicate findings.
+#
+# Required repository secret:
+#   CRON_SECRET — same value as the Vercel env var of the same name
+#
+# Manual trigger (workflow_dispatch) is also wired for on-demand recovery.
+
+on:
+  schedule:
+    # Monday 06:30 UTC — 30 min after Vercel Cron's Mon 06:00 dispatch
+    - cron: '30 6 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: weekly-cron-backup
+  cancel-in-progress: false
+
+jobs:
+  fire-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      BASE_URL: https://ynot.now
+      AUTH: "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+    steps:
+      - name: Check CRON_SECRET is set
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET repository secret is not set"
+            exit 1
+          fi
+
+      - name: Pre-flight health check
+        run: |
+          code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$BASE_URL/api/health" || echo "000")
+          echo "Health check HTTP $code"
+          cat /tmp/health.json | head -c 2000 || true
+          echo
+
+      # Phase 1. If Vercel already fired, guard returns success:true + skipped:true.
+      - name: Phase 1 — /api/cron
+        id: phase1
+        run: |
+          set -eo pipefail
+          curl -sS -H "$AUTH" --max-time 300 "$BASE_URL/api/cron" -o /tmp/p1.json
+          cat /tmp/p1.json
+          echo
+          success=$(jq -r '.success' /tmp/p1.json)
+          skipped=$(jq -r '.skipped // false' /tmp/p1.json)
+          if [ "$success" != "true" ]; then
+            echo "::error::Phase 1 failed"; exit 1
+          fi
+          echo "phase1_skipped=$skipped" >> "$GITHUB_OUTPUT"
+
+      # Small pause so Phase 2 sees Phase 1's findings row if Phase 1 actually ran.
+      - name: Pause between phases
+        if: steps.phase1.outputs.phase1_skipped != 'true'
+        run: sleep 15
+
+      - name: Phase 2 — /api/cron-synthesise
+        id: phase2
+        run: |
+          set -eo pipefail
+          curl -sS -H "$AUTH" --max-time 300 "$BASE_URL/api/cron-synthesise" -o /tmp/p2.json
+          cat /tmp/p2.json
+          echo
+          success=$(jq -r '.success' /tmp/p2.json)
+          if [ "$success" != "true" ]; then
+            echo "::error::Phase 2 failed"; exit 1
+          fi
+
+      - name: Phase 3 — /api/cron-audio
+        id: phase3
+        run: |
+          set -eo pipefail
+          curl -sS -H "$AUTH" --max-time 300 "$BASE_URL/api/cron-audio" -o /tmp/p3.json
+          cat /tmp/p3.json
+          echo
+          success=$(jq -r '.success' /tmp/p3.json)
+          if [ "$success" != "true" ]; then
+            echo "::error::Phase 3 failed"; exit 1
+          fi
+
+      - name: Post-run health check
+        run: |
+          code=$(curl -s -o /tmp/health2.json -w "%{http_code}" "$BASE_URL/api/health" || echo "000")
+          echo "Health check HTTP $code"
+          cat /tmp/health2.json | head -c 2000 || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::warning::Pipeline reported unhealthy after backup run"
+          fi
