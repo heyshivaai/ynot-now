@@ -20,6 +20,8 @@ var prompts       = require('../lib/agents/prompts');
 var logger        = require('../lib/errors/logger');
 var baseline      = require('../lib/metrics/baseline');
 var agentMetrics  = require('../lib/metrics/agent-metrics');
+var pipelineRuns  = require('../lib/utils/pipeline-runs');
+var primarySource = require('../lib/utils/primary-source');
 
 var MINDS = definitions.PRIMARY_MINDS;
 var log = logger.createLogger('phase1');
@@ -186,6 +188,24 @@ module.exports = logger.withErrorHandler('cron', async function handler(req, res
   catch(err) { return res.status(500).json({ error: 'Supabase connection failed', details: err.message }); }
 
   var runDate = new Date().toISOString().split('T')[0];
+  var weekKey = pipelineRuns.toMondayUTC(runDate);
+
+  // ── Idempotency guard ──────────────────────────────────────────────────────
+  // Safe to call from multiple schedulers (Vercel Cron + GitHub Actions backup +
+  // Tuesday catchup). If Phase 1 already completed for this week, return a
+  // no-op success so dual-dispatch does not produce duplicate findings.
+  var force = String(req.query && req.query.force || '') === 'true';
+  if (!force) {
+    var already = await pipelineRuns.isPhaseDone(weekKey, 1);
+    if (already) {
+      log.info('-', 'phase1_skip_idempotent', { week: weekKey });
+      return res.status(200).json({
+        success: true, phase: 1, skipped: true, week: weekKey,
+        message: 'Phase 1 already completed for this week — skipping. Pass ?force=true to override.'
+      });
+    }
+  }
+
   var runId = 'run_' + Date.now();
   var allFindings = []; var errors = []; var perAgent = {};
 
@@ -214,6 +234,16 @@ module.exports = logger.withErrorHandler('cron', async function handler(req, res
   allFindings = vendorFilter.applyVendorFilter(allFindings, '[YNOT]');
   if (preVendorCount !== allFindings.length) {
     log.info('-', 'vendor_filter', { before: preVendorCount, after: allFindings.length });
+  }
+
+  // Primary-source enforcement — downgrade regulator claims lacking authority refs
+  var primaryResult = primarySource.enforceBatch(allFindings);
+  allFindings = primaryResult.findings;
+  if (primaryResult.downgrades.length > 0) {
+    log.warn('-', 'primary_source_downgrades', {
+      count: primaryResult.downgrades.length,
+      downgrades: primaryResult.downgrades
+    });
   }
 
   // Build rows and store
@@ -269,8 +299,18 @@ module.exports = logger.withErrorHandler('cron', async function handler(req, res
     }
   }, log);
 
+  // ── Heartbeat: record Phase 1 completion ───────────────────────────────────
+  await logger.softFail('pipeline_runs_phase1', function() {
+    return pipelineRuns.recordPhase(weekKey, 1, {
+      phase1_run_id: runId,
+      phase1_at: new Date().toISOString(),
+      phase1_findings: allFindings.length,
+      phase1_ok: true
+    });
+  }, log);
+
   return res.status(200).json({
-    success: true, phase: 1, run_id: runId, run_date: runDate,
+    success: true, phase: 1, run_id: runId, run_date: runDate, week: weekKey,
     findings_count: allFindings.length, digest: digestStatus, errors: errors,
     trajectories_updated: true,
     metrics: { duration_ms: runDuration, fresh_rate: metrics.fresh_rate, avg_confidence: metrics.avg_confidence },

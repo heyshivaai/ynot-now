@@ -3524,6 +3524,7 @@
             </div>
             <div class="card-footer">
               <span class="trl-badge">${readinessLabel(f.trl)}</span>
+              <span class="source-badge" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.08em; color:${(f.refs && f.refs.length > 0) ? 'var(--accent)' : '#c44'}; opacity:.85;">${(f.refs && f.refs.length > 0) ? `↗ ${f.refs.length} ${f.refs.length === 1 ? 'SOURCE' : 'SOURCES'}` : '⚠ NO SOURCE'}</span>
               <div class="confidence-dots">${confidenceDots}</div>
             </div>
           </div>

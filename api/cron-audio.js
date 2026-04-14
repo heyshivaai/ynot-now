@@ -6,6 +6,7 @@
 // rather than relying on the first visitor to trigger it.
 
 var CRON_SECRET = process.env.CRON_SECRET || 'ynot-secret-2025';
+var pipelineRuns = require('../lib/utils/pipeline-runs');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,6 +21,20 @@ module.exports = async function handler(req, res) {
   console.log('[cron-audio] Phase 3: Generating audio briefing...');
 
   try {
+    // Idempotency guard
+    var weekKey = pipelineRuns.toMondayUTC(new Date());
+    var force = String(req.query && req.query.force || '') === 'true';
+    if (!force) {
+      var already = await pipelineRuns.isPhaseDone(weekKey, 3);
+      if (already) {
+        console.log('[cron-audio] Phase 3 already completed for', weekKey, '— skipping');
+        return res.status(200).json({
+          success: true, phase: 3, skipped: true, week: weekKey,
+          message: 'Phase 3 already completed for this week — skipping. Pass ?force=true to override.'
+        });
+      }
+    }
+
     // Determine the base URL from the request
     var protocol = req.headers['x-forwarded-proto'] || 'https';
     var host = req.headers['host'] || 'ynot-now.vercel.app';
@@ -31,6 +46,16 @@ module.exports = async function handler(req, res) {
 
     if (data.success && data.briefing && data.briefing.has_audio) {
       console.log('[cron-audio] Audio briefing generated successfully');
+
+      // Heartbeat
+      try {
+        await pipelineRuns.recordPhase(weekKey, 3, {
+          phase3_at: new Date().toISOString(),
+          phase3_has_audio: true,
+          phase3_ok: true
+        });
+      } catch (e) { console.warn('[cron-audio] heartbeat write failed:', e.message); }
+
       return res.status(200).json({
         success: true,
         phase: 3,

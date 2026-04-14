@@ -20,6 +20,8 @@ var prompts       = require('../lib/agents/prompts');
 var logger        = require('../lib/errors/logger');
 var baseline      = require('../lib/metrics/baseline');
 var agentMetrics  = require('../lib/metrics/agent-metrics');
+var pipelineRuns  = require('../lib/utils/pipeline-runs');
+var primarySource = require('../lib/utils/primary-source');
 
 var SYNTHESIS_MINDS = definitions.SYNTHESIS_MINDS;
 var log = logger.createLogger('phase2');
@@ -126,6 +128,20 @@ module.exports = logger.withErrorHandler('cron-synthesise', async function handl
   }
 
   var runDate = new Date().toISOString().split('T')[0];
+  var weekKey = pipelineRuns.toMondayUTC(runDate);
+
+  // Idempotency guard — safe against dual-dispatch (Vercel + GitHub Actions + catchup)
+  var force = String(req.query && req.query.force || '') === 'true';
+  if (!force) {
+    var already = await pipelineRuns.isPhaseDone(weekKey, 2);
+    if (already) {
+      log.info('-', 'phase2_skip_idempotent', { week: weekKey });
+      return res.status(200).json({
+        success: true, phase: 2, skipped: true, week: weekKey,
+        message: 'Phase 2 already completed for this week — skipping. Pass ?force=true to override.'
+      });
+    }
+  }
 
   log.info('-', 'phase2_start', { run_date: runDate });
   var phase1Findings = await fetchTodaysFindings(runDate);
@@ -171,6 +187,16 @@ module.exports = logger.withErrorHandler('cron-synthesise', async function handl
     log.info('-', 'vendor_filter', { before: preVendorCount, after: allSynthFindings.length });
   }
 
+  // Primary-source enforcement
+  var primaryResult = primarySource.enforceBatch(allSynthFindings);
+  allSynthFindings = primaryResult.findings;
+  if (primaryResult.downgrades.length > 0) {
+    log.warn('-', 'primary_source_downgrades', {
+      count: primaryResult.downgrades.length,
+      downgrades: primaryResult.downgrades
+    });
+  }
+
   // Build rows and store
   var rows = allSynthFindings.map(function(f) { return normalizers.buildFindingRow(f, runId, runDate); });
   try {
@@ -210,8 +236,18 @@ module.exports = logger.withErrorHandler('cron-synthesise', async function handl
     }
   }, log);
 
+  // Heartbeat — record Phase 2 completion
+  await logger.softFail('pipeline_runs_phase2', function() {
+    return pipelineRuns.recordPhase(weekKey, 2, {
+      phase2_run_id: runId,
+      phase2_at: new Date().toISOString(),
+      phase2_findings: allSynthFindings.length,
+      phase2_ok: true
+    });
+  }, log);
+
   return res.status(200).json({
-    success: true, phase: 2, run_id: runId, run_date: runDate,
+    success: true, phase: 2, run_id: runId, run_date: runDate, week: weekKey,
     findings_count: allSynthFindings.length, errors: errors,
     phase1_context: phase1Findings.length + ' findings used',
     metrics: { duration_ms: runDuration, fresh_rate: metrics.fresh_rate, avg_confidence: metrics.avg_confidence },
