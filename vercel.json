@@ -3,7 +3,8 @@
   "crons": [
     {"path": "/api/cron", "schedule": "0 6 * * 1"},
     {"path": "/api/cron-synthesise", "schedule": "2 6 * * 1"},
-    {"path": "/api/cron-audio", "schedule": "5 6 * * 1"}
+    {"path": "/api/cron-audio", "schedule": "5 6 * * 1"},
+    {"path": "/api/cron-catchup", "schedule": "0 10 * * 2"}
   ],
   "rewrites": [
     { "source": "/privacy", "destination": "/privacy.html" },
