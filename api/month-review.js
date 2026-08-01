@@ -8,7 +8,7 @@
 var ANTHROPIC_KEY = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY || '';
 var SUPABASE_URL  = process.env.SUPABASE_URL  || '';
 var SUPABASE_KEY  = process.env.SUPABASE_KEY  || process.env.SUPABASE_SERVICE_KEY || '';
-var CLAUDE_MODEL  = 'claude-sonnet-4-20250514';
+var CLAUDE_MODEL  = 'claude-sonnet-4-6';
 
 async function supabaseCall(method, table, body, query) {
   var url = SUPABASE_URL + '/rest/v1/' + table + (query || '');
