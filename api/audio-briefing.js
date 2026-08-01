@@ -170,7 +170,7 @@ async function generateAudioBriefing(findings, runDate) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1500,
       system: 'You write audio briefing scripts for YNOT.NOW, a free independent intelligence resource tracking emerging technologies transforming the insurance industry — including AI, automation, data analytics, IoT, blockchain, cybersecurity, and more. Your scripts feature two hosts: Signal (warm, optimistic female) and Null (sharp, skeptical male) discussing findings like a professional podcast. Be specific, grounded, and educational. Write for the ear, not the eye — use natural speech patterns, contractions, and conversational rhythm. Never say this is just about AI — it covers all emerging tech in insurance.',
       messages: [{ role: 'user', content: prompt }]

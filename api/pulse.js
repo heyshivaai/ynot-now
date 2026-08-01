@@ -145,7 +145,7 @@ async function generateExecutiveBriefing(findings, runDate, prevFindings) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 500,
       system: 'You write the weekly post for YNOT.NOW, a free independent intelligence resource for anyone curious about AI in insurance (Life, Annuities, P&C, Horizontal Tech — NOT health insurance). Grounded, specific, educational. The goal is to inform and spark curiosity, not to advise or recommend. Plain text only — no markdown, no bold, no asterisks. Use → for bullets exactly as instructed. Follow the structure precisely.',
       messages: [{ role: 'user', content: prompt }]

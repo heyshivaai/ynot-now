@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1200,
         system: system || 'You are a specialist AI insurance intelligence mind. Respond ONLY with a valid JSON array. No markdown, no preamble. Start with [ end with ].',
         messages: [{ role: 'user', content: prompt }],
